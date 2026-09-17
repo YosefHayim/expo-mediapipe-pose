@@ -1,199 +1,64 @@
-# Oly MediaPipe fork
+# Oly Pose Camera
 
-Based on ThinkSys `@thinksys/react-native-mediapipe@0.0.21` (upstream commit
-`5bae159a8b2120f9b788790566712685fa7e1ea7`). The exact published package is the baseline.
+`@oly/pose-camera` is Oly's Expo native camera module. It connects AVFoundation on iOS and CameraX on Android directly to Google's MediaPipe Tasks SDK. Camera frames and pose inference remain on the device. React receives joint coordinates and capture telemetry.
 
-This fork preserves Oly camera/lens controls, downloaded pose models, single-person
-tracking, world landmarks, frame/thermal telemetry, lifecycle/error handling, and
-iOS diagnostic recording. Native identifiers and the package name remain unchanged.
+This private repository owns the implementation and its fixes. Oly-App consumes a commit-pinned archive from this repository; it contains no local native patches. The preceding ThinkSys implementation remains in Git history, with attribution in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Built CommonJS, ESM, and TypeScript declarations are committed so a commit-pinned
-Git installation needs no prepare hook. Run `yarn build` after source changes and
-commit matching generated files. Preserve the upstream MIT license.
+## Use in an Expo app
 
-App validation must cover native camera lifecycle, inference, front/back cameras,
-model switching, and notification reload behavior after SDK upgrades.
+Requires Expo SDK 57, React Native 0.86, React 19.2, and Effect 3.21. Use a development build; Expo Go cannot load custom native modules.
 
-## Upstream documentation
+```tsx
+import { PoseCameraView } from '@oly/pose-camera';
 
-# React Native Mediapipe
-
-The ThinkSys Mediapipe enables pose detection for React Native apps, providing a comprehensive solution for both iOS and Android developers. It offers real-time motion tracking, seamless integration, and customizable features, ideal for fitness, healthcare, and interactive applications. By combining MediaPipe's advanced capabilities with React Native's cross-platform framework, developers can easily build immersive, motion-based apps across both mobile platforms.
-
-<p align="center">
-<img src="https://i.ibb.co/L1FNt92/thinksys-logo.png" height="100" alt="ThinkSys" />
-</p>
-
-## Requirement
-* iOS 13 or higher
-* Gradle minimum SDK 24 or higher
-* Android SDK Version 26 or higher
-
-
-## Installation
-```
-npm install @thinksys/react-native-mediapipe
+<PoseCameraView
+  style={{ width: 390, height: 844 }}
+  cameraFacing="front"
+  frameLimit={15}
+  onCameraConfigured={handleCameraConfigured}
+  onLandmark={handlePoseFrame}
+  onInferenceError={handleCameraFailure}
+/>
 ```
 
-## iOS setup
-1. Add camera usage permission in Info.plist in example/ios
-    ```
-    <key>NSCameraUsageDescription</key>
-	<string>This app uses camera to get pose landmarks that appear in the camera feed.</string>
-    ```
+Obtain camera permission before mounting (Oly uses `expo-camera`), and configure `NSCameraUsageDescription` in the app. Android camera permission is declared by this module. Rebuild the native app after changing its pinned module commit.
 
-2. Add the CocoaPods CDN source at the top of your `ios/Podfile`:
-    ```ruby
-    source 'https://cdn.cocoapods.org/'
-    ```
+| Prop | Default | Behavior |
+| --- | --- | --- |
+| `cameraFacing` | `front` | `front` or `back`; preview and inference mirror together on front. |
+| `cameraLens` | `auto` | iOS rear auto prefers ultra-wide, falling back to wide. Android uses its default wide camera and acknowledges that fallback. |
+| `cameraZoomFactor` | `1` | Clamped to the selected device's supported range, never below 1. |
+| `frameLimit` | `30` | Inference cadence cap, 1–60. Oly requests 15. |
+| `poseModelVariant` | `full` | `lite`, `full`, or `heavy`. Only full is bundled. |
+| `poseModelAssetPath` | omitted | Absolute local path or `file://` URI. Required for lite/heavy; never fetched by the module. |
 
-3. Run ```cd ios && pod install```
+`onCameraConfigured` acknowledges the effective lens, facing, zoom, mirroring, and capture dimensions before pose events. `onLandmark` includes normalized image coordinates, world coordinates, optional visibility/presence, and timing/model/thermal metadata. Empty landmark arrays are valid no-person heartbeats. `onInferenceError` carries a stable code without raw exceptions or file paths.
 
-> **Note:** The `MediaPipeTasksVision` dependency is pinned to version `0.10.14` in this library. If `pod search MediaPipeTasksVision` returns no results, that is expected — the pod resolves via the CDN source above. To update the version, override it in your Podfile:
-> ```ruby
-> pod 'MediaPipeTasksVision', '0.10.14'
-> ```
+Changing camera/model props restarts capture. Backgrounding or detaching releases the camera and detector; returning restarts them. Events from previous capture generations are discarded. The app owns retry policy, calibration, skeleton drawing, and scoring.
 
+## Native pipeline
 
-## Android setup
-Add these to your project's manifest.
+| Platform | SDK | Delegate | Capture |
+| --- | --- | --- | --- |
+| iOS | MediaPipeTasksVision 0.10.14 | GPU | AVFoundation, 720p preference, late frames discarded |
+| Android | tasks-vision 0.10.29 | CPU | CameraX 1.4.2, 720p preference, keep latest frame |
 
-```
-<uses-feature android:name="android.hardware.camera" />
-<uses-permission android:name="android.permission.CAMERA" />
-```
+One pose, detection/presence/tracking confidence 0.35. Sequential VIDEO-mode inference runs on a dedicated serial worker, using monotonic timestamps and capture-time metadata. Camera backpressure bounds queued frames; inference never blocks the UI thread. The SDK versions, model bytes, confidence gates, and delegates match the previous Oly configuration. This does not establish performance or accuracy parity: compare on physical devices before release.
 
-## Props
+The bundled [Google full float16 model, version 1](https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task) has SHA-256 `5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1`. Both platforms package the same file from `assets/`.
 
-| Prop        | Description                                                                                     |
-|-------------|-------------------------------------------------------------------------------------------------|
-| `width`     | Sets the camera view width.                                                                      |
-| `height`    | Sets the camera view height.                                                                     |
-| `onLandmark`| Callback function to retrieve body landmark data.                                                |
-| `frameLimit`| set the frame rate during initialization(ios only).                                              |
-| `face`      | Toggles visibility of the face in the body model. Affects the data provided by `onLandmark`.      |
-| `leftArm`   | Toggles visibility of the left arm in the body model. Affects the data provided by `onLandmark`.  |
-| `rightArm`  | Toggles visibility of the right arm in the body model. Affects the data provided by `onLandmark`. |
-| `leftWrist` | Toggles visibility of the left wrist in the body model. Affects the data provided by `onLandmark`.|
-| `rightWrist`| Toggles visibility of the right wrist in the body model. Affects the data provided by `onLandmark`.|
-| `torso`     | Toggles visibility of the torso in the body model. Affects the data provided by `onLandmark`.     |
-| `leftLeg`   | Toggles visibility of the left leg in the body model. Affects the data provided by `onLandmark`.  |
-| `rightLeg`  | Toggles visibility of the right leg in the body model. Affects the data provided by `onLandmark`. |
-| `leftAnkle` | Toggles visibility of the left ankle in the body model. Affects the data provided by `onLandmark`.|
-| `rightAnkle`| Toggles visibility of the right ankle in the body model. Affects the data provided by `onLandmark`.|
+## Develop and review fixes
 
+Clone this repository beside Oly-App. Create a branch, edit here, and open a pull request against `oly-native`. During development, use a local `file:` dependency in an isolated Oly checkout. Run:
 
-## Usage
-
-### Basic
-
-```js
-import { RNMediapipe } from '@thinksys/react-native-mediapipe';
-
-export default function App() {
-
-    return (
-        <View>
-            <RNMediapipe 
-                width={400}
-                height={300}
-            />
-        </View>
-    )
-}
+```sh
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
 ```
 
-### Usage with body prop
+Build Oly for iOS and Android after native changes. On physical phones verify front/back preview and skeleton alignment, portrait/landscape, supported lens/zoom, empty detections, denied permission, model switches, background/resume, and repeated mount/unmount. Compare cadence, latency, and thermal behavior during a long session.
 
-#### Used to show/hide any body part overlay
-#### By default, the body prop is set to true
+After review, replace Oly's dependency with `https://api.github.com/repos/YosefHayim/mediapipe-reactnative/tarball/<full-commit-sha>` and update its lockfile. Its scoped `.npmrc` reads `MEDIAPIPE_GITHUB_TOKEN`; CI/EAS needs repository Contents:read access. Never commit a token. No prepare/build scripts run when this package is installed: Metro consumes TypeScript and Expo autolinks the Swift/Kotlin module.
 
-```js
-import { RNMediapipe } from '@thinksys/react-native-mediapipe';
-
-export default function App() {
-
-    return (
-        <View>
-            <RNMediapipe 
-                width={400}
-                height={300}
-                face={true}
-                leftArm={true}
-                rightArm={true}
-                leftWrist={true}
-                rightWrist={true}
-                torso={true}
-                leftLeg={true}
-                rightLeg={true}
-                leftAnkle={true}
-                rightAnkle={true}
-            />
-        </View>
-    )
-}
-```
-
-### Usage with switch camera method
-
-```js
-import { RNMediapipe, switchCamera } from '@thinksys/react-native-mediapipe';
-
-export default function App() {
-
-    const onFlip = () => {
-        switchCamera();
-    };
-
-    return (
-        <View>
-            <RNMediapipe 
-                width={400}
-                height={300}
-            />
-
-            <TouchableOpacity onPress={onFlip} style={styles.btnView}>
-                <Text style={styles.btnTxt}>Switch Camera</Text>
-            </TouchableOpacity>
-        </View>
-    )
-}
-
-```
-
-### Usage with onLandmark prop
-
-```js
-import { RNMediapipe } from '@thinksys/react-native-mediapipe';
-
-export default function App() {
-
-    return (
-        <View>
-            <RNMediapipe 
-                width={400}
-                height={300}
-                onLandmark={(data) => {
-                    console.log('Body Landmark Data:', data);
-                }}
-            />
-        </View>
-    )
-}
-
-```
-
-## Contributing
-
-See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.
-
----
-
-## 🔗 Links
-[![thinksys](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://thinksys.com/)
-
-[![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://in.linkedin.com/company/thinksys-inc)
-
-## License
-
-This project is licensed under a custom MIT License with restrictions - see the [LICENSE](LICENSE) file for details.
+References: [Expo Modules](https://docs.expo.dev/modules/overview/), [Google iOS guide](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/ios), [Google Android guide](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/android).
