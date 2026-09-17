@@ -8,6 +8,10 @@ RCT_EXPORT_VIEW_PROPERTY(width, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(height, NSNumber)
 
 RCT_EXPORT_VIEW_PROPERTY(onLandmark, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onCameraConfigured, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onInferenceError, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onRecordingFinished, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(recordSession, BOOL)
 
 RCT_EXTERN_METHOD(switchCamera)
 
@@ -22,4 +26,9 @@ RCT_EXPORT_VIEW_PROPERTY(rightLeg, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(leftAnkle, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(rightAnkle, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(frameLimit, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(cameraFacing, NSString)
+RCT_EXPORT_VIEW_PROPERTY(cameraLens, NSString)
+RCT_EXPORT_VIEW_PROPERTY(cameraZoomFactor, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(poseModelAssetPath, NSString)
+RCT_EXPORT_VIEW_PROPERTY(poseModelVariant, NSString)
 @end

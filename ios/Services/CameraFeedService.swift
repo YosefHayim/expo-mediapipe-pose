@@ -9,6 +9,8 @@ protocol CameraFeedServiceDelegate: AnyObject {
      */
     func didOutput(sampleBuffer: CMSampleBuffer, orientation: UIImage.Orientation, landmarkData:LandmarkData)
     
+    func didConfigureCamera(configuration: CameraConfiguration)
+
     /**
      This method initimates that a session runtime error occured.
      */
@@ -26,6 +28,21 @@ protocol CameraFeedServiceDelegate: AnyObject {
     
 }
 
+enum CameraLens: String {
+    case auto
+    case wide
+    case ultraWide
+}
+
+struct CameraConfiguration {
+    let appliedZoomFactor: CGFloat
+    let captureHeight: CGFloat
+    let captureWidth: CGFloat
+    let effectiveFacing: AVCaptureDevice.Position
+    let effectiveLens: CameraLens
+    let mirrored: Bool
+}
+
 struct WatermarkImage {
     let image: CIImage
     let position: CGPoint
@@ -33,8 +50,13 @@ struct WatermarkImage {
 
 
 struct LandmarkData {
+    var cameraFacing: String
+    var cameraLens: String
+    var cameraMirrored: Bool
+    var cameraZoomFactor: CGFloat
     var height: CGFloat
     var width: CGFloat
+    var luminance: Double
     var frameNumber: Double
     var presentationTimeStamp: Double
     var frameRate: Double
@@ -104,18 +126,20 @@ class CameraFeedService: NSObject {
     private let session: AVCaptureSession = AVCaptureSession()
     private lazy var videoPreviewLayer = AVCaptureVideoPreviewLayer(session: session)
     private let sessionQueue = DispatchQueue(label: "com.google.mediapipe.CameraFeedService.sessionQueue")
-    private var cameraPosition: AVCaptureDevice.Position = .front
+    private var cameraPosition: AVCaptureDevice.Position
+    private let requestedLens: CameraLens
+    private let requestedZoomFactor: CGFloat
+    private var effectiveLens: CameraLens = .wide
+    private var appliedZoomFactor: CGFloat = 1
+    private var cameraConfigurationEmitted = false
+    private var activeCamera: AVCaptureDevice?
     
     private var cameraConfigurationStatus: CameraConfigurationStatus = .failed
     private lazy var videoDataOutput = AVCaptureVideoDataOutput()
     private var isSessionRunning = false
     private var imageBufferSize: CGSize?
     private var movieOutput: AVCaptureMovieFileOutput?
-    var videoInput: AVAssetWriterInput?
-    private var _adpater: AVAssetWriterInputPixelBufferAdaptor?
-    private var _time: Double = 0
-    // AVAssetWriter property for video saving
-    private var assetWriter: AVAssetWriter?
+    private var recordingCompletion: ((URL) -> Void)?
     private var isReacordingStart: Bool = false
     private var isTimerStart: Bool = false
     private var lastTimestamp: CMTime?
@@ -137,7 +161,10 @@ class CameraFeedService: NSObject {
     //  let processingInterval: Double = 0.05 // Adjust as needed, represents the desired interval between processing in seconds
     
     // MARK: Initializer
-    init(previewView: UIView) {
+    init(previewView: UIView, cameraFacing: String, cameraLens: String, cameraZoomFactor: CGFloat) {
+        cameraPosition = cameraFacing == "back" ? .back : .front
+        requestedLens = CameraLens(rawValue: cameraLens) ?? .auto
+        requestedZoomFactor = max(1, cameraZoomFactor)
         super.init()
         
         // Initializes the session
@@ -228,18 +255,44 @@ class CameraFeedService: NSObject {
         self.isPoseStarted = started
     }
     
-  func setFrameLimit(limit: NSNumber) {
-      self.frameLimit = limit
-  }
+    func setFrameLimit(limit: NSNumber) {
+        self.frameLimit = limit
+        sessionQueue.async { [weak self] in
+            guard let self, let camera = self.activeCamera else { return }
+            self.configureFrameRate(for: camera, frameRate: Int(truncating: limit))
+        }
+    }
   
     private func configureFrameRate(for device: AVCaptureDevice, frameRate: Int) {
+        let requestedFrameRate = Double(frameRate)
+        let targetPixelCount = Int64(1280 * 720)
+        let preferredFormat = device.formats
+            .filter { format in
+                format.videoSupportedFrameRateRanges.contains { frameRateRange in
+                    frameRateRange.minFrameRate <= requestedFrameRate &&
+                        requestedFrameRate <= frameRateRange.maxFrameRate
+                }
+            }
+            .min { firstFormat, secondFormat in
+                let firstDimensions = CMVideoFormatDescriptionGetDimensions(
+                    firstFormat.formatDescription)
+                let secondDimensions = CMVideoFormatDescriptionGetDimensions(
+                    secondFormat.formatDescription)
+                let firstPixels = Int64(firstDimensions.width) * Int64(firstDimensions.height)
+                let secondPixels = Int64(secondDimensions.width) * Int64(secondDimensions.height)
+                return abs(firstPixels - targetPixelCount) < abs(secondPixels - targetPixelCount)
+            }
+        guard let preferredFormat else { return }
+
         do {
             try device.lockForConfiguration()
-            
-            // Set frame rate
+            device.activeFormat = preferredFormat
             device.activeVideoMinFrameDuration = CMTime(value: 1, timescale: CMTimeScale(frameRate))
             device.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: CMTimeScale(frameRate))
-            
+            let minimumZoomFactor = max(1.0, device.minAvailableVideoZoomFactor)
+            let maximumZoomFactor = max(minimumZoomFactor, device.maxAvailableVideoZoomFactor)
+            appliedZoomFactor = min(max(requestedZoomFactor, minimumZoomFactor), maximumZoomFactor)
+            device.videoZoomFactor = appliedZoomFactor
             device.unlockForConfiguration()
         } catch {
             print("Error configuring frame rate: \(error.localizedDescription)")
@@ -247,29 +300,64 @@ class CameraFeedService: NSObject {
     }
     
     
+    /**
+     Keep preview + MediaPipe sample buffers on the same horizontal mirror.
+     Front camera must mirror both, otherwise the selfie feed and skeleton disagree
+     (initial open only mirrored the data output — preview looked "flipped wrong").
+     */
+    private func applyCameraMirroring() {
+        let mirrorFrontCamera = cameraPosition == .front
+        if let previewConnection = videoPreviewLayer.connection {
+            previewConnection.automaticallyAdjustsVideoMirroring = false
+            if previewConnection.isVideoMirroringSupported {
+                previewConnection.isVideoMirrored = mirrorFrontCamera
+            }
+        }
+        if let dataConnection = videoDataOutput.connection(with: .video),
+           dataConnection.isVideoMirroringSupported {
+            dataConnection.isVideoMirrored = mirrorFrontCamera
+        }
+    }
+
     // MARK: - Camera Switching
     func switchCamera() {
-        
-        cameraPosition = cameraPosition == .back ? .front : .back
-        
         sessionQueue.async {
-            self.session.beginConfiguration()
+            let previousPosition = self.cameraPosition
+            let nextPosition: AVCaptureDevice.Position = previousPosition == .back ? .front : .back
+            guard let selection = self.cameraSelection(
+                    for: nextPosition,
+                    requestedLens: .auto,
+                    devices: self.discoveredCameraDevices(for: nextPosition)),
+                  let nextInput = try? AVCaptureDeviceInput(device: selection.device) else {
+                return
+            }
+            let camera = selection.device
             
-            // Remove existing input
-            if let currentInput = self.session.inputs.first {
+            self.session.beginConfiguration()
+            let currentInput = self.session.inputs.first
+            if let currentInput {
                 self.session.removeInput(currentInput)
             }
             
-            self.addVideoDeviceInput()
+            guard self.session.canAddInput(nextInput) else {
+                if let currentInput, self.session.canAddInput(currentInput) {
+                    self.session.addInput(currentInput)
+                }
+                self.session.commitConfiguration()
+                return
+            }
+
+            self.session.addInput(nextInput)
+            self.cameraPosition = nextPosition
+            self.effectiveLens = selection.lens
+            self.activeCamera = camera
+            self.resetFrameMetadata()
+            self.configureFrameRate(for: camera, frameRate: Int(truncating: self.frameLimit))
             
             // Update video orientation
             self.videoPreviewLayer.connection?.videoOrientation = .portrait
             self.videoDataOutput.connection(with: .video)?.videoOrientation = .portrait
-            self.videoDataOutput.connection(with: .video)?.isVideoMirrored = self.cameraPosition == .front
-            
-            // Mirror the preview layer if using front camera
-            self.videoPreviewLayer.connection?.automaticallyAdjustsVideoMirroring = false
-            self.videoPreviewLayer.connection?.isVideoMirrored = self.cameraPosition == .front
+            self.applyCameraMirroring()
             
             self.session.commitConfiguration()
             
@@ -300,6 +388,8 @@ class CameraFeedService: NSObject {
     private func startSession() {
         self.session.startRunning()
         self.isSessionRunning = self.session.isRunning
+        // Preview connection is often nil until the session is running — re-apply mirror.
+        self.applyCameraMirroring()
     }
     
     // MARK: Session Configuration Methods.
@@ -345,9 +435,16 @@ class CameraFeedService: NSObject {
      This method tries to add an AVCaptureDeviceInput to the current AVCaptureSession.
      */
     private func addVideoDeviceInput() -> Bool {
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: cameraPosition) else {
+        guard let selection = cameraSelection(
+                for: cameraPosition,
+                requestedLens: requestedLens,
+                devices: discoveredCameraDevices(for: cameraPosition)) else {
             return false
         }
+        let camera = selection.device
+        effectiveLens = selection.lens
+        activeCamera = camera
+        resetFrameMetadata()
         
         do {
             let videoDeviceInput = try AVCaptureDeviceInput(device: camera)
@@ -362,6 +459,39 @@ class CameraFeedService: NSObject {
         }
     }
     
+    private func discoveredCameraDevices(for position: AVCaptureDevice.Position) -> [AVCaptureDevice] {
+        AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInUltraWideCamera, .builtInWideAngleCamera],
+            mediaType: .video,
+            position: position
+        ).devices
+    }
+
+    private func cameraSelection(
+        for position: AVCaptureDevice.Position,
+        requestedLens: CameraLens,
+        devices: [AVCaptureDevice]
+    ) -> (device: AVCaptureDevice, lens: CameraLens)? {
+        if position == .back && (requestedLens == .auto || requestedLens == .ultraWide),
+           let ultraWideCamera = devices.first(where: { $0.deviceType == .builtInUltraWideCamera }) {
+            return (ultraWideCamera, .ultraWide)
+        }
+        guard let wideCamera = devices.first(where: { $0.deviceType == .builtInWideAngleCamera }) else {
+            return nil
+        }
+        return (wideCamera, .wide)
+    }
+
+    private func resetFrameMetadata() {
+        imageBufferSize = nil
+        frameCount = 0
+        frameRate = 0
+        frameHeight = 0
+        frameWidth = 0
+        lastTimestamp = nil
+        cameraConfigurationEmitted = false
+    }
+
     
     /**
      This method tries to add an AVCaptureVideoDataOutput to the current AVCaptureSession.
@@ -375,18 +505,17 @@ class CameraFeedService: NSObject {
         if session.canAddOutput(videoDataOutput) {
             session.addOutput(videoDataOutput)
             if let connection = videoDataOutput.connection(with: .video) {
-                let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: cameraPosition)
-                
-              self.configureFrameRate(for: videoDevice!, frameRate: Int(truncating: self.frameLimit))
+                guard let videoDevice = activeCamera else {
+                    return false
+                }
+                self.configureFrameRate(for: videoDevice, frameRate: Int(truncating: self.frameLimit))
                 
                 connection.videoOrientation = isPortrait ? .portrait : .landscapeRight
-                
-                if cameraPosition == .front && connection.isVideoOrientationSupported {
-                    connection.isVideoMirrored = true
-                }
                 if !self.isPortrait {
                     videoPreviewLayer.connection?.videoOrientation = .landscapeRight
                 }
+                // Preview + detector must share the same front-camera mirror on first open.
+                self.applyCameraMirroring()
             }
             return true
         } else {
@@ -469,31 +598,32 @@ class CameraFeedService: NSObject {
     
     
     func startRecording(startRecording: Bool) {
-        if !isReacordingStart {
-            self.assetWriter = nil // Release reference
-            self.videoInput = nil
-            self._adpater = nil
-            videoOutputURL = documentDirectory.appendingPathComponent(generateDynamicFileName())
-            isReacordingStart = startRecording
+        guard startRecording, !isReacordingStart, let movieOutput, !movieOutput.isRecording else {
+            return
         }
+        videoOutputURL = documentDirectory.appendingPathComponent(generateDynamicFileName())
+        try? FileManager.default.removeItem(at: videoOutputURL)
+        isReacordingStart = true
+        if let connection = movieOutput.connection(with: .video) {
+            connection.videoOrientation = isPortrait ? .portrait : .landscapeRight
+            connection.isVideoMirrored = cameraPosition == .front
+        }
+        movieOutput.startRecording(to: videoOutputURL, recordingDelegate: self)
     }
-    
-    
-    func stopRecording() {
-        if  isReacordingStart  {
-            self.eventName = "Intro"
-            isReacordingStart = false
-            isTimerStart = false
-            guard videoInput?.isReadyForMoreMediaData == true, assetWriter!.status != .failed else { return }
-            
-            videoInput?.markAsFinished()
-            assetWriter?.finishWriting { [weak self] in
-                guard let self = self else { return }
-                self.assetWriter = nil // Release reference
-                self.videoInput = nil
-                self._adpater = nil
-                print("Video recording finished.") // Or handle success/failure as needed
-            }
+
+
+    func stopRecording(completion: ((URL) -> Void)? = nil) {
+        guard isReacordingStart else { return }
+        eventName = "Intro"
+        isReacordingStart = false
+        isTimerStart = false
+        recordingCompletion = completion
+        if movieOutput?.isRecording == true {
+            movieOutput?.stopRecording()
+        } else {
+            let outputURL = videoOutputURL
+            recordingCompletion = nil
+            completion?(outputURL)
         }
     }
     
@@ -602,6 +732,31 @@ private var videoOutputURL: URL = documentDirectory.appendingPathComponent(gener
  */
 extension CameraFeedService: AVCaptureVideoDataOutputSampleBufferDelegate {
     
+    private func sampledLuminance(_ pixelBuffer: CVPixelBuffer) -> Double {
+        CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+        guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else { return 0 }
+        let width = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        let bytes = baseAddress.assumingMemoryBound(to: UInt8.self)
+        let step = 32
+        var total = 0.0
+        var samples = 0
+        // Sample the BGRA image sparsely; Rec.709 luma avoids a full-frame copy.
+        for y in stride(from: 0, to: height, by: step) {
+            for x in stride(from: 0, to: width, by: step) {
+                let offset = y * bytesPerRow + x * 4
+                let blue = Double(bytes[offset])
+                let green = Double(bytes[offset + 1])
+                let red = Double(bytes[offset + 2])
+                total += 0.2126 * red + 0.7152 * green + 0.0722 * blue
+                samples += 1
+            }
+        }
+        return samples == 0 ? 0 : total / Double(samples) / 255
+    }
+
     /** This method delegates the CVPixelBuffer of the frame seen by the camera currently.
      */
     
@@ -612,9 +767,21 @@ extension CameraFeedService: AVCaptureVideoDataOutputSampleBufferDelegate {
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         // Assuming you have these properties defined elsewhere
         guard let imageSize = imageBufferSize else {
-            imageBufferSize = CGSize(width: CVPixelBufferGetWidth(imageBuffer), height: CVPixelBufferGetHeight(imageBuffer))
+            let capturedSize = CGSize(
+                width: CVPixelBufferGetWidth(imageBuffer),
+                height: CVPixelBufferGetHeight(imageBuffer))
+            imageBufferSize = capturedSize
+            cameraConfigurationEmitted = true
+            delegate?.didConfigureCamera(configuration: CameraConfiguration(
+                appliedZoomFactor: appliedZoomFactor,
+                captureHeight: capturedSize.height,
+                captureWidth: capturedSize.width,
+                effectiveFacing: cameraPosition,
+                effectiveLens: effectiveLens,
+                mirrored: cameraPosition == .front))
             return
         }
+        guard cameraConfigurationEmitted else { return }
         
         if  self.frameHeight == 0 {
             self.frameHeight  = Int(imageSize.height)
@@ -644,7 +811,7 @@ extension CameraFeedService: AVCaptureVideoDataOutputSampleBufferDelegate {
             
             var currentTimeStamp =  Int(Date().timeIntervalSince1970 * 1000)
           
-            let data = LandmarkData(height: imageSize.height, width: imageSize.width, frameNumber: frameCount, presentationTimeStamp: Double(timestamp.value), frameRate: self.frameRate, startTimestamp:currentTimeStamp)
+            let data = LandmarkData(cameraFacing: cameraPosition == .front ? "front" : "back", cameraLens: effectiveLens.rawValue, cameraMirrored: cameraPosition == .front, cameraZoomFactor: appliedZoomFactor, height: imageSize.height, width: imageSize.width, luminance: sampledLuminance(imageBuffer), frameNumber: frameCount, presentationTimeStamp: Double(timestamp.value), frameRate: self.frameRate, startTimestamp:currentTimeStamp)
             
             delegate?.didOutput(sampleBuffer: sampleBuffer, orientation: UIImage.Orientation.from(deviceOrientation:  UIDevice.current.orientation), landmarkData: data)
             
@@ -916,12 +1083,10 @@ extension CameraFeedService: AVCaptureFileOutputRecordingDelegate {
     /** This method gets called when the output finished recording to a file.
      */
     func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
-        // Handle recording finished event
-        if let error = error {
-            print("Recording finished with error: \(error.localizedDescription)")
-        } else {
-            print("Recording finished successfully.")
-        }
+        let completion = recordingCompletion
+        recordingCompletion = nil
+        guard error == nil else { return }
+        completion?(outputFileURL)
     }
 }
 
@@ -940,7 +1105,3 @@ extension UIImage.Orientation {
         }
     }
 }
-
-
-
-

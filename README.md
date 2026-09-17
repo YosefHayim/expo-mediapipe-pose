@@ -1,3 +1,21 @@
+# Oly MediaPipe fork
+
+Based on ThinkSys `@thinksys/react-native-mediapipe@0.0.21` (upstream commit
+`5bae159a8b2120f9b788790566712685fa7e1ea7`). The exact published package is the baseline.
+
+This fork preserves Oly camera/lens controls, downloaded pose models, single-person
+tracking, world landmarks, frame/thermal telemetry, lifecycle/error handling, and
+iOS diagnostic recording. Native identifiers and the package name remain unchanged.
+
+Built CommonJS, ESM, and TypeScript declarations are committed so a commit-pinned
+Git installation needs no prepare hook. Run `yarn build` after source changes and
+commit matching generated files. Preserve the upstream MIT license.
+
+App validation must cover native camera lifecycle, inference, front/back cameras,
+model switching, and notification reload behavior after SDK upgrades.
+
+## Upstream documentation
+
 # React Native Mediapipe
 
 The ThinkSys Mediapipe enables pose detection for React Native apps, providing a comprehensive solution for both iOS and Android developers. It offers real-time motion tracking, seamless integration, and customizable features, ideal for fitness, healthcare, and interactive applications. By combining MediaPipe's advanced capabilities with React Native's cross-platform framework, developers can easily build immersive, motion-based apps across both mobile platforms.

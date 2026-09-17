@@ -1,5 +1,6 @@
 package com.tsmediapipe;
 
+import android.os.Bundle;
 import android.util.Log;
 import android.view.Choreographer;
 import android.view.View;
@@ -13,8 +14,11 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReadableArray;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.common.MapBuilder;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.ThemedReactContext;
@@ -30,6 +34,9 @@ public class TsMediapipeViewManager extends ViewGroupManager<FrameLayout> {
   private int propHeight;
   private Choreographer.FrameCallback frameCallback;
   private CameraFragment currentFragment;
+  private String poseModelAssetPath;
+  private String poseModelVariant = "full";
+  private String cameraFacing = "front";
 
   ReactApplicationContext reactContext;
 
@@ -48,18 +55,17 @@ public class TsMediapipeViewManager extends ViewGroupManager<FrameLayout> {
   private void createFragmentAuto(FrameLayout root) {
     Log.d("TsMediapipe", "Auto-creating fragment - START");
 
-    final FragmentActivity activity = (FragmentActivity) reactContext.getCurrentActivity();
-    if (activity == null) {
-      Log.e("TsMediapipe", "Activity is null, cannot create fragment");
+    if (!(reactContext.getCurrentActivity() instanceof FragmentActivity)) {
+      Log.e("TsMediapipe", "Fragment activity is unavailable, cannot create fragment");
+      emitInferenceError(root.getId(), "nativeViewInitialization");
       return;
     }
+    final FragmentActivity activity = (FragmentActivity) reactContext.getCurrentActivity();
 
     // Clean up existing fragment if any
     cleanupFragment();
 
     try {
-      Log.d("TsMediapipe", "Creating new CameraFragment instance");
-      currentFragment = new CameraFragment();
       final FragmentManager fragmentManager = activity.getSupportFragmentManager();
 
       int containerId = root.getId();
@@ -70,6 +76,9 @@ public class TsMediapipeViewManager extends ViewGroupManager<FrameLayout> {
       } else {
         Log.d("TsMediapipe", "Using existing container ID: " + containerId);
       }
+
+      Log.d("TsMediapipe", "Creating new CameraFragment instance");
+      currentFragment = configuredCameraFragment(containerId);
 
       final int finalContainerId = containerId; // Make final for lambda
       final CameraFragment finalFragment = currentFragment; // Make final for lambda
@@ -104,12 +113,14 @@ public class TsMediapipeViewManager extends ViewGroupManager<FrameLayout> {
 
           } catch (Exception e) {
             Log.e("TsMediapipe", "Error in fragment transaction: " + e.getMessage(), e);
+            emitInferenceError(finalContainerId, "nativeViewInitialization");
           }
         }
       });
 
     } catch (Exception e) {
       Log.e("TsMediapipe", "Error auto-creating fragment: " + e.getMessage(), e);
+      emitInferenceError(root.getId(), "nativeViewInitialization");
     }
   }
 
@@ -227,6 +238,31 @@ public class TsMediapipeViewManager extends ViewGroupManager<FrameLayout> {
     }
   }
 
+  @ReactProp(name = "poseModelAssetPath")
+  public void setPoseModelAssetPath(FrameLayout view, @Nullable String assetPath) {
+    poseModelAssetPath = assetPath;
+  }
+
+  @ReactProp(name = "poseModelVariant")
+  public void setPoseModelVariant(FrameLayout view, @Nullable String variant) {
+    poseModelVariant = variant == null ? "full" : variant;
+  }
+
+  @ReactProp(name = "cameraFacing")
+  public void setCameraFacing(FrameLayout view, @Nullable String facing) {
+    cameraFacing = "back".equals(facing) ? "back" : "front";
+  }
+
+  @ReactProp(name = "cameraLens")
+  public void setCameraLens(FrameLayout view, @Nullable String lens) {
+    // CameraX exposes logical front/back selection here; the wrapper acknowledges Wide at 1x.
+  }
+
+  @ReactProp(name = "cameraZoomFactor")
+  public void setCameraZoomFactor(FrameLayout view, double zoomFactor) {
+    // CameraX applies a safe 1x physical-lens baseline in CameraFragment.
+  }
+
   @ReactProp(name = "face")
   public void setFaceProp(View view, boolean face) {
     GlobalState.isFaceEnabled = face;
@@ -283,17 +319,18 @@ public class TsMediapipeViewManager extends ViewGroupManager<FrameLayout> {
   public void createFragment(FrameLayout root, int reactNativeViewId) {
     Log.d("TsMediapipe", "createFragment called with viewId: " + reactNativeViewId);
 
-    final FragmentActivity activity = (FragmentActivity) reactContext.getCurrentActivity();
-    if (activity == null) {
-      Log.e("TsMediapipe", "Activity is null, cannot create fragment");
+    if (!(reactContext.getCurrentActivity() instanceof FragmentActivity)) {
+      Log.e("TsMediapipe", "Fragment activity is unavailable, cannot create fragment");
+      emitInferenceError(reactNativeViewId, "nativeViewInitialization");
       return;
     }
+    final FragmentActivity activity = (FragmentActivity) reactContext.getCurrentActivity();
 
     // Clean up existing fragment if any
     cleanupFragment();
 
     try {
-      currentFragment = new CameraFragment();
+      currentFragment = configuredCameraFragment(reactNativeViewId);
       final FragmentManager fragmentManager = activity.getSupportFragmentManager();
 
       // Use the FrameLayout's ID instead of reactNativeViewId
@@ -317,7 +354,33 @@ public class TsMediapipeViewManager extends ViewGroupManager<FrameLayout> {
 
     } catch (Exception e) {
       Log.e("TsMediapipe", "Error creating fragment: " + e.getMessage(), e);
+      emitInferenceError(reactNativeViewId, "nativeViewInitialization");
     }
+  }
+
+  private CameraFragment configuredCameraFragment(int reactNativeViewId) {
+    CameraFragment fragment = new CameraFragment();
+    Bundle arguments = new Bundle();
+    arguments.putString(CameraFragment.ARG_POSE_MODEL_VARIANT, poseModelVariant);
+    arguments.putString(CameraFragment.ARG_CAMERA_FACING, cameraFacing);
+    arguments.putInt(CameraFragment.ARG_REACT_NATIVE_VIEW_ID, reactNativeViewId);
+    if (poseModelAssetPath != null) {
+      arguments.putString(CameraFragment.ARG_POSE_MODEL_ASSET_PATH, poseModelAssetPath);
+    }
+    fragment.setArguments(arguments);
+    return fragment;
+  }
+
+  private void emitInferenceError(int reactNativeViewId, String errorCode) {
+    if (reactNativeViewId == View.NO_ID) {
+      return;
+    }
+    WritableMap safePayload = Arguments.createMap();
+    safePayload.putString("code", errorCode);
+    safePayload.putInt("viewId", reactNativeViewId);
+    reactContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+            .emit("onInferenceError", safePayload);
   }
 
   private void cleanupFragment() {

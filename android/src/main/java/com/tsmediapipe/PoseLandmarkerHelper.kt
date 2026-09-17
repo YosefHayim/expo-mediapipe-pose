@@ -14,12 +14,17 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
+import java.io.File
+import java.io.FileInputStream
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 
 class PoseLandmarkerHelper(
   var minPoseDetectionConfidence: Float = DEFAULT_POSE_DETECTION_CONFIDENCE,
   var minPoseTrackingConfidence: Float = DEFAULT_POSE_TRACKING_CONFIDENCE,
   var minPosePresenceConfidence: Float = DEFAULT_POSE_PRESENCE_CONFIDENCE,
   var currentModel: Int = MODEL_POSE_LANDMARKER_FULL,
+  var currentModelAssetPath: String? = null,
   var currentDelegate: Int = DELEGATE_CPU,
   var runningMode: RunningMode = RunningMode.LIVE_STREAM,
   val context: Context,
@@ -30,6 +35,20 @@ class PoseLandmarkerHelper(
   // For this example this needs to be a var so it can be reset on changes.
   // If the Pose Landmarker will not change, a lazy val would be preferable.
   private var poseLandmarker: PoseLandmarker? = null
+  private var modelAssetBuffer: MappedByteBuffer? = null
+
+  val modelVariantName: String
+    get() = when (currentModel) {
+      MODEL_POSE_LANDMARKER_LITE -> "lite"
+      MODEL_POSE_LANDMARKER_HEAVY -> "heavy"
+      else -> "full"
+    }
+
+  val modelDelegateName: String
+    get() = if (currentDelegate == DELEGATE_GPU) "GPU" else "CPU"
+
+  val modelSourceName: String
+    get() = if (currentModelAssetPath.isNullOrBlank()) "bundled" else "downloaded"
 
   init {
     setupPoseLandmarker()
@@ -38,6 +57,7 @@ class PoseLandmarkerHelper(
   fun clearPoseLandmarker() {
     poseLandmarker?.close()
     poseLandmarker = null
+    modelAssetBuffer = null
   }
 
   // Return running status of PoseLandmarkerHelper
@@ -74,10 +94,6 @@ class PoseLandmarkerHelper(
       }
 
 
-    // val myPath = "file:///android_asset/$modelName"
-
-    baseOptionBuilder.setModelAssetPath(modelName)
-
     // Check if runningMode is consistent with poseLandmarkerHelperListener
     when (runningMode) {
       RunningMode.LIVE_STREAM -> {
@@ -94,12 +110,24 @@ class PoseLandmarkerHelper(
     }
 
     try {
+      val modelFilePath = currentModelAssetPath
+      if (modelFilePath.isNullOrBlank()) {
+        baseOptionBuilder.setModelAssetPath(modelName)
+      } else {
+        val modelFile = File(android.net.Uri.parse(modelFilePath).path ?: modelFilePath)
+        val assetBuffer = FileInputStream(modelFile).channel.use { fileChannel ->
+          fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size())
+        }
+        modelAssetBuffer = assetBuffer
+        baseOptionBuilder.setModelAssetBuffer(assetBuffer)
+      }
       val baseOptions = baseOptionBuilder.build()
       // Create an option builder with base options and specific
       // options only use for Pose Landmarker.
       val optionsBuilder =
         PoseLandmarker.PoseLandmarkerOptions.builder()
           .setBaseOptions(baseOptions)
+          .setNumPoses(DEFAULT_NUM_POSES) // Oly: one exercising person; prevents duplicate overlapping-body results
           .setMinPoseDetectionConfidence(minPoseDetectionConfidence)
           .setMinTrackingConfidence(minPoseTrackingConfidence)
           .setMinPosePresenceConfidence(minPosePresenceConfidence)
@@ -116,11 +144,7 @@ class PoseLandmarkerHelper(
       poseLandmarker =
         PoseLandmarker.createFromOptions(context, options)
     } catch (e: Exception) {
-      Log.d("hello", "${e}")
-      poseLandmarkerHelperListener?.onError(
-        "Pose Landmarker failed to initialize. See error logs for " +
-          "details"
-      )
+      poseLandmarkerHelperListener?.onError("modelInitialization")
       Log.e(
         TAG, "MediaPipe failed to load the task with error: " + e
           .message
@@ -206,9 +230,8 @@ class PoseLandmarkerHelper(
   // Return errors thrown during detection to this PoseLandmarkerHelper's
   // caller
   private fun returnLivestreamError(error: RuntimeException) {
-    poseLandmarkerHelperListener?.onError(
-      error.message ?: "An unknown error has occurred"
-    )
+    Log.e(TAG, "MediaPipe live-stream inference failed", error)
+    poseLandmarkerHelperListener?.onError("inferenceRuntime")
   }
 
   companion object {
@@ -216,12 +239,10 @@ class PoseLandmarkerHelper(
 
     const val DELEGATE_CPU = 0
     const val DELEGATE_GPU = 1
-    const val DEFAULT_POSE_DETECTION_CONFIDENCE = 0.5F
-    const val DEFAULT_POSE_TRACKING_CONFIDENCE = 0.5F
-    const val DEFAULT_POSE_PRESENCE_CONFIDENCE = 0.5F
-    const val DEFAULT_NUM_POSES = 1
-    const val OTHER_ERROR = 0
-    const val GPU_ERROR = 1
+    const val DEFAULT_POSE_DETECTION_CONFIDENCE = 0.35F
+    const val DEFAULT_POSE_TRACKING_CONFIDENCE = 0.35F
+    const val DEFAULT_POSE_PRESENCE_CONFIDENCE = 0.35F
+    const val DEFAULT_NUM_POSES = 1 // Oly one-person session
     const val MODEL_POSE_LANDMARKER_FULL = 0
     const val MODEL_POSE_LANDMARKER_LITE = 1
     const val MODEL_POSE_LANDMARKER_HEAVY = 2
@@ -235,7 +256,7 @@ class PoseLandmarkerHelper(
   )
 
   interface LandmarkerListener {
-    fun onError(error: String, errorCode: Int = OTHER_ERROR)
+    fun onError(errorCode: String)
     fun onResults(resultBundle: ResultBundle)
   }
 }

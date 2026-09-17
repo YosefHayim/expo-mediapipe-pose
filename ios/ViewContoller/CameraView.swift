@@ -7,7 +7,19 @@ class CameraView: UIView {
         static let edgeOffset: CGFloat = 2.0
     }
 
-    var propDictionary: [String: Bool]? {
+    // Oly: start with all limb filters off so the first frames never draw the native white skeleton.
+    var propDictionary: [String: Bool]? = [
+        "face": false,
+        "leftArm": false,
+        "leftLeg": false,
+        "rightArm": false,
+        "leftWrist": false,
+        "rightWrist": false,
+        "torso": false,
+        "rightLeg": false,
+        "leftAnkle": false,
+        "rightAnkle": false,
+    ] {
         didSet {
         }
     }
@@ -23,6 +35,29 @@ class CameraView: UIView {
     var landmarkData: LandmarkData!
     var isPortrait: Bool = true
     var poseStart: Bool = true
+    // Oly: defensively select one primary result if the native task ever returns more than requested.
+    private var lockedPrimaryHipX: Float? = nil
+    private var lockedPrimaryHipY: Float? = nil
+    private let primaryLockMaxDistance: Float = 0.28
+    private var emittedLandmarkFrameNumber: Int = 0
+    private var isTearingDown = false
+    private var cameraConfigurationAcknowledged = false
+
+    /// Privacy-safe platform thermal pressure for adaptive performance diagnostics.
+    private var currentThermalState: String {
+        switch ProcessInfo.processInfo.thermalState {
+        case .nominal:
+            return "nominal"
+        case .fair:
+            return "fair"
+        case .serious:
+            return "serious"
+        case .critical:
+            return "critical"
+        @unknown default:
+            return "critical"
+        }
+    }
 
     private var isSessionRunning = false
     private var isObserving = false
@@ -30,7 +65,7 @@ class CameraView: UIView {
 
     // MARK: Controllers that manage functionality
     // Handles all the camera related functionality
-    private lazy var cameraFeedService = CameraFeedService(previewView: previewView)
+    private var cameraFeedService: CameraFeedService?
 
     private let poseLandmarkerServiceQueue = DispatchQueue(
         label: "com.google.mediapipe.cameraController.poseLandmarkerServiceQueue",
@@ -69,59 +104,68 @@ class CameraView: UIView {
         }
     }
 
-    @objc var face: Bool = true  {
+    @objc var face: Bool = false  {
         didSet {
             updateBodyTrack()
         }
     }
-    @objc var leftArm: Bool = true {
-        didSet {
-            updateBodyTrack()
-        }
-    }
-
-    @objc var rightArm: Bool = true {
-        didSet {
-            updateBodyTrack()
-        }
-    }
-    @objc var leftWrist: Bool = true {
-        didSet {
-            updateBodyTrack()
-        }
-    }
-    @objc var rightWrist: Bool = true {
-        didSet {
-            updateBodyTrack()
-        }
-    }
-    @objc var torso: Bool = true {
-        didSet {
-            updateBodyTrack()
-        }
-    }
-    @objc var leftLeg: Bool = true {
-        didSet {
-            updateBodyTrack()
-        }
-    }
-    @objc var rightLeg: Bool = true {
-        didSet {
-            updateBodyTrack()
-        }
-    }
-    @objc var leftAnkle: Bool = true {
-        didSet {
-            updateBodyTrack()
-        }
-    }
-    @objc var rightAnkle: Bool = true {
+    @objc var leftArm: Bool = false {
         didSet {
             updateBodyTrack()
         }
     }
 
-  @objc var frameLimit: NSNumber = DefaultConstants.FRAME_LIMIT
+    @objc var rightArm: Bool = false {
+        didSet {
+            updateBodyTrack()
+        }
+    }
+    @objc var leftWrist: Bool = false {
+        didSet {
+            updateBodyTrack()
+        }
+    }
+    @objc var rightWrist: Bool = false {
+        didSet {
+            updateBodyTrack()
+        }
+    }
+    @objc var torso: Bool = false {
+        didSet {
+            updateBodyTrack()
+        }
+    }
+    @objc var leftLeg: Bool = false {
+        didSet {
+            updateBodyTrack()
+        }
+    }
+    @objc var rightLeg: Bool = false {
+        didSet {
+            updateBodyTrack()
+        }
+    }
+    @objc var leftAnkle: Bool = false {
+        didSet {
+            updateBodyTrack()
+        }
+    }
+    @objc var rightAnkle: Bool = false {
+        didSet {
+            updateBodyTrack()
+        }
+    }
+
+    @objc var frameLimit: NSNumber = DefaultConstants.FRAME_LIMIT {
+        didSet {
+            cameraFeedService?.setFrameLimit(limit: frameLimit)
+        }
+    }
+    @objc var poseModelAssetPath: String?
+    @objc var poseModelVariant: String = "full"
+    @objc var cameraFacing: String = "front"
+    @objc var cameraLens: String = "auto"
+    @objc var cameraZoomFactor: NSNumber = 1
     @objc var orientation: NSNumber = 0 {
         didSet {
 //            let result =  CGFloat(truncating: orientation)
@@ -138,6 +182,18 @@ class CameraView: UIView {
     }
 
     @objc var onLandmark: RCTDirectEventBlock?
+    @objc var onCameraConfigured: RCTDirectEventBlock?
+    @objc var onInferenceError: RCTDirectEventBlock?
+    @objc var onRecordingFinished: RCTDirectEventBlock?
+    @objc var recordSession: Bool = false {
+        didSet {
+            if recordSession {
+                cameraFeedService?.startRecording(startRecording: true)
+            } else {
+                stopDebugRecording()
+            }
+        }
+    }
 
     // MARK: - Initializers
 
@@ -189,8 +245,15 @@ class CameraView: UIView {
         ])
     }
     private func teardownUI() {
+        isTearingDown = true
+        stopDebugRecording()
+        stopObserveConfigChanges()
+        poseLandmarkerService?.liveStreamDelegate = nil
+        poseLandmarkerService = nil
+        cameraFeedService?.delegate = nil
+        cameraFeedService?.stopSession()
+        self.cameraFeedService = nil
         if previewView != nil {
-            cameraFeedService.stopSession()
             previewView.removeFromSuperview()
             previewView = nil
         }
@@ -211,12 +274,20 @@ class CameraView: UIView {
 
     private func setupUI() {
         teardownUI()
+        isTearingDown = false
+        cameraConfigurationAcknowledged = false
         requestCameraPermission()
         // Instantiate and add subviews
         previewView = UIView()
         cameraUnavailableLabel = UILabel()
         resumeButton = UIButton()
         overlayView = OverlayView()
+        let cameraFeedService = CameraFeedService(
+            previewView: previewView,
+            cameraFacing: cameraFacing,
+            cameraLens: cameraLens,
+            cameraZoomFactor: max(1, CGFloat(truncating: cameraZoomFactor)))
+        self.cameraFeedService = cameraFeedService
         overlayView.backgroundColor = UIColor.white.withAlphaComponent(0.0)
         addSubview(previewView)
         addSubview(cameraUnavailableLabel)
@@ -237,20 +308,23 @@ class CameraView: UIView {
 
         cameraFeedService.setFrameLimit(limit: frameLimit)
         cameraFeedService.setOrientation(isPortrait: self.isPortrait)
+        cameraFeedService.delegate = self
         cameraFeedService.startLiveCameraSession {[weak self] cameraConfiguration in
             DispatchQueue.main.async {
                 switch cameraConfiguration {
                 case .failed:
+                    self?.emitInferenceError(code: "cameraConfiguration")
                     self?.presentVideoConfigurationErrorAlert()
                 case .permissionDenied:
+                    self?.emitInferenceError(code: "cameraPermission")
                     self?.presentCameraPermissionsDeniedAlert()
                 default:
-                    break
+                    if self?.recordSession == true {
+                        self?.cameraFeedService?.startRecording(startRecording: true)
+                    }
                 }
             }
         }
-        cameraFeedService.delegate = self
-
         cameraFeedService.updateVideoPreviewLayer(toFrame: previewView.bounds)
         UIApplication.shared.isIdleTimerDisabled = true
     }
@@ -258,13 +332,24 @@ class CameraView: UIView {
     @objc
     override func didSetProps(_ changedProps: [String]!) {
 
-        if changedProps.contains("height") && changedProps.contains("width")  {
+        let sizeReady = changedProps.contains("height") && changedProps.contains("width")
+        let cameraInputChanged = changedProps.contains("cameraFacing") ||
+            changedProps.contains("cameraLens") || changedProps.contains("cameraZoomFactor")
+        if sizeReady || (cameraInputChanged && widthInfo > 0 && heightInfo > 0) {
             setupUI()
         }
     }
 
     @objc func switchCamera() {
-        cameraFeedService.switchCamera()
+        cameraFeedService?.switchCamera()
+    }
+
+    private func stopDebugRecording() {
+        cameraFeedService?.stopRecording { [weak self] outputURL in
+            DispatchQueue.main.async {
+                self?.onRecordingFinished?(["uri": outputURL.absoluteString])
+            }
+        }
     }
 
     override func willMove(toSuperview newSuperview: UIView?) {
@@ -314,6 +399,14 @@ class CameraView: UIView {
         UIApplication.shared.keyWindow?.rootViewController?.present(alert, animated: true, completion: nil)
     }
 
+    /// Emit one stable error code after teardown guards, without native details or user data.
+    private func emitInferenceError(code: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.isTearingDown else { return }
+            self.onInferenceError?(["code": code])
+        }
+    }
+
     private func initializePoseLandmarkerServiceOnSessionResumption() {
         clearAndInitializePoseLandmarkerService()
         startObserveConfigChanges()
@@ -321,15 +414,45 @@ class CameraView: UIView {
 
     @objc private func clearAndInitializePoseLandmarkerService() {
         poseLandmarkerService = nil
-        poseLandmarkerService = PoseLandmarkerService
+        let initializedService = PoseLandmarkerService
             .liveStreamPoseLandmarkerService(
-                modelPath: InferenceConfigurationManager.sharedInstance.model.modelPath,
+                modelPath: selectedPoseModelPath,
                 numPoses: InferenceConfigurationManager.sharedInstance.numPoses,
                 minPoseDetectionConfidence: InferenceConfigurationManager.sharedInstance.minPoseDetectionConfidence,
                 minPosePresenceConfidence: InferenceConfigurationManager.sharedInstance.minPosePresenceConfidence,
                 minTrackingConfidence: InferenceConfigurationManager.sharedInstance.minTrackingConfidence,
                 liveStreamDelegate: self,
                 delegate: InferenceConfigurationManager.sharedInstance.delegate)
+        poseLandmarkerService = initializedService
+        if initializedService?.poseLandmarker == nil {
+            emitInferenceError(code: "modelInitialization")
+        }
+    }
+
+    private var selectedPoseModelPath: String? {
+        guard let assetPath = poseModelAssetPath, !assetPath.isEmpty else {
+            return InferenceConfigurationManager.sharedInstance.model.modelPath
+        }
+        guard assetPath.hasPrefix("file://"), let fileUrl = URL(string: assetPath) else {
+            return assetPath
+        }
+        return fileUrl.path
+    }
+
+    private var activePoseModelVariant: String {
+        guard poseModelAssetPath?.isEmpty == false else {
+            return "full"
+        }
+        switch poseModelVariant {
+        case "lite", "heavy":
+            return poseModelVariant
+        default:
+            return "full"
+        }
+    }
+
+    private var activePoseModelSource: String {
+        return poseModelAssetPath?.isEmpty == false ? "downloaded" : "bundled"
     }
 
     private func clearPoseLandmarkerServiceOnSessionInterruption() {
@@ -357,11 +480,104 @@ class CameraView: UIView {
         }
         isObserving = false
     }
+
+    // MARK: - Oly multi-person primary lock
+
+    /// Hip midpoint of a pose landmark list (indices 23 + 24), or nil when incomplete.
+    private func hipCenter(of landmarks: [NormalizedLandmark]) -> (x: Float, y: Float)? {
+        guard landmarks.count > 24 else { return nil }
+        let left = landmarks[23]
+        let right = landmarks[24]
+        return (x: (left.x + right.x) / 2, y: (left.y + right.y) / 2)
+    }
+
+    /// Approximate torso size used as a "closest / largest person" score.
+    private func torsoScale(of landmarks: [NormalizedLandmark]) -> Float {
+        guard landmarks.count > 24 else { return 0 }
+        let ls = landmarks[11]
+        let rs = landmarks[12]
+        let lh = landmarks[23]
+        let rh = landmarks[24]
+        let shoulderWidth = hypot(ls.x - rs.x, ls.y - rs.y)
+        let hipWidth = hypot(lh.x - rh.x, lh.y - rh.y)
+        let torsoHeight = hypot(((ls.x + rs.x) / 2) - ((lh.x + rh.x) / 2),
+                                ((ls.y + rs.y) / 2) - ((lh.y + rh.y) / 2))
+        return max(shoulderWidth, hipWidth) * max(torsoHeight, 0.01)
+    }
+
+    /// Pick the pose index to stream to JS: sticky hip lock, else largest torso.
+    private func selectPrimaryPoseIndex(from poses: [[NormalizedLandmark]]) -> Int? {
+        if poses.isEmpty {
+            lockedPrimaryHipX = nil
+            lockedPrimaryHipY = nil
+            return nil
+        }
+        if poses.count == 1 {
+            if let center = hipCenter(of: poses[0]) {
+                lockedPrimaryHipX = center.x
+                lockedPrimaryHipY = center.y
+            }
+            return 0
+        }
+
+        if let lockX = lockedPrimaryHipX, let lockY = lockedPrimaryHipY {
+            var bestIndex: Int? = nil
+            var bestDistance = Float.greatestFiniteMagnitude
+            for (index, pose) in poses.enumerated() {
+                guard let center = hipCenter(of: pose) else { continue }
+                let distance = hypot(center.x - lockX, center.y - lockY)
+                if distance < bestDistance {
+                    bestDistance = distance
+                    bestIndex = index
+                }
+            }
+            if let bestIndex, bestDistance <= primaryLockMaxDistance {
+                if let center = hipCenter(of: poses[bestIndex]) {
+                    lockedPrimaryHipX = center.x
+                    lockedPrimaryHipY = center.y
+                }
+                return bestIndex
+            }
+        }
+
+        // No stable lock — prefer the largest torso (usually the nearer primary user).
+        var bestIndex = 0
+        var bestScale: Float = -1
+        for (index, pose) in poses.enumerated() {
+            let scale = torsoScale(of: pose)
+            if scale > bestScale {
+                bestScale = scale
+                bestIndex = index
+            }
+        }
+        if let center = hipCenter(of: poses[bestIndex]) {
+            lockedPrimaryHipX = center.x
+            lockedPrimaryHipY = center.y
+        }
+        return bestIndex
+    }
+
 }
 
 extension CameraView: CameraFeedServiceDelegate {
 
+    func didConfigureCamera(configuration: CameraConfiguration) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.isTearingDown else { return }
+            self.cameraConfigurationAcknowledged = true
+            self.onCameraConfigured?([
+                "appliedZoomFactor": configuration.appliedZoomFactor,
+                "captureHeight": configuration.captureHeight,
+                "captureWidth": configuration.captureWidth,
+                "effectiveFacing": configuration.effectiveFacing == .front ? "front" : "back",
+                "effectiveLens": configuration.effectiveLens.rawValue,
+                "mirrored": configuration.mirrored,
+            ])
+        }
+    }
+
     func didOutput(sampleBuffer: CMSampleBuffer, orientation: UIImage.Orientation, landmarkData:LandmarkData) {
+        guard cameraConfigurationAcknowledged else { return }
         let currentTimeMs = Date().timeIntervalSince1970 * 1000
         // Pass the pixel buffer to mediapipe
         backgroundQueue.async { [weak self] in
@@ -398,6 +614,7 @@ extension CameraView: CameraFeedServiceDelegate {
         // manually resumed.
         resumeButton.isHidden = false
         clearPoseLandmarkerServiceOnSessionInterruption()
+        emitInferenceError(code: "cameraRuntime")
     }
 }
 
@@ -420,6 +637,8 @@ extension CameraView: CameraFeedServiceDelegate {
 //    return data.base64EncodedString()
 //}
 
+
+
 // MARK: PoseLandmarkerServiceLiveStreamDelegate
 
 extension CameraView: PoseLandmarkerServiceLiveStreamDelegate {
@@ -429,101 +648,125 @@ extension CameraView: PoseLandmarkerServiceLiveStreamDelegate {
         _ poseLandmarkerService: PoseLandmarkerService,
         didFinishDetection result: ResultBundle?,
         error: Error?) {
+        if error != nil {
+            emitInferenceError(code: "inferenceRuntime")
+            return
+        }
+        guard let poseLandmarkerResult = result?.poseLandmarkerResults.first as? PoseLandmarkerResult else { return }
+        let inferenceDurationMs = result?.inferenceTime ?? 0
+        let capturedAtMs = Date().timeIntervalSince1970 * 1000 - inferenceDurationMs
+        emittedLandmarkFrameNumber += 1
+        let emittedFrameNumber = emittedLandmarkFrameNumber
+        let poseCount = poseLandmarkerResult.landmarks.count
+        frameCount = 0
+        let primaryIndex = selectPrimaryPoseIndex(from: poseLandmarkerResult.landmarks)
+        let results = primaryIndex.flatMap { poseLandmarkerResult.landmarks[$0] }
+        let worldLandmarks = primaryIndex.flatMap { index in
+            poseLandmarkerResult.worldLandmarks.indices.contains(index)
+                ? poseLandmarkerResult.worldLandmarks[index]
+                : nil
+        }
+        let additionalData: [String: Any] = [
+            "cameraFacing": landmarkData?.cameraFacing ?? cameraFacing,
+            "cameraLens": landmarkData?.cameraLens ?? "wide",
+            "cameraMirrored": landmarkData?.cameraMirrored ?? (cameraFacing == "front"),
+            "cameraZoomFactor": landmarkData?.cameraZoomFactor ?? 1,
+            "height": landmarkData?.height ?? CGFloat(isPortrait ? DefaultConstants.HEIGHT : DefaultConstants.WIDTH),
+            "width": landmarkData?.width ?? CGFloat(isPortrait ? DefaultConstants.WIDTH : DefaultConstants.HEIGHT),
+            "luminance": landmarkData?.luminance ?? 0,
+            "capturedAtMs": capturedAtMs,
+            "inferenceDurationMs": inferenceDurationMs,
+            "poseCount": poseCount,
+            "poseModelDelegate": InferenceConfigurationManager.sharedInstance.delegate.name,
+            "poseModelSource": activePoseModelSource,
+            "poseModelVariant": activePoseModelVariant,
+            "thermalState": currentThermalState,
+            "presentationTimeStamp": landmarkData?.presentationTimeStamp ?? 0,
+            "frameNumber": emittedFrameNumber,
+            "startTimestamp": landmarkData?.startTimestamp ?? 0,
+        ]
+        let landmarkPayload: [String: Any]
 
-            DispatchQueue.main.async { [weak self] in
-                guard let weakSelf = self else { return }
-                //   weakSelf.inferenceResultDeliveryDelegate?.didPerformInference(result: result)
-                guard let poseLandmarkerResult = result?.poseLandmarkerResults.first as? PoseLandmarkerResult else { return }
-              //  let limit = ((self?.landmarkData.frameRate)!)/6
-                
-             //   self!.frameCount =  self!.frameCount+1;
-             //   if(self!.frameCount > Int(limit)){
-                    self!.frameCount = 0
-                    var results = poseLandmarkerResult.landmarks.first
-                    var worldLandmarks = poseLandmarkerResult.worldLandmarks.first
+        if let landmarks = results {
+            var landmarksArray: [Float] = []
+            landmarksArray.reserveCapacity(landmarks.count * 5)
+            // Pack one detected landmark as x, y, z, visibility, presence without per-field dictionaries.
+            for landmark in landmarks {
+                landmarksArray.append(contentsOf: [
+                    landmark.x,
+                    landmark.y,
+                    landmark.z,
+                    landmark.visibility?.floatValue ?? -1,
+                    landmark.presence?.floatValue ?? -1,
+                ])
+            }
 
-                    var swiftDict: [String: Any] = [:]
-
-                    if let landmarks = results {
-                        var landmarksArray: [[String: Any]] = []
-                        var worldLandmarksArray: [[String: Any]] = []
-
-                        for landmark in landmarks {
-                            // Assuming landmark has `x` and `y` properties
-                            let landmarkData: [String: Any] = [
-                                "x": landmark.x,
-                                "y": landmark.y,
-                                "z": landmark.z,
-                                "visibility": landmark.visibility?.floatValue as Any,
-                                "presence": landmark.presence?.floatValue as Any,
-
-                            ]
-                            landmarksArray.append(landmarkData)
-                        }
-
-
-                        if(worldLandmarks != nil){
-                            for landmark in worldLandmarks! {
-                                // Assuming landmark has `x` and `y` properties
-                                let landmarkData: [String: Any] = [
-                                    "x": landmark.x,
-                                    "y": landmark.y,
-                                    "z": landmark.z,
-                                    "visibility": landmark.visibility?.floatValue as Any,
-                                    "presence": landmark.presence?.floatValue as Any,
-
-                                ]
-                                worldLandmarksArray.append(landmarkData)
-                            }
-                        }
-
-
-                        //              var pixelBufferFromSampleBuffe = CMSampleBufferGetImageBuffer(self!.sampleBuffer)
-                        //              var uiImage = uiImageFromPixelBuffer(pixelBufferFromSampleBuffe!)
-                        //              var  dataFromUIImage =  dataFromUIImage(uiImage!)
-                        //   var base64StringFromData = base64StringFromData(dataFromUIImage!)
-
-                        // Add the landmarks array to the swiftDict
-
-
-                        swiftDict["landmarks"] = landmarksArray
-                        swiftDict["additionalData"] = [
-                            "height": self?.landmarkData.height ?? CGFloat(self!.isPortrait ? DefaultConstants.HEIGHT : DefaultConstants.WIDTH) ,
-                            "width": self?.landmarkData.width ?? CGFloat(self!.isPortrait ? DefaultConstants.WIDTH : DefaultConstants.HEIGHT),
-                            "presentationTimeStamp": self?.landmarkData.presentationTimeStamp ?? 0,
-                            "frameNumber": self?.landmarkData.frameNumber ?? 0,
-                            "startTimestamp" : self?.landmarkData.startTimestamp
-                        ]
-
-                        swiftDict["worldLandmarks"] = worldLandmarksArray
-
-                        if self!.onLandmark != nil {
-                            self!.onLandmark!(swiftDict)
-                        }
-                    } else {
-                        // Handle the case where `results` is nil
-                        //                print("No landmarks found")
-                    }
-              //  }
-                
-                if self!.previewView != nil{
-                    let orientaiton =  self!.isPortrait ? UIDevice.current.orientation : UIDeviceOrientation(rawValue: 3)
-                    let imageSize = weakSelf.cameraFeedService.videoResolution
-                    let poseOverlays = OverlayView().poseOverlays(
-                        fromMultiplePoseLandmarks: poseLandmarkerResult.landmarks,
-                        inferredOnImageOfSize: imageSize,
-                        ovelayViewSize: weakSelf.overlayView.bounds.size,
-                        imageContentMode: weakSelf.overlayView.imageContentMode,
-                        andOrientation: UIImage.Orientation.from(
-                            deviceOrientation:  UIDevice.current.orientation ), isPortrait: self!.isPortrait, propDictionary: self!.propDictionary!)
-                    weakSelf.overlayView.clear()
-                    weakSelf.overlayView.draw(poseOverlays: poseOverlays,
-                                              inBoundsOfContentImageOfSize: imageSize,
-                                              imageContentMode: weakSelf.cameraFeedService.videoGravity.contentMode,
-                                              isPortrait: self!.isPortrait)
+            var worldLandmarksArray: [Float] = []
+            if let worldLandmarks {
+                worldLandmarksArray.reserveCapacity(worldLandmarks.count * 5)
+                // Pack one world landmark as x, y, z, visibility, presence for the JS scorer.
+                for landmark in worldLandmarks {
+                    worldLandmarksArray.append(contentsOf: [
+                        landmark.x,
+                        landmark.y,
+                        landmark.z,
+                        landmark.visibility?.floatValue ?? -1,
+                        landmark.presence?.floatValue ?? -1,
+                    ])
                 }
             }
+            landmarkPayload = [
+                "additionalData": additionalData,
+                "landmarks": landmarksArray,
+                "worldLandmarks": worldLandmarksArray,
+            ]
+        } else {
+            // Emit an explicit empty frame so React Native clears stale pose state.
+            lockedPrimaryHipX = nil
+            lockedPrimaryHipY = nil
+            landmarkPayload = [
+                "additionalData": additionalData,
+                "landmarks": [],
+                "worldLandmarks": [],
+            ]
         }
+
+        // React Native view events and UIKit drawing cross the main thread only after
+        // selection and payload packing finish on MediaPipe's result callback queue.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.isTearingDown else { return }
+            self.onLandmark?(landmarkPayload)
+
+            let nativeOverlayEnabled = self.propDictionary?.values.contains(true) == true
+            if !nativeOverlayEnabled {
+                if let overlayView = self.overlayView, !overlayView.poseOverlays.isEmpty {
+                    overlayView.clear()
+                }
+                return
+            }
+
+            guard let previewView = self.previewView, let overlayView = self.overlayView,
+                  let propDictionary = self.propDictionary,
+                  let cameraFeedService = self.cameraFeedService else { return }
+            guard previewView.superview != nil else { return }
+            let imageSize = cameraFeedService.videoResolution
+            let poseOverlays = OverlayView().poseOverlays(
+                fromMultiplePoseLandmarks: poseLandmarkerResult.landmarks,
+                inferredOnImageOfSize: imageSize,
+                ovelayViewSize: overlayView.bounds.size,
+                imageContentMode: overlayView.imageContentMode,
+                andOrientation: UIImage.Orientation.from(
+                    deviceOrientation: UIDevice.current.orientation),
+                isPortrait: self.isPortrait,
+                propDictionary: propDictionary)
+            overlayView.clear()
+            overlayView.draw(
+                poseOverlays: poseOverlays,
+                inBoundsOfContentImageOfSize: imageSize,
+                imageContentMode: cameraFeedService.videoGravity.contentMode,
+                isPortrait: self.isPortrait)
+        }
+    }
 }
 
 // MARK: - AVLayerVideoGravity Extension
@@ -544,4 +787,3 @@ extension AVLayerVideoGravity {
 
 
 }
-

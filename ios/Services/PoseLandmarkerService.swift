@@ -168,7 +168,10 @@ class PoseLandmarkerService: NSObject {
             do {
                 try poseLandmarker?.detectAsync(image: image, timestampInMilliseconds: timeStamps)
             } catch {
-                print(error)
+                liveStreamDelegate?.poseLandmarkerService(
+                    self,
+                    didFinishDetection: nil,
+                    error: error)
             }
         }
     

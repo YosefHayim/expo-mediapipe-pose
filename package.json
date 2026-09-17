@@ -1,6 +1,6 @@
 {
   "name": "@thinksys/react-native-mediapipe",
-  "version": "0.0.21",
+  "version": "0.0.21-oly.1",
   "description": "ThinkSys MediaPipe package for React Native",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -31,8 +31,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
-    "prepare": "bob build",
-    "release": "release-it"
+    "release": "release-it",
+    "build": "bob build"
   },
   "keywords": [
     "react-native",
@@ -41,14 +41,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ThinkSys/mediapipe-reactnative.git"
+    "url": "git+https://github.com/YosefHayim/mediapipe-reactnative.git"
   },
   "author": "Kaushiki Pandey <pandey.kaushiki@thinksys.com> (https://github.com/ThinkSys)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ThinkSys/mediapipe-reactnative/issues"
+    "url": "https://github.com/YosefHayim/mediapipe-reactnative/issues"
   },
-  "homepage": "https://github.com/ThinkSys/mediapipe-reactnative#readme",
+  "homepage": "https://github.com/YosefHayim/mediapipe-reactnative#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

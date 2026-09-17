@@ -10,18 +10,22 @@ struct DefaultConstants {
     static let pointColor = UIColor.yellow
     static let pointFillColor = UIColor.red
     
-    static let lineColor = UIColor(red: 255.0, green: 255.0, blue: 255.0, alpha: 1)
+    // Oly skeleton: connection lines in white, matching Android's `icActive`
+    // default (#FFFFFFFF) and the product reference design — was app "success"
+    // green, changed per product direction. Joint dots stay red (pointFillColor)
+    // per product design; dot drawing itself is disabled (see OverlayView.swift).
+    static let lineColor = UIColor.white
     
-    static var numPoses: Int = 1
-    static var minPoseDetectionConfidence: Float = 0.5
-    static var minPosePresenceConfidence: Float = 0.5
-    static var minTrackingConfidence: Float = 0.5
-    static let model: Model = .pose_landmarker_full
-    static let delegate: PoseLandmarkerDelegate = .CPU
+    static var numPoses: Int = 1  // Oly one-person session
+    static var minPoseDetectionConfidence: Float = 0.35
+    static var minPosePresenceConfidence: Float = 0.35
+    static var minTrackingConfidence: Float = 0.35
+    static let model: Model = .pose_landmarker_full  // Oly: full (not lite/heavy) — best side-profile accuracy vs FPS
+    static let delegate: PoseLandmarkerDelegate = .GPU
     
     static let HEIGHT: Int = 1280
     static let WIDTH: Int = 720
-    static let FRAME_LIMIT: NSNumber = 20
+    static let FRAME_LIMIT: NSNumber = 30
 }
 
 // MARK: Model
