@@ -46,4 +46,3 @@ type MediapipeComponentProps = TsMediapipeProps & {
 declare const switchCamera: any;
 declare const TsMediapipeView: React.FC<MediapipeComponentProps>;
 export { TsMediapipeView as RNMediapipe, switchCamera };
-//# sourceMappingURL=index.d.ts.map
