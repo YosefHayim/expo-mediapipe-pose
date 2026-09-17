@@ -10,6 +10,7 @@
     "ios",
     "android",
     "assets",
+    "OlyPoseCamera.podspec",
     "expo-module.config.json",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
