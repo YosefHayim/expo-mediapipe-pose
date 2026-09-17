@@ -49,7 +49,11 @@ final class OlyPoseCameraView: ExpoView, AVCaptureVideoDataOutputSampleBufferDel
   deinit {
     NotificationCenter.default.removeObserver(self)
     let ownedSession = session
-    worker.async { ownedSession.stopRunning() }
+    let ownedDetector = detector
+    worker.async {
+      ownedSession.stopRunning()
+      withExtendedLifetime(ownedDetector) {}
+    }
   }
 
   override func layoutSubviews() {

@@ -24,6 +24,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
@@ -235,6 +236,7 @@ class OlyPoseCameraView(context: Context, appContext: AppContext) : ExpoView(con
     var failed = false
     cameraAnalysis.setAnalyzer(worker) { cameraImage ->
       var rotatedPixels: Bitmap? = null
+      var inputImage: MPImage? = null
       try {
         val timestamp = SystemClock.uptimeMillis()
         if (generation.get() != token || failed || timestamp <= lastTimestamp ||
@@ -252,7 +254,8 @@ class OlyPoseCameraView(context: Context, appContext: AppContext) : ExpoView(con
         }
         frameNumber += 1
         val image = BitmapImageBuilder(pixels).build()
-        val inference = try { activeDetector.detectForVideo(image, timestamp) } finally { image.close() }
+        inputImage = image
+        val inference = activeDetector.detectForVideo(image, timestamp)
         val landmarks = inference.landmarks().firstOrNull().orEmpty().map { joint ->
           mutableMapOf<String, Any>("x" to joint.x(), "y" to joint.y(), "z" to joint.z()).apply {
             joint.visibility().ifPresent { confidence -> put("visibility", confidence) }
@@ -277,7 +280,9 @@ class OlyPoseCameraView(context: Context, appContext: AppContext) : ExpoView(con
         failed = true
         emitFailure("inferenceRuntime", token)
       } finally {
-        rotatedPixels?.recycle()
+        // MPImage owns its Bitmap and recycles it on close, after telemetry has been sampled.
+        inputImage?.close()
+        rotatedPixels?.let { if (!it.isRecycled) it.recycle() }
         cameraImage.close()
       }
     }
