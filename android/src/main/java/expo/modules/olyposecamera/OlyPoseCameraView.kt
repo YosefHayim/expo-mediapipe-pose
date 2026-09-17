@@ -49,6 +49,7 @@ data class CameraOptions(
 )
 
 class OlyPoseCameraView(context: Context, appContext: AppContext) : ExpoView(context, appContext), LifecycleEventObserver {
+  override val shouldUseAndroidLayout = true
   var options = CameraOptions()
   private val onCameraConfigured by EventDispatcher()
   private val onLandmark by EventDispatcher()
