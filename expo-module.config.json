@@ -4,6 +4,7 @@
     "android"
   ],
   "apple": {
+    "podspecPath": "OlyPoseCamera.podspec",
     "modules": [
       "OlyPoseCameraModule"
     ]
