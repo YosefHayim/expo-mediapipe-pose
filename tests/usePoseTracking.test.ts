@@ -107,6 +107,22 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		await act(() => currentTracking().reset());
 		assert.equal(currentTracking().status, "searching");
 		await send(0);
+		await send(100);
+		await act(() =>
+			root.render(
+				createElement(Harness, { ...options, landmarks: ["rightWrist"] }),
+			),
+		);
+		assert.equal(currentTracking().status, "searching");
+		await send(0);
+		await send(100);
+		assert.equal(currentTracking().status, "found");
+		await act(() =>
+			root.render(createElement(Harness, { ...options, minVisibility: 1 })),
+		);
+		await send(0);
+		assert.equal(currentTracking().status, "incomplete");
+		assert.deepEqual(currentTracking().uncertainLandmarks, ["leftWrist"]);
 	} finally {
 		const callbackCount = transitions.length + latestTransitions.length;
 		await act(() => root.unmount());

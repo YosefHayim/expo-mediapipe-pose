@@ -12,9 +12,9 @@ export type PoseTrackingStatus =
 	| "stale"
 	| "inactive";
 export interface PoseTrackingState {
-	status: PoseTrackingStatus;
-	missingLandmarks: readonly LandmarkName[];
-	uncertainLandmarks: readonly LandmarkName[];
+	readonly status: PoseTrackingStatus;
+	readonly missingLandmarks: readonly LandmarkName[];
+	readonly uncertainLandmarks: readonly LandmarkName[];
 }
 export interface PoseTrackingOptions
 	extends Pick<
