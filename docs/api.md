@@ -2,6 +2,29 @@
 
 This document describes `main`, including unreleased additions. For the tagged source installation, use the [v0.2.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.2.0/docs/api.md).
 
+## Public API and native integration
+
+| Entry point | Use |
+| --- | --- |
+| `expo-mediapipe-pose` | React components/hooks, validated native camera discovery and image/video analysis, mask release, and the exported core contracts/helpers. |
+| `expo-mediapipe-pose/core` | Pure landmark, geometry, selection, rule, recording/replay and schema APIs without initializing the React Native view or Expo native module. This is not an inference backend. |
+
+For Expo/React Native, use `PoseCameraView`, `PoseSkeleton`, `PoseSegmentationOverlay`, the `usePose*` hooks, `getCameraCapabilities`, `analyzePoseImage`, `analyzePoseVideo` and `releasePoseSegmentation` through the root export. The source export inventories are [index.ts](../src/index.ts) and [core.ts](../src/core.ts). Components/hooks are React APIs; `core` exposes their pure building blocks where applicable.
+
+The Swift and Kotlin implementations are internal Expo module code, not stable standalone consumer SDKs. This repository does not publish a Swift Package or independent Android artifact. A Swift-only or Kotlin-only application can use Google's official [iOS Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/ios) or [Android Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/android) SDK directly.
+
+For contributors extending the native integration:
+
+| Responsibility | iOS | Android |
+| --- | --- | --- |
+| Expo functions, view props and lifecycle | [ExpoMediaPipePoseModule.swift](../ios/ExpoMediaPipePoseModule.swift) | [ExpoMediaPipePoseModule.kt](../android/src/main/java/expo/modules/mediapipepose/ExpoMediaPipePoseModule.kt) |
+| Camera capture and inference ownership | [ExpoMediaPipePoseView.swift](../ios/ExpoMediaPipePoseView.swift) | [ExpoMediaPipePoseView.kt](../android/src/main/java/expo/modules/mediapipepose/ExpoMediaPipePoseView.kt) |
+| Local image analysis | [PoseImageAnalysis.swift](../ios/PoseImageAnalysis.swift) | [PoseImageAnalysis.kt](../android/src/main/java/expo/modules/mediapipepose/PoseImageAnalysis.kt) |
+| Video sessions and cancellation | [PoseVideoAnalysis.swift](../ios/PoseVideoAnalysis.swift) | [PoseVideoAnalysis.kt](../android/src/main/java/expo/modules/mediapipepose/PoseVideoAnalysis.kt) |
+| Mask-file ownership and cleanup | [PoseMaskStore.swift](../ios/PoseMaskStore.swift) | [PoseMaskStore.kt](../android/src/main/java/expo/modules/mediapipepose/PoseMaskStore.kt) |
+
+Consult [AGENTS.md](../AGENTS.md) and the [native fixture workflow](../example/fixtures/README.md) before changing these internals. A public standalone native library would require its own API, packaging and compatibility contract; copying bridge files does not provide that contract.
+
 ## PoseCameraView
 
 The component accepts React Native `ViewProps`, including `style`, `onLayout` and overlay children. Give it non-zero bounds. Obtain camera permission before mounting.
@@ -20,6 +43,9 @@ The component accepts React Native `ViewProps`, including `style`, `onLayout` an
 | `minPoseDetectionConfidence` | `0.35` | MediaPipe detector threshold, 0–1. |
 | `minPosePresenceConfidence` | `0.35` | MediaPipe pose-presence threshold, 0–1. |
 | `minTrackingConfidence` | `0.35` | MediaPipe tracking threshold, 0–1. |
+| `maxPoses` | `1` | Integer 1–6; returns all image/world pose pairs. Existing top-level landmarks retain first-pose behavior. |
+| `segmentationEnabled` | `false` | Requests per-pose mask output. Requires an `onLandmark` consumer that releases delivered mask leases. |
+| `maskMaxDimension` | `256` | Integer 64–512; bounds exported mask dimensions, not the SDK's internal buffers. |
 | `skeleton` | `true` | `false`, `true`, or `SkeletonOptions`. Disabled overlays avoid internal per-frame React state updates. |
 
 `onCameraConfigured(configuration)` acknowledges effective facing/lens/zoom, mirroring and actual inference dimensions before landmarks. `onLandmark(frame)` is optional. `onInferenceError(error)` reports a stable code. Changing capture/model options restarts capture; changing skeleton styles does not. Backgrounding/detaching stops native work. Events from earlier capture generations are discarded.
@@ -171,7 +197,7 @@ Native failures release camera/detector resources and invalidate queued frames. 
 | iOS | AVFoundation | MediaPipeTasksVision 0.10.14 | GPU |
 | Android | CameraX 1.4.2 | tasks-vision 0.10.29 | CPU |
 
-Both use one pose and sequential VIDEO-mode inference on a serial worker. SDKs are deliberately pinned; version numbers alone do not establish parity. The bundled model is [Google's full float16 version 1](https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task), SHA-256 `5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1`.
+Both platforms default to one pose and support `maxPoses` from 1 to 6. Camera/video inference uses sequential VIDEO-mode calls on a serial owner; photo inference uses IMAGE mode. SDKs are deliberately pinned; version numbers alone do not establish parity. The bundled model is [Google's full float16 version 1](https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task), SHA-256 `5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1`.
 
 ## Migration
 
