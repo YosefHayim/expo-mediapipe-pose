@@ -17,7 +17,9 @@ import { poseFrame } from "./fixtures";
 function multiplePoses(): PoseFrame {
 	const first = poseFrame();
 	const second = poseFrame();
-	second.landmarks[0]!.x = 0.25;
+	const secondNose = second.landmarks[0];
+	assert.ok(secondNose);
+	secondNose.x = 0.25;
 	second.worldLandmarks.push({ x: 1, y: 2, z: 3 });
 	return {
 		...first,
