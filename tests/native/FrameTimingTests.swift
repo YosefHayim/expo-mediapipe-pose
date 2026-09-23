@@ -21,6 +21,13 @@ struct FrameTimingTests {
     precondition(metrics.inferenceFps == 15)
     precondition(metrics.resultFps == 5)
     let encoded = try JSONSerialization.data(withJSONObject: metrics.event, options: [.sortedKeys])
+    let decoded = try JSONDecoder().decode([String: Double].self, from: encoded)
+    precondition(
+      decoded == [
+        "intervalMs": 1000, "observedFrames": 60, "inferenceCount": 15, "resultCount": 5,
+        "skippedInferenceFrames": 45, "observedFps": 60, "inferenceFps": 15,
+        "resultFps": 5, "averageInferenceDurationMs": 12,
+      ])
     print(String(decoding: encoded, as: UTF8.self))
 
     var dynamic = PoseFrameTiming()

@@ -12,3 +12,13 @@ export const validateFrameRates = (rates: FrameRates) => {
 		}
 	}
 };
+
+export const getOverlayStaleAfterMs = (rates: FrameRates) => {
+	validateFrameRates(rates);
+	const slowestRate = Math.min(
+		rates.previewFps,
+		rates.frameLimit,
+		rates.callbackFps,
+	);
+	return Math.max(500, 2000 / slowestRate);
+};

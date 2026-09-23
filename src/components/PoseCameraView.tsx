@@ -17,7 +17,7 @@ import {
 	PosePerformanceMetrics,
 } from "../contracts";
 import { usePoseOverlayFrame } from "../hooks/usePoseOverlayFrame";
-import { validateFrameRates } from "../pose/frameRates";
+import { getOverlayStaleAfterMs } from "../pose/frameRates";
 import type { SkeletonOptions } from "../pose/skeleton";
 import { PoseSkeleton } from "./PoseSkeleton";
 
@@ -85,11 +85,11 @@ export const PoseCameraView = ({
 	children,
 	...viewProps
 }: PoseCameraViewProps) => {
-	validateFrameRates({ frameLimit, previewFps, callbackFps });
-	const overlayStaleAfterMs = Math.max(
-		500,
-		2000 / Math.min(frameLimit, callbackFps),
-	);
+	const overlayStaleAfterMs = getOverlayStaleAfterMs({
+		frameLimit,
+		previewFps,
+		callbackFps,
+	});
 	const {
 		frame,
 		update: updateOverlay,

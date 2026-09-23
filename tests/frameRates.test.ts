@@ -1,7 +1,11 @@
 import { strict as assert } from "node:assert";
 import { it } from "node:test";
 import { Schema } from "effect";
-import { PosePerformanceMetrics, validateFrameRates } from "../src/core";
+import {
+	getOverlayStaleAfterMs,
+	PosePerformanceMetrics,
+	validateFrameRates,
+} from "../src/core";
 
 it("accepts independent rates and rejects invalid public rate settings", () => {
 	validateFrameRates({ frameLimit: 15, previewFps: 60, callbackFps: 5 });
@@ -58,4 +62,12 @@ it("decodes measured performance and preserves unavailable average duration", ()
 			inferenceFps: NaN,
 		}),
 	);
+});
+
+it("keeps overlays between expected frames when any stage limits throughput", () => {
+	const rates = { frameLimit: 30, previewFps: 30, callbackFps: 30 };
+	assert.equal(getOverlayStaleAfterMs(rates), 500);
+	for (const name of ["frameLimit", "previewFps", "callbackFps"]) {
+		assert.equal(getOverlayStaleAfterMs({ ...rates, [name]: 1 }), 2000);
+	}
 });
