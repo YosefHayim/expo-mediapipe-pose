@@ -155,6 +155,8 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                     try {
                         val started = SystemClock.elapsedRealtimeNanos()
                         val result = current.detector.detectForVideo(image, timestampMs)
+                        val inferenceDurationMs =
+                            (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
                         outputMasks = result.segmentationMasks().orElse(emptyList())
                         val segmentation =
                             if (current.options.segmentationEnabled)
@@ -175,9 +177,7 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                                 mapOf(
                                     "imageSize" to
                                         mapOf("width" to pixels.width, "height" to pixels.height),
-                                    "inferenceDurationMs" to
-                                        (SystemClock.elapsedRealtimeNanos() - started) /
-                                            1_000_000.0,
+                                    "inferenceDurationMs" to inferenceDurationMs,
                                     "model" to
                                         mapOf(
                                             "variant" to current.options.modelVariant,

@@ -108,6 +108,7 @@ internal final class PoseVideoAnalysis {
           let image = try MPImage(uiImage: UIImage(cgImage: decoded.image))
           let started = ProcessInfo.processInfo.systemUptime
           let result = try detector.detect(videoFrame: image, timestampInMilliseconds: timestampMs)
+          let inferenceDurationMs = (ProcessInfo.processInfo.systemUptime - started) * 1000
           var detection = try PoseLandmarkPayload.make(result)
           if current.options.segmentationEnabled {
             detection["segmentation"] = try self.masks.save(
@@ -115,7 +116,7 @@ internal final class PoseVideoAnalysis {
               maximumDimension: current.options.maskMaxDimension)
           }
           detection["imageSize"] = ["width": decoded.image.width, "height": decoded.image.height]
-          detection["inferenceDurationMs"] = (ProcessInfo.processInfo.systemUptime - started) * 1000
+          detection["inferenceDurationMs"] = inferenceDurationMs
           detection["model"] = [
             "variant": current.options.modelVariant, "delegate": "CPU",
             "source": current.options.modelPath == nil ? "bundled" : "local",
