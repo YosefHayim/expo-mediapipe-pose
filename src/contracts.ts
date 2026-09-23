@@ -40,6 +40,21 @@ export const InferenceError = Schema.Struct({
 	),
 });
 
+export const PosePerformanceMetrics = Schema.Struct({
+	intervalMs: Positive,
+	observedFrames: NonNegative.pipe(Schema.int()),
+	inferenceCount: NonNegative.pipe(Schema.int()),
+	resultCount: NonNegative.pipe(Schema.int()),
+	skippedInferenceFrames: NonNegative.pipe(Schema.int()),
+	observedFps: NonNegative,
+	inferenceFps: NonNegative,
+	resultFps: NonNegative,
+	averageInferenceDurationMs: Schema.NullOr(NonNegative),
+});
+export type PosePerformanceMetrics = Schema.Schema.Type<
+	typeof PosePerformanceMetrics
+>;
+
 export const PoseFrame = Schema.Struct({
 	landmarks: Schema.mutable(Schema.Array(Landmark)),
 	worldLandmarks: Schema.mutable(Schema.Array(Landmark)),

@@ -7,7 +7,7 @@ class ExpoMediaPipePoseModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("ExpoMediaPipePose")
         View(ExpoMediaPipePoseView::class) {
-            Events("onCameraConfigured", "onLandmark", "onInferenceError")
+            Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
             Prop("isActive") { view: ExpoMediaPipePoseView, active: Boolean ->
                 view.isActive = active
             }
@@ -21,7 +21,16 @@ class ExpoMediaPipePoseModule : Module() {
                 view.options = view.options.copy(zoom = zoom)
             }
             Prop("frameLimit") { view: ExpoMediaPipePoseView, limit: Int ->
-                view.options = view.options.copy(frameLimit = limit)
+                view.processingOptions = view.processingOptions.copy(frameLimit = limit)
+            }
+            Prop("previewFps") { view: ExpoMediaPipePoseView, fps: Int ->
+                view.options = view.options.copy(previewFps = fps)
+            }
+            Prop("callbackFps") { view: ExpoMediaPipePoseView, fps: Int ->
+                view.processingOptions = view.processingOptions.copy(callbackFps = fps)
+            }
+            Prop("performanceMetricsEnabled") { view: ExpoMediaPipePoseView, enabled: Boolean ->
+                view.processingOptions = view.processingOptions.copy(metricsEnabled = enabled)
             }
             Prop("poseModelVariant") { view: ExpoMediaPipePoseView, variant: String ->
                 view.options = view.options.copy(modelVariant = variant)

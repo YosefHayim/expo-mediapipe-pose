@@ -14,7 +14,10 @@ import {
 	InferenceError,
 	type ModelVariant,
 	PoseFrame,
+	PosePerformanceMetrics,
 } from "../contracts";
+import { usePoseOverlayFrame } from "../hooks/usePoseOverlayFrame";
+import { getOverlayStaleAfterMs } from "../pose/frameRates";
 import type { SkeletonOptions } from "../pose/skeleton";
 import { PoseSkeleton } from "./PoseSkeleton";
 
@@ -24,6 +27,8 @@ interface CameraOptions {
 	cameraLens?: Schema.Schema.Type<typeof CameraLens>;
 	cameraZoomFactor?: number;
 	frameLimit?: number;
+	previewFps?: number;
+	callbackFps?: number;
 	poseModelAssetPath?: string | null;
 	poseModelVariant?: Schema.Schema.Type<typeof ModelVariant>;
 	minPoseDetectionConfidence?: number;
@@ -36,9 +41,12 @@ export interface PoseCameraViewProps extends ViewProps, CameraOptions {
 	onCameraConfigured?: (configuration: CameraConfiguration) => void;
 	onInferenceError?: (failure: InferenceError) => void;
 	onLandmark?: (frame: PoseFrame) => void;
+	onPerformanceMetrics?: (metrics: PosePerformanceMetrics) => void;
 }
 
 interface NativeCameraProps extends ViewProps, CameraOptions {
+	performanceMetricsEnabled: boolean;
+	onPerformanceMetrics: (event: { nativeEvent: unknown }) => void;
 	onCameraConfigured: (event: { nativeEvent: unknown }) => void;
 	onInferenceError: (event: { nativeEvent: unknown }) => void;
 	onLandmark: (event: { nativeEvent: unknown }) => void;
@@ -48,6 +56,7 @@ const NativeCamera = requireNativeView<NativeCameraProps>("ExpoMediaPipePose");
 const decodeFrame = Schema.decodeUnknownEither(PoseFrame);
 const decodeConfiguration = Schema.decodeUnknownEither(CameraConfiguration);
 const decodeFailure = Schema.decodeUnknownEither(InferenceError);
+const decodeMetrics = Schema.decodeUnknownEither(PosePerformanceMetrics);
 const styles = StyleSheet.create({
 	container: { overflow: "hidden" },
 	overlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
@@ -59,6 +68,8 @@ export const PoseCameraView = ({
 	cameraLens = "auto",
 	cameraZoomFactor = 1,
 	frameLimit = 30,
+	previewFps = 30,
+	callbackFps = 30,
 	poseModelVariant = "full",
 	poseModelAssetPath = null,
 	minPoseDetectionConfidence = 0.35,
@@ -68,27 +79,30 @@ export const PoseCameraView = ({
 	onCameraConfigured,
 	onInferenceError,
 	onLandmark,
+	onPerformanceMetrics,
 	style,
 	onLayout,
 	children,
 	...viewProps
 }: PoseCameraViewProps) => {
-	const [frame, setFrame] = React.useState<PoseFrame | null>(null);
+	const overlayStaleAfterMs = getOverlayStaleAfterMs({
+		frameLimit,
+		previewFps,
+		callbackFps,
+	});
+	const {
+		frame,
+		update: updateOverlay,
+		clear,
+	} = usePoseOverlayFrame(overlayStaleAfterMs);
 	const [size, setSize] = React.useState({ width: 0, height: 0 });
-	const staleTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(
-		undefined,
-	);
-	const clear = React.useCallback(() => {
-		clearTimeout(staleTimer.current);
-		setFrame(null);
-	}, []);
 
 	const captureIdentity = JSON.stringify({
 		isActive,
 		cameraFacing,
 		cameraLens,
 		cameraZoomFactor,
-		frameLimit,
+		previewFps,
 		poseModelVariant,
 		poseModelAssetPath,
 		minPoseDetectionConfidence,
@@ -101,9 +115,6 @@ export const PoseCameraView = ({
 			previousCaptureIdentity.current = captureIdentity;
 			clear();
 		}
-		return () => {
-			clearTimeout(staleTimer.current);
-		};
 	}, [captureIdentity, clear]);
 
 	const skeletonEnabled = skeleton !== false;
@@ -123,13 +134,30 @@ export const PoseCameraView = ({
 				return;
 			}
 			if (skeletonEnabled) {
-				setFrame(decoded.right);
-				clearTimeout(staleTimer.current);
-				staleTimer.current = setTimeout(clear, 500);
+				updateOverlay(decoded.right);
 			}
 			onLandmark?.(decoded.right);
 		},
-		[isActive, skeletonEnabled, clear, onInferenceError, onLandmark],
+		[
+			isActive,
+			skeletonEnabled,
+			clear,
+			onInferenceError,
+			onLandmark,
+			updateOverlay,
+		],
+	);
+	const handleMetrics = React.useCallback(
+		(event: { nativeEvent: unknown }) => {
+			if (!isActive) return;
+			const decoded = decodeMetrics(event.nativeEvent);
+			if (Either.isLeft(decoded)) {
+				onInferenceError?.({ code: "invalidNativeEvent" });
+				return;
+			}
+			onPerformanceMetrics?.(decoded.right);
+		},
+		[isActive, onInferenceError, onPerformanceMetrics],
 	);
 
 	const handleConfiguration = React.useCallback(
@@ -185,6 +213,10 @@ export const PoseCameraView = ({
 				cameraLens={cameraLens}
 				cameraZoomFactor={cameraZoomFactor}
 				frameLimit={frameLimit}
+				previewFps={previewFps}
+				callbackFps={callbackFps}
+				performanceMetricsEnabled={onPerformanceMetrics !== undefined}
+				onPerformanceMetrics={handleMetrics}
 				poseModelVariant={poseModelVariant}
 				poseModelAssetPath={poseModelAssetPath}
 				minPoseDetectionConfidence={minPoseDetectionConfidence}
