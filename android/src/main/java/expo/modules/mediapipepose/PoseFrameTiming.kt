@@ -43,9 +43,38 @@ data class PosePerformanceSnapshot(
         get() = resultCount * 1000.0 / intervalMs
 }
 
+class PoseCadence {
+    private var lastAcceptedMs: Double? = null
+    private var nextDueMs: Double? = null
+    private var previousFps: Int? = null
+
+    fun allows(nowMs: Double, fps: Int): Boolean {
+        val intervalMs = 1000.0 / fps
+        val lastAccepted = lastAcceptedMs
+        if (lastAccepted != null && previousFps != fps) {
+            nextDueMs = lastAccepted + intervalMs
+        }
+        previousFps = fps
+        val deadline = nextDueMs
+        if (deadline == null) {
+            lastAcceptedMs = nowMs
+            nextDueMs = nowMs + intervalMs
+            return true
+        }
+        val toleranceMs = minOf(5.0, intervalMs * 0.25)
+        if (nowMs + toleranceMs < deadline) return false
+        val missedFullInterval = nowMs >= deadline + intervalMs
+        nextDueMs =
+            if (missedFullInterval) nowMs + intervalMs
+            else maxOf(deadline + intervalMs, nowMs + intervalMs - toleranceMs)
+        lastAcceptedMs = nowMs
+        return true
+    }
+}
+
 class PoseFrameTiming {
-    private var lastInferenceMs: Double? = null
-    private var lastResultMs: Double? = null
+    private val inferenceCadence = PoseCadence()
+    private val resultCadence = PoseCadence()
     private var windowStartedAtMs: Double? = null
     private var observedFrames = 0
     private var inferenceCount = 0
@@ -86,13 +115,10 @@ class PoseFrameTiming {
     }
 
     fun shouldInfer(nowMs: Double, fps: Int): Boolean {
-        val previous = lastInferenceMs
-        val arrivedTooSoon = previous != null && nowMs - previous + 0.000001 < 1000.0 / fps
-        if (arrivedTooSoon) {
+        if (!inferenceCadence.allows(nowMs, fps)) {
             skippedInferenceFrames += 1
             return false
         }
-        lastInferenceMs = nowMs
         return true
     }
 
@@ -102,10 +128,7 @@ class PoseFrameTiming {
     }
 
     fun shouldDeliver(nowMs: Double, fps: Int): Boolean {
-        val previous = lastResultMs
-        val arrivedTooSoon = previous != null && nowMs - previous + 0.000001 < 1000.0 / fps
-        if (arrivedTooSoon) return false
-        lastResultMs = nowMs
+        if (!resultCadence.allows(nowMs, fps)) return false
         resultCount += 1
         return true
     }

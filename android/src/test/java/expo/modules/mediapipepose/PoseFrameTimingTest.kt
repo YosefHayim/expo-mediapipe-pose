@@ -41,6 +41,28 @@ class PoseFrameTimingTest {
     }
 
     @Test
+    fun jitterAndLongGapsDoNotCauseCadenceCollapseOrCatchUpBursts() {
+        val timing = PoseFrameTiming()
+        for (index in 0 until 120) {
+            val jitter = if (index % 2 == 0) 2.0 else -2.0
+            val timestamp = index * 1000.0 / 30 + jitter
+            assertTrue(timing.shouldInfer(timestamp, 30))
+            assertTrue(timing.shouldDeliver(timestamp, 30))
+        }
+        assertTrue(timing.shouldInfer(10000.0, 30))
+        assertFalse(timing.shouldInfer(10001.0, 30))
+        assertTrue(timing.shouldDeliver(10000.0, 30))
+        assertFalse(timing.shouldDeliver(10001.0, 30))
+    }
+
+    @Test
+    fun toleranceDoesNotIncreaseSustainedRateWithFastInput() {
+        val timing = PoseFrameTiming()
+        val accepted = (0 until 10000).count { timing.shouldInfer(it.toDouble(), 30) }
+        assertTrue(accepted in 300..301)
+    }
+
+    @Test
     fun emptyWindowAndInvalidRatesRemainExplicit() {
         val timing = PoseFrameTiming()
         assertNull(timing.observeFrame(0.0))

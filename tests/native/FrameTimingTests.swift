@@ -41,6 +41,25 @@ struct FrameTimingTests {
     precondition(!dynamic.shouldDeliver(at: 30, fps: 1))
     precondition(dynamic.shouldDeliver(at: 1020, fps: 1))
 
+    var jittered = PoseFrameTiming()
+    for index in 0..<120 {
+      let jitter = index % 2 == 0 ? 2.0 : -2.0
+      let timestamp = Double(index) * 1000 / 30 + jitter
+      precondition(jittered.shouldInfer(at: timestamp, fps: 30))
+      precondition(jittered.shouldDeliver(at: timestamp, fps: 30))
+    }
+    precondition(jittered.shouldInfer(at: 10000, fps: 30))
+    precondition(!jittered.shouldInfer(at: 10001, fps: 30))
+    precondition(jittered.shouldDeliver(at: 10000, fps: 30))
+    precondition(!jittered.shouldDeliver(at: 10001, fps: 30))
+
+    var fastInput = PoseFrameTiming()
+    var accepted = 0
+    for timestamp in 0..<10000 {
+      if fastInput.shouldInfer(at: Double(timestamp), fps: 30) { accepted += 1 }
+    }
+    precondition((300...301).contains(accepted))
+
     var idle = PoseFrameTiming()
     precondition(idle.observeFrame(at: 0) == nil)
     let noInference = idle.observeFrame(at: 2000)!

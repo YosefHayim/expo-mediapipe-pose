@@ -38,9 +38,36 @@ struct PosePerformanceSnapshot {
   var resultFps: Double { Double(resultCount) * 1000 / intervalMs }
 }
 
+struct PoseCadence {
+  private var lastAcceptedMs: Double?
+  private var nextDueMs: Double?
+  private var previousFps: Int?
+
+  mutating func allows(at nowMs: Double, fps: Int) -> Bool {
+    let intervalMs = 1000 / Double(fps)
+    if let lastAcceptedMs, previousFps != fps {
+      nextDueMs = lastAcceptedMs + intervalMs
+    }
+    previousFps = fps
+    guard let deadline = nextDueMs else {
+      lastAcceptedMs = nowMs
+      nextDueMs = nowMs + intervalMs
+      return true
+    }
+    let toleranceMs = min(5, intervalMs * 0.25)
+    guard nowMs + toleranceMs >= deadline else { return false }
+    let missedFullInterval = nowMs >= deadline + intervalMs
+    nextDueMs =
+      missedFullInterval
+      ? nowMs + intervalMs : max(deadline + intervalMs, nowMs + intervalMs - toleranceMs)
+    lastAcceptedMs = nowMs
+    return true
+  }
+}
+
 struct PoseFrameTiming {
-  private var lastInferenceMs: Double?
-  private var lastResultMs: Double?
+  private var inferenceCadence = PoseCadence()
+  private var resultCadence = PoseCadence()
   private var windowStartedAtMs: Double?
   private var observedFrames = 0
   private var inferenceCount = 0
@@ -76,11 +103,10 @@ struct PoseFrameTiming {
   }
 
   mutating func shouldInfer(at nowMs: Double, fps: Int) -> Bool {
-    if let lastInferenceMs, nowMs - lastInferenceMs + 0.000001 < 1000 / Double(fps) {
+    guard inferenceCadence.allows(at: nowMs, fps: fps) else {
       skippedInferenceFrames += 1
       return false
     }
-    lastInferenceMs = nowMs
     return true
   }
 
@@ -90,8 +116,7 @@ struct PoseFrameTiming {
   }
 
   mutating func shouldDeliver(at nowMs: Double, fps: Int) -> Bool {
-    if let lastResultMs, nowMs - lastResultMs + 0.000001 < 1000 / Double(fps) { return false }
-    lastResultMs = nowMs
+    guard resultCadence.allows(at: nowMs, fps: fps) else { return false }
     resultCount += 1
     return true
   }
