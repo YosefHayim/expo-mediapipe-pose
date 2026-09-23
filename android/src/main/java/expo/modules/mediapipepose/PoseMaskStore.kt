@@ -58,6 +58,7 @@ internal class PoseMaskStore {
         directory = root
         val folder = File(root, id)
         check(folder.mkdirs()) { "Cannot create mask directory" }
+        leases[id] = folder
         try {
             val payload = masks.mapIndexed { index, mask ->
                 val file = File(folder, "$index.png")
@@ -69,7 +70,6 @@ internal class PoseMaskStore {
                     "height" to size.second,
                 )
             }
-            leases[id] = folder
             return mapOf(
                 "status" to "available",
                 "leaseId" to id,
@@ -77,7 +77,7 @@ internal class PoseMaskStore {
                 "imageSize" to mapOf("width" to width, "height" to height),
             )
         } catch (error: Exception) {
-            check(folder.deleteRecursively()) { "Cannot remove failed mask output" }
+            release(id)
             throw error
         }
     }

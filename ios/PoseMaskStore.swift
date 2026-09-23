@@ -30,6 +30,7 @@ internal final class PoseMaskStore {
       let id = UUID().uuidString
       let folder = root.appendingPathComponent(id)
       try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+      leases[id] = folder
       do {
         let payload = try masks.enumerated().map { index, mask -> [String: Any] in
           let url = folder.appendingPathComponent("\(index).png")
@@ -39,13 +40,12 @@ internal final class PoseMaskStore {
             "height": size.height,
           ]
         }
-        leases[id] = folder
         return [
           "status": "available", "leaseId": id, "masks": payload,
           "imageSize": ["width": width, "height": height],
         ]
       } catch {
-        try FileManager.default.removeItem(at: folder)
+        try remove(id)
         throw error
       }
     }
