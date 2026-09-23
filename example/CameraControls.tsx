@@ -72,11 +72,15 @@ export function CameraControls({
 						? mode
 						: nearest,
 				);
+				const displayedFps =
+					selectedCamera === camera && selection
+						? selection.previewFps
+						: initialMode.previewFps;
 				return (
 					<Button
 						key={`${camera.facing}-${camera.lens}`}
 						disabled={selectedCamera === camera}
-						title={`${camera.facing} / ${camera.lens} · ${initialMode.previewFps} fps`}
+						title={`${camera.facing} / ${camera.lens} · ${displayedFps} fps`}
 						onPress={() =>
 							onSelect({
 								facing: camera.facing,

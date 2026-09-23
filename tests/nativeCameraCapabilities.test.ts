@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
+import * as nodeModule from "node:module";
 import { test } from "node:test";
 
 test("public discovery decodes native responses and propagates failures", async () => {
+	if (typeof nodeModule.registerHooks !== "function") {
+		throw new Error(
+			"Contributor tests require Node 24 LTS; run nvm use before pnpm check",
+		);
+	}
 	let response: unknown = { status: "permissionRequired" };
 	let failure: Error | undefined;
 	const mockKey = Symbol.for("pose.nativeCapabilitiesTest");
@@ -14,7 +19,7 @@ test("public discovery decodes native responses and propagates failures", async 
 		},
 	});
 	const moduleURL = new URL("./stubs/expo.cjs", import.meta.url).href;
-	const hooks = registerHooks({
+	const hooks = nodeModule.registerHooks({
 		resolve(specifier, context, next) {
 			if (specifier === "expo") return { url: moduleURL, shortCircuit: true };
 			return next(specifier, context);

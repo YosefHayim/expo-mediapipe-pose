@@ -119,6 +119,8 @@ const leftWrist = getLandmark(frame, "leftWrist");
 
 ## Develop
 
+Use Node 24 LTS (`nvm use`) and the pinned pnpm version for contributor checks, matching CI. This development requirement does not change the library’s mobile runtime contract.
+
 ```sh
 pnpm install --frozen-lockfile
 pnpm check
