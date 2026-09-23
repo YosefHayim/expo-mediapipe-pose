@@ -15,6 +15,7 @@ export interface PoseTrackingState {
 	readonly status: PoseTrackingStatus;
 	readonly missingLandmarks: readonly LandmarkName[];
 	readonly uncertainLandmarks: readonly LandmarkName[];
+	readonly outsideImageLandmarks: readonly LandmarkName[];
 }
 export interface PoseTrackingOptions
 	extends Pick<
@@ -29,6 +30,7 @@ export const trackingState = (
 	status,
 	missingLandmarks: [],
 	uncertainLandmarks: [],
+	outsideImageLandmarks: [],
 });
 export const inspectPoseTracking = (
 	frame: PoseFrame,
@@ -39,6 +41,7 @@ export const inspectPoseTracking = (
 	if (frame.landmarks.length === 0) return trackingState("lost");
 	const missingLandmarks: LandmarkName[] = [];
 	const uncertainLandmarks: LandmarkName[] = [];
+	const outsideImageLandmarks: LandmarkName[] = [];
 	for (const name of new Set(options.landmarks)) {
 		const joint = frame.landmarks[LANDMARK_NAMES.indexOf(name)];
 		if (!joint) {
@@ -52,12 +55,23 @@ export const inspectPoseTracking = (
 			joint,
 			options.minVisibility ?? 0.6,
 		);
-		if (!finiteCoordinates || !confident) uncertainLandmarks.push(name);
+		if (!finiteCoordinates || !confident) {
+			uncertainLandmarks.push(name);
+			continue;
+		}
+		const insideImage = [joint.x, joint.y].every(
+			(value) => value >= 0 && value <= 1,
+		);
+		if (!insideImage) outsideImageLandmarks.push(name);
 	}
-	const complete = missingLandmarks.length + uncertainLandmarks.length === 0;
+	const unavailableLandmarkCount =
+		missingLandmarks.length +
+		uncertainLandmarks.length +
+		outsideImageLandmarks.length;
 	return {
-		status: complete ? "found" : "incomplete",
+		status: unavailableLandmarkCount === 0 ? "found" : "incomplete",
 		missingLandmarks,
 		uncertainLandmarks,
+		outsideImageLandmarks,
 	};
 };

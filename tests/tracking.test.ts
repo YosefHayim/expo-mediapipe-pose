@@ -24,6 +24,7 @@ it("distinguishes no pose, absent joints, uncertain joints and complete tracking
 		status: "incomplete",
 		missingLandmarks: [],
 		uncertainLandmarks: ["leftWrist", "rightWrist"],
+		outsideImageLandmarks: [],
 	});
 	assert.equal(
 		inspectPoseTracking(frame, { ...options, isActive: false }).status,
@@ -32,5 +33,25 @@ it("distinguishes no pose, absent joints, uncertain joints and complete tracking
 	assert.throws(
 		() => inspectPoseTracking(frame, { landmarks: [] }),
 		RangeError,
+	);
+});
+
+it("reports confident out-of-frame joints without modifying their coordinates", () => {
+	const frame = poseFrame();
+	frame.landmarks[15] = { x: -0.1, y: 0.5, z: 0, visibility: 0.9 };
+	assert.deepEqual(
+		inspectPoseTracking(frame, { landmarks: ["leftWrist", "leftWrist"] }),
+		{
+			status: "incomplete",
+			missingLandmarks: [],
+			uncertainLandmarks: [],
+			outsideImageLandmarks: ["leftWrist"],
+		},
+	);
+	assert.equal(frame.landmarks[15].x, -0.1);
+	frame.landmarks[15].x = 0;
+	assert.equal(
+		inspectPoseTracking(frame, { landmarks: ["leftWrist"] }).status,
+		"found",
 	);
 });
