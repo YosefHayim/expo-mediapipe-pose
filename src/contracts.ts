@@ -7,6 +7,8 @@ const NonNegative = Finite.pipe(Schema.nonNegative());
 
 export const CameraFacing = Schema.Literal("front", "back");
 export const CameraLens = Schema.Literal("auto", "wide", "ultraWide");
+export type CameraFacing = Schema.Schema.Type<typeof CameraFacing>;
+export type CameraLens = Schema.Schema.Type<typeof CameraLens>;
 export const ModelVariant = Schema.Literal("lite", "full", "heavy");
 
 export const Landmark = Schema.mutable(

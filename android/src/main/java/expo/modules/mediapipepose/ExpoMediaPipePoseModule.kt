@@ -1,11 +1,20 @@
 package expo.modules.mediapipepose
 
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class ExpoMediaPipePoseModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("ExpoMediaPipePose")
+        AsyncFunction("getCameraCapabilities") { promise: Promise ->
+            val context = appContext.reactContext
+            if (context == null) {
+                promise.reject("cameraCapabilities", "React context is unavailable", null)
+                return@AsyncFunction
+            }
+            PoseCameraCapabilities.discover(context, promise)
+        }
         View(ExpoMediaPipePoseView::class) {
             Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
             Prop("isActive") { view: ExpoMediaPipePoseView, active: Boolean ->
