@@ -16,6 +16,7 @@ import {
 	PoseFrame,
 	PosePerformanceMetrics,
 } from "../contracts";
+import { usePoseOverlayFrame } from "../hooks/usePoseOverlayFrame";
 import { validateFrameRates } from "../pose/frameRates";
 import type { SkeletonOptions } from "../pose/skeleton";
 import { PoseSkeleton } from "./PoseSkeleton";
@@ -89,15 +90,12 @@ export const PoseCameraView = ({
 		500,
 		2000 / Math.min(frameLimit, callbackFps),
 	);
-	const [frame, setFrame] = React.useState<PoseFrame | null>(null);
+	const {
+		frame,
+		update: updateOverlay,
+		clear,
+	} = usePoseOverlayFrame(overlayStaleAfterMs);
 	const [size, setSize] = React.useState({ width: 0, height: 0 });
-	const staleTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(
-		undefined,
-	);
-	const clear = React.useCallback(() => {
-		clearTimeout(staleTimer.current);
-		setFrame(null);
-	}, []);
 
 	const captureIdentity = JSON.stringify({
 		isActive,
@@ -117,9 +115,6 @@ export const PoseCameraView = ({
 			previousCaptureIdentity.current = captureIdentity;
 			clear();
 		}
-		return () => {
-			clearTimeout(staleTimer.current);
-		};
 	}, [captureIdentity, clear]);
 
 	const skeletonEnabled = skeleton !== false;
@@ -139,9 +134,7 @@ export const PoseCameraView = ({
 				return;
 			}
 			if (skeletonEnabled) {
-				setFrame(decoded.right);
-				clearTimeout(staleTimer.current);
-				staleTimer.current = setTimeout(clear, overlayStaleAfterMs);
+				updateOverlay(decoded.right);
 			}
 			onLandmark?.(decoded.right);
 		},
@@ -151,7 +144,7 @@ export const PoseCameraView = ({
 			clear,
 			onInferenceError,
 			onLandmark,
-			overlayStaleAfterMs,
+			updateOverlay,
 		],
 	);
 	const handleMetrics = React.useCallback(
