@@ -1,13 +1,13 @@
 import { useCameraPermissions } from "expo-camera";
 import {
+	composeSkeletonFeedback,
+	createThresholdRule,
 	getImageJointAngle,
 	type InferenceError,
 	PoseCameraView,
 	type PoseFrame,
 	type PosePerformanceMetrics,
-	type PoseRuleStatus,
-	type PoseTrackingStatus,
-	usePoseRule,
+	usePoseRules,
 	usePoseTracking,
 } from "expo-mediapipe-pose";
 import * as React from "react";
@@ -19,27 +19,14 @@ import {
 	Text,
 	View,
 } from "react-native";
+import {
+	feedbackLabels,
+	jointFeedbackStyles,
+	trackingLabels,
+} from "./poseFeedback";
 
-const feedbackColors: Record<PoseRuleStatus, string> = {
-	pass: "#22c55e",
-	fail: "#ef4444",
-	unknown: "#94a3b8",
-};
-const feedbackLabels: Record<PoseRuleStatus, string> = {
-	pass: "Wrist raised",
-	fail: "Raise your left wrist above your shoulder",
-	unknown: "Keep your left arm visible",
-};
-
-const trackingLabels: Record<PoseTrackingStatus, string> = {
-	searching: "Waiting for a camera result",
-	acquiring: "Keep your left arm visible briefly",
-	found: "Left arm tracked",
-	lost: "Step into the frame",
-	incomplete: "Keep your left shoulder, elbow and wrist visible",
-	stale: "Waiting for fresh camera results",
-	inactive: "Tracking paused",
-};
+const wristFeedback = jointFeedbackStyles("leftWrist");
+const elbowFeedback = jointFeedbackStyles("leftElbow");
 
 export default function App() {
 	const [permission, requestPermission] = useCameraPermissions();
@@ -61,28 +48,43 @@ export default function App() {
 	React.useEffect(() => {
 		if (!isActive) setMetrics(null);
 	}, [isActive]);
-	const raisedArm = usePoseRule({
-		landmarks: ["leftWrist", "leftShoulder"],
-		holdMs: 250,
-		isActive,
-		evaluate: (pose) => pose.leftWrist.y < pose.leftShoulder.y,
-	});
-
-	const elbowBend = usePoseRule({
-		landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
-		isActive,
-		holdMs: 250,
-		evaluate: (_pose, frame) => {
-			const angle = getImageJointAngle(
-				{ landmarks: frame.landmarks, imageSize: frame.additionalData },
-				"leftShoulder",
-				"leftElbow",
-				"leftWrist",
-			);
-			if (angle.status === "unavailable") return "unknown";
-			return angle.value < 90;
+	const feedback = usePoseRules({
+		raisedArm: {
+			landmarks: ["leftWrist", "leftShoulder"],
+			holdMs: 250,
+			isActive,
+			evaluate: (pose) => pose.leftWrist.y < pose.leftShoulder.y,
 		},
+		elbowBend: createThresholdRule({
+			landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
+			isActive,
+			holdMs: 250,
+			direction: "below",
+			enterThreshold: 85,
+			exitThreshold: 95,
+			measure: (_pose, frame) => {
+				const angle = getImageJointAngle(
+					{ landmarks: frame.landmarks, imageSize: frame.additionalData },
+					"leftShoulder",
+					"leftElbow",
+					"leftWrist",
+				);
+				if (angle.status === "unavailable") return null;
+				return angle.value;
+			},
+		}),
 	});
+	const feedbackSkeleton = composeSkeletonFeedback(
+		{
+			color: "#94a3b8",
+			bodyParts: ["leftArm", "torso"],
+			joints: { leftWrist: { radius: 8 } },
+		},
+		[
+			{ status: feedback.statuses.raisedArm, styles: wristFeedback },
+			{ status: feedback.statuses.elbowBend, styles: elbowFeedback },
+		],
+	);
 	const tracking = usePoseTracking({
 		landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
 		isActive,
@@ -91,10 +93,9 @@ export default function App() {
 	const handleLandmark = React.useCallback(
 		(frame: PoseFrame) => {
 			tracking.update(frame);
-			raisedArm.update(frame);
-			elbowBend.update(frame);
+			feedback.update(frame);
 		},
-		[tracking.update, raisedArm.update, elbowBend.update],
+		[tracking.update, feedback.update],
 	);
 
 	React.useEffect(() => {
@@ -130,30 +131,26 @@ export default function App() {
 
 	const switchCamera = () => {
 		setMetrics(null);
-		raisedArm.reset();
-		elbowBend.reset();
+		feedback.reset();
 		tracking.reset();
 		setCameraFacing((previous) => (previous === "front" ? "back" : "front"));
 	};
 	const retryCamera = () => {
 		setMetrics(null);
 		setFailure(null);
-		raisedArm.reset();
-		elbowBend.reset();
+		feedback.reset();
 		tracking.reset();
 		setCameraKey((previous) => previous + 1);
 	};
 	const handleFailure = (error: InferenceError) => {
 		setMetrics(null);
-		raisedArm.reset();
-		elbowBend.reset();
+		feedback.reset();
 		tracking.reset();
 		setFailure(error);
 	};
 	const handleConfiguration = () => {
 		setMetrics(null);
-		raisedArm.reset();
-		elbowBend.reset();
+		feedback.reset();
 		tracking.reset();
 		setFailure(null);
 	};
@@ -162,8 +159,12 @@ export default function App() {
 		<View style={styles.screen}>
 			<Text style={styles.title}>MediaPipe Pose</Text>
 			<Text style={styles.text}>{trackingLabels[tracking.status]}</Text>
-			<Text style={styles.text}>{feedbackLabels[raisedArm.status]}</Text>
-			<Text style={styles.text}>Elbow below 90°: {elbowBend.status}</Text>
+			<Text style={styles.text}>
+				{feedbackLabels[feedback.statuses.raisedArm]}
+			</Text>
+			<Text style={styles.text}>
+				Elbow feedback: {feedback.statuses.elbowBend}
+			</Text>
 			<PoseCameraView
 				key={cameraKey}
 				style={styles.camera}
@@ -176,11 +177,7 @@ export default function App() {
 				onLandmark={handleLandmark}
 				onCameraConfigured={handleConfiguration}
 				onInferenceError={handleFailure}
-				skeleton={{
-					color: feedbackColors[raisedArm.status],
-					bodyParts: ["leftArm", "torso"],
-					joints: { leftWrist: { radius: 8 } },
-				}}
+				skeleton={feedbackSkeleton}
 			/>
 			{displayedMetrics && (
 				<Text style={styles.text}>

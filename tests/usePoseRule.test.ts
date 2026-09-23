@@ -51,8 +51,12 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 		onChange: (status) => transitions.push(status),
 	};
 	let frameNumber = 0;
-	const sendFrame = async (elapsed: number) => {
+	const advanceTime = async (elapsed: number) => {
 		now += elapsed;
+		await act(() => test.mock.timers.tick(elapsed));
+	};
+	const sendFrame = async (elapsed: number) => {
+		await advanceTime(elapsed);
 		frameNumber += 1;
 		const frame = poseFrame();
 		await act(() =>
@@ -79,8 +83,7 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 				}),
 			),
 		);
-		now += 500;
-		await act(() => test.mock.timers.tick(500));
+		await advanceTime(500);
 		assert.equal(getRule().status, "unknown");
 		assert.deepEqual(updatedTransitions, ["unknown"]);
 

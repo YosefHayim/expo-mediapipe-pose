@@ -9,11 +9,13 @@ export interface PoseRuleOptions<Name extends LandmarkName = LandmarkName> {
 	evaluate: (
 		pose: Readonly<Record<Name, Landmark>>,
 		frame: PoseFrame,
+		previousOutcome: PoseRuleStatus,
 	) => boolean | "unknown";
 	minVisibility?: number;
 	holdMs?: number;
 	staleAfterMs?: number;
 	isActive?: boolean;
+	resetKey?: string | number;
 	onChange?: (status: PoseRuleStatus) => void;
 }
 
@@ -34,9 +36,12 @@ export const initialPoseRuleState = (): PoseRuleState => ({
 export const validatePoseRuleOptions = (
 	options: Pick<
 		PoseRuleOptions,
-		"landmarks" | "minVisibility" | "holdMs" | "staleAfterMs"
+		"landmarks" | "minVisibility" | "holdMs" | "staleAfterMs" | "resetKey"
 	>,
 ) => {
+	const invalidResetKey =
+		typeof options.resetKey === "number" && !Number.isFinite(options.resetKey);
+	if (invalidResetKey) throw new RangeError("Numeric resetKey must be finite");
 	if (options.landmarks.length === 0)
 		throw new RangeError("A pose rule requires at least one landmark");
 	const visibility = options.minVisibility ?? 0.6;
@@ -56,6 +61,7 @@ export const validatePoseRuleOptions = (
 export const evaluatePoseRule = <Name extends LandmarkName>(
 	frame: PoseFrame,
 	options: PoseRuleOptions<Name>,
+	previousOutcome: PoseRuleStatus = "unknown",
 ): PoseRuleStatus => {
 	if (options.isActive === false) return "unknown";
 	const pose = getNamedLandmarks(frame);
@@ -71,7 +77,11 @@ export const evaluatePoseRule = <Name extends LandmarkName>(
 	});
 	if (hasUncertainLandmark) return "unknown";
 	// Every requested key has been checked above; other landmarks remain optional internally.
-	const outcome = options.evaluate(pose as Record<Name, Landmark>, frame);
+	const outcome = options.evaluate(
+		pose as Record<Name, Landmark>,
+		frame,
+		previousOutcome,
+	);
 	if (outcome === "unknown") return "unknown";
 	return outcome ? "pass" : "fail";
 };
@@ -108,3 +118,7 @@ export const advancePoseRule = (
 		status: now - since >= holdMs ? outcome : previous.status,
 	};
 };
+
+export const definePoseRule = <Name extends LandmarkName>(
+	options: PoseRuleOptions<Name>,
+) => options;

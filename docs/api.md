@@ -59,11 +59,12 @@ Supported body parts: `face`, `leftArm`, `rightArm`, `leftWrist`, `rightWrist`, 
 `usePoseRule({ landmarks, evaluate, minVisibility, holdMs, staleAfterMs, isActive, onChange })` returns `{ status, update, reset }`.
 
 - `landmarks`: non-empty list required by the predicate. Its names determine the typed `evaluate` input.
-- `evaluate`: synchronous application function receiving `(pose, frame)` and returning a boolean or `"unknown"`. Return `"unknown"` when a derived measurement is unavailable. It is called only when all required joints have adequate visibility and, when available, presence. Errors thrown by application functions are not swallowed.
+- `evaluate`: synchronous application function receiving `(pose, frame, previousOutcome)` and returning a boolean or `"unknown"`. Return `"unknown"` when a derived measurement is unavailable. `previousOutcome` is the previous evaluated outcome before hold confirmation; it enables stateful comparisons without mutable predicate closures. It is called only when all required joints have adequate visibility and, when available, presence. Errors thrown by application functions are not swallowed.
 - `minVisibility`: defaults to 0.6; must be 0–1. Missing confidence or coordinates yields `unknown`.
 - `holdMs`: defaults to 0; non-negative duration a candidate condition must remain consistent before committing. The prior committed result stays visible during confirmation. Unknown input clears it immediately.
 - `staleAfterMs`: defaults to 500; positive interval without an update before invalidating feedback. No new frame is needed to expire it.
 - `isActive`: defaults to true. Set false when pausing/backgrounding and pass the same intent to the camera.
+- `resetKey`: optional string or finite number; change it to reset history when the meaning of an inline predicate changes.
 - `onChange`: receives `pass`, `fail` or `unknown` only when the committed state changes. The initial unknown state is not a transition notification.
 
 Connect `update` to `onLandmark`, and `reset` to camera configuration/error callbacks. The hook also detects restarted frame counters. Threshold, landmark, duration and active-state changes reset history. Inline predicates/callbacks use their latest committed versions; call `reset` when changing the semantic meaning of a predicate and you need a fresh hold window. Unmount clears its timer. Conditions run on the JS thread, so keep them small and synchronous.
@@ -92,6 +93,37 @@ const bentElbow = usePoseRule({
 ```
 
 The example app displays this rule alongside wrist-height feedback. Applications choose their own thresholds; the library does not assign exercise correctness or clinical meaning.
+
+## Multiple rules and independent feedback
+
+`usePoseRules({ ruleName: options, ... })` returns `{ statuses, update, reset }`. Each rule uses the same options and timing policy as `usePoseRule`; predicates retain their own required-landmark types and statuses retain their configured names. `update(frame)` evaluates the collection. `reset()` clears all rules; `reset("ruleName")` clears one. Each rule has independent hold and stale timers. Changing one rule's settings resets only that rule; adding/removing rules preserves the others. Removed rules stop their timers without emitting a final transition. Inline predicates and callbacks use their latest committed versions. Use `resetKey` when changing a predicate's meaning should reset its history.
+
+`definePoseRule(options)` preserves landmark inference when defining a reusable rule outside the hook call. The single-rule hook uses the same lifecycle implementation as the collection.
+
+`createThresholdRule({ landmarks, measure, direction, enterThreshold, exitThreshold, ...ruleOptions })` creates a rule with hysteresis. `measure(pose, frame)` returns a number or null. For `above`, entry is inclusive at the higher enter threshold and exit is inclusive at the lower exit threshold; `below` reverses these comparisons. Thresholds must be finite and distinct in the specified order. Values inside the band retain the previous evaluated outcome, including initial `unknown`, so hysteresis remains effective during hold confirmation. Null or non-finite measurements return unknown immediately. Changing thresholds/direction resets history automatically. Hold timing still applies to a candidate pass/fail outcome. The pure `evaluatePoseThreshold(value, previousStatus, threshold)` helper exposes this comparison without React.
+
+```tsx
+const feedback = usePoseRules({
+  raisedWrist: {
+    landmarks: ["leftWrist", "leftShoulder"],
+    evaluate: pose => pose.leftWrist.y < pose.leftShoulder.y,
+  },
+  elbow: createThresholdRule({
+    landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
+    direction: "below", enterThreshold: 85, exitThreshold: 95,
+    measure: (_pose, frame) => {
+      const angle = getImageJointAngle(
+        { landmarks: frame.landmarks, imageSize: frame.additionalData },
+        "leftShoulder", "leftElbow", "leftWrist",
+      );
+      if (angle.status === "unavailable") return null;
+      return angle.value;
+    },
+  }),
+});
+```
+
+`composeSkeletonFeedback(base, entries)` combines appearance in array order. Each entry has `{ status, styles: { pass?, fail?, unknown? } }`; an omitted status style makes no change. Later entries win conflicting attributes, including individual attributes of a shared joint/connection, while preserving unrelated radius/width/color settings. Feedback can change global color/radius/width and named joint/connection styles; selection and confidence options remain on the base. Inputs are not modified. The example colors the wrist and elbow independently and uses 85°/95° elbow thresholds to avoid boundary flicker.
 
 ## Tracking feedback
 
