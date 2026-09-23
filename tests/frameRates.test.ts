@@ -5,6 +5,8 @@ import { PosePerformanceMetrics, validateFrameRates } from "../src/core";
 
 it("accepts independent rates and rejects invalid public rate settings", () => {
 	validateFrameRates({ frameLimit: 15, previewFps: 60, callbackFps: 5 });
+	validateFrameRates({ frameLimit: 1, previewFps: 1, callbackFps: 1 });
+	validateFrameRates({ frameLimit: 60, previewFps: 60, callbackFps: 60 });
 	for (const name of ["frameLimit", "previewFps", "callbackFps"]) {
 		for (const value of [0, 61, 1.5, NaN, Infinity]) {
 			assert.throws(

@@ -95,6 +95,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     let shouldCapture = isActive && applicationIsActive && viewIsVisible
     let desired = shouldCapture ? options : nil
     if shouldCapture && !processingOptions.isValid {
+      // Terminal errors require an isActive toggle or remount, including invalid processing props.
       requestedOptions = desired
       emitFailure("cameraConfiguration", token: generation)
       return

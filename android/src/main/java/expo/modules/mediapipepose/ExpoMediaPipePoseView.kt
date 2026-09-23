@@ -130,6 +130,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         if (destroyed || !viewIsVisible) return
         if (!lifecycleIsStarted) return
         if (!processingOptions.isValid()) {
+            // Terminal errors require an isActive toggle or remount, including invalid processing props.
             requestedOptions = options
             emitFailure("cameraConfiguration", generation.get())
             return

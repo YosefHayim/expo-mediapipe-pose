@@ -43,6 +43,10 @@ export default function App() {
 		null,
 	);
 	const isActive = foreground && !paused;
+	const displayedMetrics = isActive ? metrics : null;
+	React.useEffect(() => {
+		if (!isActive) setMetrics(null);
+	}, [isActive]);
 	const raisedArm = usePoseRule({
 		landmarks: ["leftWrist", "leftShoulder"],
 		holdMs: 250,
@@ -82,19 +86,23 @@ export default function App() {
 	}
 
 	const switchCamera = () => {
+		setMetrics(null);
 		raisedArm.reset();
 		setCameraFacing((previous) => (previous === "front" ? "back" : "front"));
 	};
 	const retryCamera = () => {
+		setMetrics(null);
 		setFailure(null);
 		raisedArm.reset();
 		setCameraKey((previous) => previous + 1);
 	};
 	const handleFailure = (error: InferenceError) => {
+		setMetrics(null);
 		raisedArm.reset();
 		setFailure(error);
 	};
 	const handleConfiguration = () => {
+		setMetrics(null);
 		raisedArm.reset();
 		setFailure(null);
 	};
@@ -121,10 +129,10 @@ export default function App() {
 					joints: { leftWrist: { radius: 8 } },
 				}}
 			/>
-			{metrics && (
+			{displayedMetrics && (
 				<Text style={styles.text}>
-					Inference: {metrics.inferenceFps.toFixed(1)} fps · Results:{" "}
-					{metrics.resultFps.toFixed(1)} fps
+					Inference: {displayedMetrics.inferenceFps.toFixed(1)} fps · Results:{" "}
+					{displayedMetrics.resultFps.toFixed(1)} fps
 				</Text>
 			)}
 			<Button
