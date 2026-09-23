@@ -7,6 +7,8 @@ import {
 	validateLocalFileLocation,
 } from "../pose/imageAnalysis";
 
+import { discardResultSegmentation } from "./segmentation";
+
 export async function analyzePoseImage(
 	location: string,
 	options: PoseImageOptions = {},
@@ -19,7 +21,19 @@ export async function analyzePoseImage(
 			options: ReturnType<typeof resolvePoseImageOptions>,
 		): Promise<unknown>;
 	}>("ExpoMediaPipePose");
-	return Schema.decodeUnknownSync(PoseDetection)(
-		await native.analyzePoseImage(location, resolved),
-	);
+	const result = await native.analyzePoseImage(location, resolved);
+	try {
+		return Schema.decodeUnknownSync(PoseDetection)(result);
+	} catch (error) {
+		try {
+			await discardResultSegmentation(result);
+		} catch (cleanupError) {
+			throw new AggregateError(
+				[error, cleanupError],
+				"Image result validation and mask cleanup failed",
+				{ cause: error },
+			);
+		}
+		throw error;
+	}
 }

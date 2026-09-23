@@ -4,7 +4,7 @@ import { PoseDetection } from "./imageAnalysis";
 
 const maximumFrames = 10_000;
 const maximumJsonCharacters = 64 * 1024 * 1024;
-const RecordedFrame = PoseFrame.pipe(
+const RecordedFrame = PoseFrame.pipe(Schema.omit("segmentation")).pipe(
 	Schema.filter(
 		(frame) =>
 			frame.landmarks.length <= 33 && frame.worldLandmarks.length <= 33,
@@ -41,9 +41,17 @@ export type PoseRecording = Schema.Schema.Type<typeof PoseRecording>;
 const decodeRecording = Schema.decodeUnknownSync(PoseRecording, {
 	onExcessProperty: "error",
 });
-const decodeFrame = Schema.decodeUnknownSync(RecordedFrame, {
+function withoutSegmentation(value: unknown): unknown {
+	if (typeof value !== "object" || value === null) return value;
+	if (!("segmentation" in value)) return value;
+	const { segmentation: _segmentation, ...landmarks } = value;
+	return landmarks;
+}
+const decodeRecordedFrame = Schema.decodeUnknownSync(RecordedFrame, {
 	onExcessProperty: "error",
 });
+const decodeFrame = (value: unknown) =>
+	decodeRecordedFrame(withoutSegmentation(value));
 
 export function parsePoseRecording(json: string): PoseRecording {
 	if (json.length > maximumJsonCharacters)
@@ -130,13 +138,16 @@ function createRecorder<Frame, Recording>(
 	};
 }
 
-const RecordedDetection = PoseDetection.pipe(
+const RecordedDetection = PoseDetection.pipe(Schema.omit("segmentation")).pipe(
 	Schema.filter(
 		(frame) =>
 			frame.landmarks.length <= 33 && frame.worldLandmarks.length <= 33,
 	),
 );
 export const PoseDetectionRecording = recordingSchema(RecordedDetection);
+const decodeRecordedDetection = Schema.decodeUnknownSync(RecordedDetection, {
+	onExcessProperty: "error",
+});
 export type PoseDetectionRecording = Schema.Schema.Type<
 	typeof PoseDetectionRecording
 >;
@@ -171,7 +182,7 @@ export function createPoseDetectionRecorder(
 ) {
 	return createRecorder<PoseDetection, PoseDetectionRecording>(
 		options,
-		Schema.decodeUnknownSync(RecordedDetection, { onExcessProperty: "error" }),
+		(value) => decodeRecordedDetection(withoutSegmentation(value)),
 		copyPoseDetectionRecording,
 	);
 }

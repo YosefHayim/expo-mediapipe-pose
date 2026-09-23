@@ -15,6 +15,7 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 private class PoseVideoSession(
+    val context: Context,
     val retriever: MediaMetadataRetriever,
     val detector: PoseLandmarker,
     val durationMs: Long,
@@ -32,7 +33,7 @@ private class PoseVideoSession(
     }
 }
 
-internal class PoseVideoAnalysis {
+internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
     private val worker = Executors.newSingleThreadExecutor()
     private val destroyed = AtomicBoolean(false)
     private var session: PoseVideoSession? = null
@@ -98,12 +99,20 @@ internal class PoseVideoAnalysis {
                         .setBaseOptions(PoseModel.options(options.modelVariant, options.modelPath))
                         .setRunningMode(RunningMode.VIDEO)
                         .setNumPoses(options.maxPoses)
+                        .setOutputSegmentationMasks(options.segmentationEnabled)
                         .setMinPoseDetectionConfidence(options.minPoseDetectionConfidence.toFloat())
                         .setMinPosePresenceConfidence(options.minPosePresenceConfidence.toFloat())
                         .setMinTrackingConfidence(trackingConfidence.toFloat())
                         .build()
                 val detector = PoseLandmarker.createFromOptions(context, configuration)
-                val opened = PoseVideoSession(retriever, detector, duration, options)
+                val opened =
+                    PoseVideoSession(
+                        context.applicationContext,
+                        retriever,
+                        detector,
+                        duration,
+                        options,
+                    )
                 session = opened
                 mapOf("id" to opened.id, "durationMs" to duration)
             } catch (error: Exception) {
@@ -142,17 +151,34 @@ internal class PoseVideoAnalysis {
                     }
                 try {
                     val image = BitmapImageBuilder(pixels).build()
+                    var outputMasks = emptyList<com.google.mediapipe.framework.image.MPImage>()
                     try {
                         val started = SystemClock.elapsedRealtimeNanos()
                         val result = current.detector.detectForVideo(image, timestampMs)
+                        val inferenceDurationMs =
+                            (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
+                        outputMasks = result.segmentationMasks().orElse(emptyList())
+                        val landmarkPayload = PoseLandmarkPayload.make(result)
+                        val segmentation =
+                            if (current.options.segmentationEnabled)
+                                mapOf(
+                                    "segmentation" to
+                                        masks.save(
+                                            current.context,
+                                            result,
+                                            pixels.width,
+                                            pixels.height,
+                                            current.options.maskMaxDimension,
+                                        )
+                                )
+                            else emptyMap()
                         val detection =
-                            PoseLandmarkPayload.make(result) +
+                            landmarkPayload +
+                                segmentation +
                                 mapOf(
                                     "imageSize" to
                                         mapOf("width" to pixels.width, "height" to pixels.height),
-                                    "inferenceDurationMs" to
-                                        (SystemClock.elapsedRealtimeNanos() - started) /
-                                            1_000_000.0,
+                                    "inferenceDurationMs" to inferenceDurationMs,
                                     "model" to
                                         mapOf(
                                             "variant" to current.options.modelVariant,
@@ -168,6 +194,7 @@ internal class PoseVideoAnalysis {
                             "detection" to detection,
                         )
                     } finally {
+                        outputMasks.forEach { it.close() }
                         image.close()
                     }
                 } finally {

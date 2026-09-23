@@ -3,6 +3,7 @@ import { File, Paths } from "expo-file-system";
 import { analyzePoseImage, getCameraCapabilities } from "expo-mediapipe-pose";
 import { Platform } from "react-native";
 import { runMultiplePoseChecks } from "./runMultiplePoseChecks";
+import { runSegmentationChecks } from "./runSegmentationChecks";
 import { runVideoChecks } from "./runVideoChecks";
 
 function verify(condition: boolean, message: string): asserts condition {
@@ -165,6 +166,14 @@ export async function runNativeChecks() {
 		);
 		await runMultiplePoseChecks(
 			await localAsset(require("./fixtures/man-woman-okay.jpg")),
+			cases,
+		);
+		await runSegmentationChecks(
+			photo,
+			await localAsset(require("./fixtures/pose-exif-6.jpg")),
+			emptyImage,
+			await localAsset(require("./fixtures/man-woman-okay.jpg")),
+			await localAsset(require("./fixtures/pose-video.mp4")),
 			cases,
 		);
 		return writeReport({

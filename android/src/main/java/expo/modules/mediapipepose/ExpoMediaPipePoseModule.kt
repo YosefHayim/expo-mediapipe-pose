@@ -9,7 +9,8 @@ import kotlinx.coroutines.withContext
 
 class ExpoMediaPipePoseModule : Module() {
     private val photoDispatcher = Dispatchers.Default.limitedParallelism(1)
-    private val videos = PoseVideoAnalysis()
+    private val masks = PoseMaskStore()
+    private val videos = PoseVideoAnalysis(masks)
 
     override fun definition() = ModuleDefinition {
         Name("ExpoMediaPipePose")
@@ -25,7 +26,7 @@ class ExpoMediaPipePoseModule : Module() {
             { location: String, options: PoseImageOptions ->
                 val context = requireNotNull(appContext.reactContext).applicationContext
                 withContext(photoDispatcher) {
-                    PoseImageAnalysis.analyze(context, location, options)
+                    PoseImageAnalysis.analyze(context, location, options, masks)
                 }
             }
         AsyncFunction("openPoseVideo") {
@@ -47,7 +48,14 @@ class ExpoMediaPipePoseModule : Module() {
         AsyncFunction("closePoseVideo") { id: String, promise: Promise ->
             videos.close(id, promise)
         }
-        OnDestroy { videos.destroy() }
+        AsyncFunction("releasePoseSegmentation") Coroutine
+            { id: String ->
+                withContext(Dispatchers.IO) { masks.release(id) }
+            }
+        OnDestroy {
+            videos.destroy()
+            masks.destroy()
+        }
         View(ExpoMediaPipePoseView::class) {
             Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
             Prop("isActive") { view: ExpoMediaPipePoseView, active: Boolean ->
@@ -74,6 +82,12 @@ class ExpoMediaPipePoseModule : Module() {
             Prop("performanceMetricsEnabled") { view: ExpoMediaPipePoseView, enabled: Boolean ->
                 view.processingOptions = view.processingOptions.copy(metricsEnabled = enabled)
             }
+            Prop("segmentationEnabled") { view: ExpoMediaPipePoseView, enabled: Boolean ->
+                view.options = view.options.copy(segmentationEnabled = enabled)
+            }
+            Prop("maskMaxDimension") { view: ExpoMediaPipePoseView, dimension: Int ->
+                view.options = view.options.copy(maskMaxDimension = dimension)
+            }
             Prop("maxPoses") { view: ExpoMediaPipePoseView, count: Int ->
                 view.options = view.options.copy(maxPoses = count)
             }
@@ -92,7 +106,10 @@ class ExpoMediaPipePoseModule : Module() {
             Prop("minTrackingConfidence") { view: ExpoMediaPipePoseView, confidence: Double ->
                 view.options = view.options.copy(minTrackingConfidence = confidence)
             }
-            OnViewDidUpdateProps { view: ExpoMediaPipePoseView -> view.applyChanges() }
+            OnViewDidUpdateProps { view: ExpoMediaPipePoseView ->
+                view.maskStore = masks
+                view.applyChanges()
+            }
             OnViewDestroys { view: ExpoMediaPipePoseView -> view.destroy() }
         }
     }

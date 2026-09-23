@@ -8,6 +8,8 @@ import {
 	resolvePoseVideoOptions,
 } from "../pose/videoAnalysis";
 
+import { discardResultSegmentation } from "./segmentation";
+
 const VideoHandle = Schema.Struct({
 	id: Schema.String.pipe(Schema.nonEmptyString()),
 });
@@ -45,6 +47,11 @@ function throwVideoFailures(failures: unknown[]) {
 	if (primary instanceof Error) combined.name = primary.name;
 	throw combined;
 }
+function videoDetection(frame: unknown): unknown {
+	if (typeof frame !== "object" || frame === null) return undefined;
+	if (!("detection" in frame)) return undefined;
+	return frame.detection;
+}
 export async function* analyzePoseVideo(
 	location: string,
 	options: PoseVideoOptions = {},
@@ -71,6 +78,7 @@ export async function* analyzePoseVideo(
 	};
 	signal?.addEventListener("abort", onAbort, { once: true });
 	const failures: unknown[] = [];
+	let undelivered: unknown;
 	try {
 		const session = Schema.decodeUnknownSync(VideoSession)(rawSession);
 		throwIfAborted(signal);
@@ -78,9 +86,9 @@ export async function* analyzePoseVideo(
 		for (let index = 0; index < plan.frameCount; index += 1) {
 			throwIfAborted(signal);
 			const timestampMs = plan.timestampAt(index);
-			const frame = Schema.decodeUnknownSync(PoseVideoFrame)(
-				await native.readPoseVideoFrame(session.id, timestampMs),
-			);
+			const rawFrame = await native.readPoseVideoFrame(session.id, timestampMs);
+			undelivered = videoDetection(rawFrame);
+			const frame = Schema.decodeUnknownSync(PoseVideoFrame)(rawFrame);
 			throwIfAborted(signal);
 			if (frame.timestampMs !== timestampMs)
 				throw new Error(
@@ -92,12 +100,18 @@ export async function* analyzePoseVideo(
 				timestampMs,
 			});
 			throwIfAborted(signal);
+			undelivered = undefined;
 			yield frame;
 		}
 	} catch (error) {
 		failures.push(signal?.aborted ? createAbortError() : error);
 	} finally {
 		signal?.removeEventListener("abort", onAbort);
+		try {
+			await discardResultSegmentation(undelivered);
+		} catch (error) {
+			failures.push(error);
+		}
 		try {
 			await close();
 		} catch (error) {

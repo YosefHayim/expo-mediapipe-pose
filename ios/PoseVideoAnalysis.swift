@@ -29,6 +29,7 @@ private final class PoseVideoSession {
     configuration.baseOptions.delegate = .CPU
     configuration.runningMode = .video
     configuration.numPoses = options.maxPoses
+    configuration.shouldOutputSegmentationMasks = options.segmentationEnabled
     configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(trackingConfidence)
@@ -42,6 +43,7 @@ private final class PoseVideoSession {
 }
 
 internal final class PoseVideoAnalysis {
+  let masks = PoseMaskStore()
   let worker = DispatchQueue(label: "expo.pose.media")
   private var session: PoseVideoSession?
   private var destroyed = false
@@ -106,9 +108,15 @@ internal final class PoseVideoAnalysis {
           let image = try MPImage(uiImage: UIImage(cgImage: decoded.image))
           let started = ProcessInfo.processInfo.systemUptime
           let result = try detector.detect(videoFrame: image, timestampInMilliseconds: timestampMs)
+          let inferenceDurationMs = (ProcessInfo.processInfo.systemUptime - started) * 1000
           var detection = try PoseLandmarkPayload.make(result)
+          if current.options.segmentationEnabled {
+            detection["segmentation"] = try self.masks.save(
+              result, width: decoded.image.width, height: decoded.image.height,
+              maximumDimension: current.options.maskMaxDimension)
+          }
           detection["imageSize"] = ["width": decoded.image.width, "height": decoded.image.height]
-          detection["inferenceDurationMs"] = (ProcessInfo.processInfo.systemUptime - started) * 1000
+          detection["inferenceDurationMs"] = inferenceDurationMs
           detection["model"] = [
             "variant": current.options.modelVariant, "delegate": "CPU",
             "source": current.options.modelPath == nil ? "bundled" : "local",

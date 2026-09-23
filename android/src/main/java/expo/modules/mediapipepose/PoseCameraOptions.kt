@@ -5,6 +5,8 @@ data class PoseCameraOptions(
     val lens: String = "auto",
     val zoom: Double = 1.0,
     val previewFps: Int = 30,
+    val segmentationEnabled: Boolean = false,
+    val maskMaxDimension: Int = 256,
     val maxPoses: Int = 1,
     val modelVariant: String = "full",
     val modelPath: String? = null,
@@ -16,6 +18,7 @@ data class PoseCameraOptions(
     val minTrackingConfidence: Double = 0.35,
 ) {
     fun isValid(): Boolean {
+        if (maskMaxDimension !in 64..512) return false
         if (maxPoses !in 1..6) return false
         if (facing !in listOf("front", "back")) return false
         if (lens !in listOf("auto", "wide")) return false

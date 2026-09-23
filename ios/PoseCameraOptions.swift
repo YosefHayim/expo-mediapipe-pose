@@ -5,6 +5,8 @@ struct PoseCameraOptions: Equatable {
   var lens = "auto"
   var zoom = 1.0
   var previewFps = 30
+  var segmentationEnabled: Bool = false
+  var maskMaxDimension: Int = 256
   var maxPoses = 1
   var modelVariant = "full"
   var modelPath: String?
@@ -13,6 +15,7 @@ struct PoseCameraOptions: Equatable {
   var minPosePresenceConfidence = 0.35
   var minTrackingConfidence = 0.35
   var isValid: Bool {
+    guard (64...512).contains(maskMaxDimension) else { return false }
     guard (1...6).contains(maxPoses) else { return false }
     guard ["front", "back"].contains(facing) else { return false }
     guard ["auto", "wide", "ultraWide"].contains(lens) else { return false }

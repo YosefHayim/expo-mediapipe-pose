@@ -18,7 +18,9 @@ import {
 	PosePerformanceMetrics,
 } from "../contracts";
 import { usePoseOverlayFrame } from "../hooks/usePoseOverlayFrame";
+import { discardResultSegmentation } from "../native/segmentation";
 import { getOverlayStaleAfterMs } from "../pose/frameRates";
+import { MaskMaxDimension } from "../pose/segmentation";
 import type { SkeletonOptions } from "../pose/skeleton";
 import { PoseSkeleton } from "./PoseSkeleton";
 
@@ -36,6 +38,8 @@ interface CameraOptions {
 	minPosePresenceConfidence?: number;
 	minTrackingConfidence?: number;
 	maxPoses?: number;
+	segmentationEnabled?: boolean;
+	maskMaxDimension?: number;
 }
 
 export interface PoseCameraViewProps extends ViewProps, CameraOptions {
@@ -78,6 +82,8 @@ export const PoseCameraView = ({
 	minPosePresenceConfidence = 0.35,
 	minTrackingConfidence = 0.35,
 	maxPoses = 1,
+	segmentationEnabled = false,
+	maskMaxDimension = 256,
 	skeleton = true,
 	onCameraConfigured,
 	onInferenceError,
@@ -89,6 +95,11 @@ export const PoseCameraView = ({
 	...viewProps
 }: PoseCameraViewProps) => {
 	Schema.decodeUnknownSync(MaxPoses)(maxPoses);
+	Schema.decodeUnknownSync(MaskMaxDimension)(maskMaxDimension);
+	if (segmentationEnabled && !onLandmark)
+		throw new Error(
+			"Segmentation requires an onLandmark consumer to release mask handles",
+		);
 	const overlayStaleAfterMs = getOverlayStaleAfterMs({
 		frameLimit,
 		previewFps,
@@ -113,6 +124,8 @@ export const PoseCameraView = ({
 		minPosePresenceConfidence,
 		minTrackingConfidence,
 		maxPoses,
+		segmentationEnabled,
+		maskMaxDimension,
 	});
 	const previousCaptureIdentity = React.useRef(captureIdentity);
 	React.useLayoutEffect(() => {
@@ -131,17 +144,35 @@ export const PoseCameraView = ({
 
 	const handleFrame = React.useCallback(
 		(event: { nativeEvent: unknown }) => {
-			if (!isActive) return;
+			const discard = () => {
+				void discardResultSegmentation(event.nativeEvent).catch(() =>
+					onInferenceError?.({ code: "segmentationCleanup" }),
+				);
+			};
+			if (!isActive) {
+				discard();
+				return;
+			}
 			const decoded = decodeFrame(event.nativeEvent);
 			if (Either.isLeft(decoded)) {
 				clear();
+				discard();
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
 			if (skeletonEnabled) {
 				updateOverlay(decoded.right);
 			}
-			onLandmark?.(decoded.right);
+			if (!onLandmark) {
+				discard();
+				return;
+			}
+			try {
+				onLandmark(decoded.right);
+			} catch (error) {
+				discard();
+				throw error;
+			}
 		},
 		[
 			isActive,
@@ -228,6 +259,8 @@ export const PoseCameraView = ({
 				minPosePresenceConfidence={minPosePresenceConfidence}
 				minTrackingConfidence={minTrackingConfidence}
 				maxPoses={maxPoses}
+				segmentationEnabled={segmentationEnabled}
+				maskMaxDimension={maskMaxDimension}
 				onLandmark={handleFrame}
 				onCameraConfigured={handleConfiguration}
 				onInferenceError={handleFailure}

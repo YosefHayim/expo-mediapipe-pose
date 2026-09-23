@@ -158,7 +158,9 @@ const tracking = usePoseTracking({
 
 ## Errors and recovery
 
-Codes: `cameraPermission`, `cameraConfiguration`, `cameraRuntime`, `modelInitialization`, `inferenceRuntime`, `nativeViewInitialization`, `invalidNativeEvent`. Native payloads never include raw exceptions or device paths. Invalid payloads report `invalidNativeEvent`, rather than being presented as valid detection results.
+JavaScript prop validation (including frame rates, `maxPoses`, mask dimensions and the required segmentation consumer) throws during render before that configuration reaches the native view. Validate dynamic configuration before rendering or handle programmer/configuration errors with a React error boundary. `onInferenceError` reports native failures and malformed native events; it does not intercept JavaScript validation errors.
+
+Codes: `cameraPermission`, `cameraConfiguration`, `cameraRuntime`, `modelInitialization`, `inferenceRuntime`, `nativeViewInitialization`, `invalidNativeEvent`, `segmentationCleanup`. The last code means that discarding an undelivered mask lease failed. Native payloads never include raw exceptions or device paths. Invalid payloads report `invalidNativeEvent`, rather than being presented as valid detection results.
 
 Native failures release camera/detector resources and invalidate queued frames. The application owns recovery. After correcting permissions/options, toggle `isActive` or remount using a new React `key`. Use bounded retries appropriate to your UI. Empty detections are not errors.
 
@@ -254,7 +256,7 @@ const recording = recorder.stop();
 
 Sampling defaults: `samplingFps: 5` (integer 1–60), `startMs: 0`, `endMs: duration`, `maxFrames: 1000` (1–10,000), `minTrackingConfidence: 0.35`. Explicit range boundaries are integer milliseconds, start inclusive/end exclusive, up to 24 hours. A range beyond the file duration or a plan exceeding `maxFrames` rejects; it is never silently truncated. Sampling rate is a media-time selection rate, not a throughput promise. Increasing it above encoded FPS can decode the same source frame more than once.
 
-Each `PoseVideoFrame` contains `timestampMs` (requested monotonic media time), `decodedTimestampMs` (actual decoded time on iOS; `null` on Android because its retriever does not expose it), and `detection: PoseDetection`. Landmarks/dimensions refer to bounded, upright decoded pixels, including container rotation. No pixels cross the JS boundary. Progress fires after each successful sample, before it is yielded.
+Each `PoseVideoFrame` contains `timestampMs` (requested monotonic media time), `decodedTimestampMs` (actual decoded time on iOS; `null` on Android because its retriever does not expose it), and `detection: PoseDetection`. Landmarks/dimensions refer to bounded, upright decoded pixels, including container rotation. The dimension limit bounds the returned image, not the platform decoder's internal allocations or peak memory. No pixels cross the JS boundary. Progress fires after each successful sample, before it is yielded.
 
 Only one video session can be open per native module. The next frame is decoded only when the consumer requests it; results are not accumulated. Completion, errors and `break` close the session. Abort rejects with `AbortError`, closes even while paused at a yield, and suppresses pending result delivery. An already-running native decode/inference may finish before cleanup. A cleanup failure rejects too; if analysis and cleanup both fail, the rejection is an `AggregateError` with the primary failure as `cause` and first `errors` entry. Its name preserves `AbortError` for cancellation. Always use `for await`/`return()` or an AbortSignal; abandoning an iterator without either cannot notify its owner.
 
@@ -284,3 +286,53 @@ Set `maxPoses` on `PoseCameraView`, `analyzePoseImage` or `analyzePoseVideo` (de
 Result indices are **not persistent person IDs**. The SDK may reorder results between frames. Reset temporal rules/tracking when your application changes selection; do not carry a hold timer across a known person/selection change. Identity association and selecting the same person over time remain application responsibilities.
 
 `poses` is optional in TypeScript/recorded contracts so existing version-one recordings and manually constructed single-pose frames remain readable. Every result produced by the updated native module includes it. Legacy data exposes only index zero; requesting another index is empty. Recording/replay preserves all available poses within the same total serialized-size budget. The example photo panel loads a public two-person fixture and switches skeleton selection without rerunning inference.
+
+## Opt-in segmentation masks
+
+Set `segmentationEnabled: true` on camera/image/video options to request the SDK's per-pose confidence masks. The default is **false**: no masks are requested, encoded or written by this library. `maskMaxDimension` controls exported mask size (default 256, integer 64–512), preserving aspect ratio without upscaling. It bounds PNG output, not the detector's internal inference buffers. Segmentation adds native inference/encoding work; no FPS or battery improvement is implied.
+
+A result's optional `segmentation` is one of:
+
+| Status | Meaning |
+| --- | --- |
+| `available` | Includes `leaseId`, source `imageSize`, and `masks` with `poseIndex`, `uri`, `width`, `height`. |
+| `empty` | No pose was detected; no mask files are created. |
+| `backpressure` | Two result leases are already outstanding. Landmarks still arrive, but no additional mask files are created. |
+
+Each mask is a local **RGBA8 PNG**: nontransparent pixels have white RGB and alpha = foreground confidence quantized to 0–255. RGB values at alpha zero are unspecified; read alpha for probabilities. Masks are sampled at output pixel centers and refer to the same upright, already-mirrored image coordinates as the result landmarks. `poseIndex` pairs with that result's `poses` array; it is not an identity. Use the supplied source `imageSize` for projection, since integer thumbnail dimensions may differ slightly in aspect ratio.
+
+`PoseSegmentationOverlay` renders one mask with aspect-fill alignment, using `segmentation`, `width`, `height`, optional `poseIndex` (default 0), `color`, `opacity` (default 0.5), and standard image `onError`. It renders nothing for empty/backpressure/missing selection. It does **not** own or release the files. The photo example shows it over the analyzed image and releases the previous result on replacement/unmount.
+
+```ts
+import { File } from "expo-file-system";
+import { analyzePoseImage, releasePoseSegmentation } from "expo-mediapipe-pose";
+
+async function readPoseMasks(localUri: string) {
+  const detection = await analyzePoseImage(localUri, {
+    segmentationEnabled: true,
+    maskMaxDimension: 256,
+  });
+  const segmentation = detection.segmentation;
+  if (segmentation === undefined) throw new Error("Requested masks were not returned");
+  if (segmentation.status !== "available") return segmentation;
+  try {
+    const pngs: Uint8Array[] = [];
+    for (const mask of segmentation.masks) {
+      pngs.push(await new File(mask.uri).bytes());
+    }
+    return { status: "available" as const, pngs };
+  } finally {
+    await releasePoseSegmentation(segmentation.leaseId);
+  }
+}
+```
+
+Ownership transfers to the consumer when a result is delivered. Call `releasePoseSegmentation(leaseId)` after every use, including errors, or after the UI stops displaying that result. Release is idempotent and deletes only that lease. At most **two result leases**, each with at most six mask files, exist per module. They are app-cache resources, invalid after release or module teardown; do not persist their URIs. The first enabled segmentation result in a process removes files left by an interrupted previous process, including when no pose is detected. Cache eviction can also invalidate a URI; use `onError` where needed.
+
+The reader above uses the optional `expo-file-system` package and copies PNG bytes before releasing the files. If image result validation and mask cleanup both fail, `analyzePoseImage` rejects with an `AggregateError` whose `cause` is the validation error and whose `errors` retain both failures.
+
+Camera segmentation requires an `onLandmark` consumer. The library releases masks for discarded native generations, inactive/invalid JS events and synchronously failing handlers. Image/video decoding failures and video cancellation release masks that were never delivered. Already-delivered masks remain consumer-owned, even after video cancellation or `break`. Always release them in your consumer's `finally` block. Recording APIs deliberately omit segmentation handles and neither persist nor release consumer-owned mask files.
+
+Use `callbackFps`/`frameLimit` to manage camera load. Backpressure bounds exported resources; it does not disable the SDK's requested segmentation computation. Mask output can be composited through the overlay or read using a file library of your choice; no float arrays or base64 images cross the result bridge.
+
+Native fixtures verify disabled output, PNG headers/dimensions, orientation, two-lease backpressure, isolated/idempotent release, multiple masks, startup cleanup and video cleanup. `scripts/verify-mask-fixtures.py` compares actual exported alpha pixels with Google's reference mask (IoU ≥ 0.90 at alpha ≥ 128); simulator/emulator tests do not establish physical-camera alignment or throughput. SDK ownership follows the official [iOS Mask API](https://developers.google.com/edge/api/mediapipe/objc/vision/Classes/MPPMask.html) and [Android buffer extraction API](https://developers.google.com/edge/api/mediapipe/java/com/google/mediapipe/framework/image/ByteBufferExtractor).
