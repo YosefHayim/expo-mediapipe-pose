@@ -159,5 +159,11 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 		},
 		[commit, resetRuntime],
 	);
-	return { statuses, update, reset };
+	const configuredStatuses = Object.fromEntries(
+		Object.keys(rules).map((id) => {
+			if (!Object.hasOwn(statuses, id)) return [id, "unknown"];
+			return [id, statuses[id as Id]];
+		}),
+	) as Readonly<Record<Id, PoseRuleStatus>>;
+	return { statuses: configuredStatuses, update, reset };
 };

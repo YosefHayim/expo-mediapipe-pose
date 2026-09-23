@@ -54,6 +54,13 @@ it("maintains independent named rules through changes, expiry, removal and reset
 	};
 	const Harness = ({ rules }: { rules: Record<string, PoseRuleOptions> }) => {
 		result = usePoseRules(rules);
+		assert.deepEqual(
+			Object.keys(result.statuses).sort(),
+			Object.keys(rules).sort(),
+		);
+		assert.ok(
+			Object.values(result.statuses).every((status) => status !== undefined),
+		);
 		return null;
 	};
 	const render = async (rules: Record<string, PoseRuleOptions>) => {
