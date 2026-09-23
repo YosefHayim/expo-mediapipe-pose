@@ -57,7 +57,7 @@ Supported body parts: `face`, `leftArm`, `rightArm`, `leftWrist`, `rightWrist`, 
 `usePoseRule({ landmarks, evaluate, minVisibility, holdMs, staleAfterMs, isActive, onChange })` returns `{ status, update, reset }`.
 
 - `landmarks`: non-empty list required by the predicate. Its names determine the typed `evaluate` input.
-- `evaluate`: synchronous application function returning a boolean. It is called only when all required joints have adequate visibility and, when available, presence. Errors thrown by application functions are not swallowed.
+- `evaluate`: synchronous application function receiving `(pose, frame)` and returning a boolean or `"unknown"`. Return `"unknown"` when a derived measurement is unavailable. It is called only when all required joints have adequate visibility and, when available, presence. Errors thrown by application functions are not swallowed.
 - `minVisibility`: defaults to 0.6; must be 0–1. Missing confidence or coordinates yields `unknown`.
 - `holdMs`: defaults to 0; non-negative duration a candidate condition must remain consistent before committing. The prior committed result stays visible during confirmation. Unknown input clears it immediately.
 - `staleAfterMs`: defaults to 500; positive interval without an update before invalidating feedback. No new frame is needed to expire it.
@@ -65,6 +65,31 @@ Supported body parts: `face`, `leftArm`, `rightArm`, `leftWrist`, `rightWrist`, 
 - `onChange`: receives `pass`, `fail` or `unknown` only when the committed state changes. The initial unknown state is not a transition notification.
 
 Connect `update` to `onLandmark`, and `reset` to camera configuration/error callbacks. The hook also detects restarted frame counters. Threshold, landmark, duration and active-state changes reset history. Inline predicates/callbacks use their latest committed versions; call `reset` when changing the semantic meaning of a predicate and you need a fresh hold window. Unmount clears its timer. Conditions run on the JS thread, so keep them small and synchronous.
+
+## Angles and distances
+
+`getImageJointAngle(input, start, vertex, end, options?)` and `getImageDistance(input, start, end, options?)` accept `{ landmarks, imageSize: { width, height } }`. Use the inference image dimensions (`frame.additionalData`), not preview bounds. Image angles use scaled x/y coordinates, excluding estimated z; distances are in inference-image pixels. This accounts for image aspect ratio and does not mirror coordinates again.
+
+`getWorldJointAngle({ worldLandmarks }, start, vertex, end, options?)` and `getWorldDistance({ worldLandmarks }, start, end, options?)` use all three world axes. Angles are 0–180 degrees, with the middle named joint as the vertex. World distances are model estimates in meters, not calibrated physical measurements. These coordinate definitions follow [Google's Pose Landmarker output contract](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/python#handle_and_display_results).
+
+Every helper returns `{ status: "available", value, unit }` or `{ status: "unavailable", reason }`. Units are `degrees`, `pixels` or `meters`. Reasons are `missing-landmark`, `uncertain-landmark`, `invalid-coordinates` and `degenerate-angle`. Coincident angle endpoints are degenerate; zero distance is valid. Input arrays are never modified. `minVisibility` defaults to 0.6; present presence must also meet the threshold. Missing visibility remains unknown. Invalid confidence options or non-positive/non-finite image dimensions throw `RangeError`.
+
+```tsx
+const bentElbow = usePoseRule({
+  landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
+  holdMs: 250,
+  evaluate: (_pose, frame) => {
+    const angle = getImageJointAngle(
+      { landmarks: frame.landmarks, imageSize: frame.additionalData },
+      "leftShoulder", "leftElbow", "leftWrist",
+    );
+    if (angle.status === "unavailable") return "unknown";
+    return angle.value < 90;
+  },
+});
+```
+
+The example app displays this rule alongside wrist-height feedback. Applications choose their own thresholds; the library does not assign exercise correctness or clinical meaning.
 
 ## Errors and recovery
 
