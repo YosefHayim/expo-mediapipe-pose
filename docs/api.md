@@ -59,7 +59,7 @@ Supported body parts: `face`, `leftArm`, `rightArm`, `leftWrist`, `rightWrist`, 
 `usePoseRule({ landmarks, evaluate, minVisibility, holdMs, staleAfterMs, isActive, onChange })` returns `{ status, update, reset }`.
 
 - `landmarks`: non-empty list required by the predicate. Its names determine the typed `evaluate` input.
-- `evaluate`: synchronous application function receiving `(pose, frame, previousStatus)` and returning a boolean or `"unknown"`. Return `"unknown"` when a derived measurement is unavailable. It is called only when all required joints have adequate visibility and, when available, presence. Errors thrown by application functions are not swallowed.
+- `evaluate`: synchronous application function receiving `(pose, frame, previousOutcome)` and returning a boolean or `"unknown"`. Return `"unknown"` when a derived measurement is unavailable. `previousOutcome` is the previous evaluated outcome before hold confirmation; it enables stateful comparisons without mutable predicate closures. It is called only when all required joints have adequate visibility and, when available, presence. Errors thrown by application functions are not swallowed.
 - `minVisibility`: defaults to 0.6; must be 0–1. Missing confidence or coordinates yields `unknown`.
 - `holdMs`: defaults to 0; non-negative duration a candidate condition must remain consistent before committing. The prior committed result stays visible during confirmation. Unknown input clears it immediately.
 - `staleAfterMs`: defaults to 500; positive interval without an update before invalidating feedback. No new frame is needed to expire it.
@@ -100,7 +100,7 @@ The example app displays this rule alongside wrist-height feedback. Applications
 
 `definePoseRule(options)` preserves landmark inference when defining a reusable rule outside the hook call. The single-rule hook uses the same lifecycle implementation as the collection.
 
-`createThresholdRule({ landmarks, measure, direction, enterThreshold, exitThreshold, ...ruleOptions })` creates a rule with hysteresis. `measure(pose, frame)` returns a number or null. For `above`, entry is inclusive at the higher enter threshold and exit is inclusive at the lower exit threshold; `below` reverses these comparisons. Thresholds must be finite and distinct in the specified order. Values inside the band retain the previous committed status, including initial `unknown`. Null or non-finite measurements return unknown immediately. Changing thresholds/direction resets history automatically. Hold timing still applies to a candidate pass/fail outcome. The pure `evaluatePoseThreshold(value, previousStatus, threshold)` helper exposes this comparison without React.
+`createThresholdRule({ landmarks, measure, direction, enterThreshold, exitThreshold, ...ruleOptions })` creates a rule with hysteresis. `measure(pose, frame)` returns a number or null. For `above`, entry is inclusive at the higher enter threshold and exit is inclusive at the lower exit threshold; `below` reverses these comparisons. Thresholds must be finite and distinct in the specified order. Values inside the band retain the previous evaluated outcome, including initial `unknown`, so hysteresis remains effective during hold confirmation. Null or non-finite measurements return unknown immediately. Changing thresholds/direction resets history automatically. Hold timing still applies to a candidate pass/fail outcome. The pure `evaluatePoseThreshold(value, previousStatus, threshold)` helper exposes this comparison without React.
 
 ```tsx
 const feedback = usePoseRules({

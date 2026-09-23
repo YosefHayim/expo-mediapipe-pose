@@ -142,7 +142,11 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 				if (restarted || expired) resetRuntime(id, runtime);
 				if (revision.current !== updateRevision) break;
 				runtime.lastFrame = frame.additionalData.frameNumber;
-				const outcome = evaluatePoseRule(frame, options, runtime.state.status);
+				const outcome = evaluatePoseRule(
+					frame,
+					options,
+					runtime.state.candidate,
+				);
 				const next = advancePoseRule(
 					runtime.state,
 					outcome,

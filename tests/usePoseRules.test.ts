@@ -131,12 +131,17 @@ it("maintains independent named rules through changes, expiry, removal and reset
 			0,
 		);
 		let measuredAngle = 80;
-		const thresholdRule = (enterThreshold = 85, exitThreshold = 95) =>
+		const thresholdRule = (
+			enterThreshold = 85,
+			exitThreshold = 95,
+			holdMs = 0,
+		) =>
 			createThresholdRule({
 				landmarks: ["leftElbow"],
 				direction: "below",
 				enterThreshold,
 				exitThreshold,
+				holdMs,
 				measure: () => measuredAngle,
 			});
 		await render({ elbow: thresholdRule() });
@@ -156,6 +161,20 @@ it("maintains independent named rules through changes, expiry, removal and reset
 		measuredAngle = 69;
 		await send();
 		assert.equal(current().statuses.elbow, "pass");
+		await render({ elbow: thresholdRule(85, 95, 100) });
+		measuredAngle = 80;
+		await send();
+		assert.equal(current().statuses.elbow, "unknown");
+		measuredAngle = 90;
+		await send(50);
+		await send(50);
+		assert.equal(current().statuses.elbow, "pass");
+		measuredAngle = 95;
+		await send();
+		measuredAngle = 90;
+		await send(50);
+		await send(50);
+		assert.equal(current().statuses.elbow, "fail");
 		await render({});
 		assert.deepEqual(current().statuses, {});
 		let followingEvaluations = 0;

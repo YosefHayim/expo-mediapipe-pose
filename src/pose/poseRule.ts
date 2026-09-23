@@ -9,7 +9,7 @@ export interface PoseRuleOptions<Name extends LandmarkName = LandmarkName> {
 	evaluate: (
 		pose: Readonly<Record<Name, Landmark>>,
 		frame: PoseFrame,
-		previousStatus: PoseRuleStatus,
+		previousOutcome: PoseRuleStatus,
 	) => boolean | "unknown";
 	minVisibility?: number;
 	holdMs?: number;
@@ -61,7 +61,7 @@ export const validatePoseRuleOptions = (
 export const evaluatePoseRule = <Name extends LandmarkName>(
 	frame: PoseFrame,
 	options: PoseRuleOptions<Name>,
-	previousStatus: PoseRuleStatus = "unknown",
+	previousOutcome: PoseRuleStatus = "unknown",
 ): PoseRuleStatus => {
 	if (options.isActive === false) return "unknown";
 	const pose = getNamedLandmarks(frame);
@@ -80,7 +80,7 @@ export const evaluatePoseRule = <Name extends LandmarkName>(
 	const outcome = options.evaluate(
 		pose as Record<Name, Landmark>,
 		frame,
-		previousStatus,
+		previousOutcome,
 	);
 	if (outcome === "unknown") return "unknown";
 	return outcome ? "pass" : "fail";
