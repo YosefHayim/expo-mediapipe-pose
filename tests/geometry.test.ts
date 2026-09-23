@@ -177,3 +177,31 @@ it("feeds geometry into rules while retaining explicit unknown measurements", ()
 	frame.landmarks[15] = { x: 0, y: 0, z: 0, visibility: 1 };
 	assert.equal(evaluatePoseRule(frame, options), "unknown");
 });
+
+it("shares confidence policy between standalone measurements and rules", () => {
+	for (const confidence of [
+		{},
+		{ visibility: 1.1 },
+		{ visibility: 0.9, presence: 1.1 },
+		{ visibility: 0.9, presence: NaN },
+		{ visibility: 0.4 },
+	]) {
+		const frame = { ...poseFrame(), landmarks: geometry().landmarks };
+		frame.landmarks[15] = { x: 1, y: 1, z: 0, ...confidence };
+		assert.equal(
+			evaluatePoseRule(frame, {
+				landmarks: ["leftWrist"],
+				evaluate: () => true,
+			}),
+			"unknown",
+		);
+		assert.equal(
+			getImageDistance(
+				{ landmarks: frame.landmarks, imageSize: frame.additionalData },
+				"leftElbow",
+				"leftWrist",
+			).status,
+			"unavailable",
+		);
+	}
+});

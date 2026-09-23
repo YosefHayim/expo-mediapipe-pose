@@ -1,4 +1,5 @@
 import type { Landmark } from "../contracts";
+import { hasLandmarkConfidence } from "./confidence";
 import { LANDMARK_NAMES, type LandmarkName } from "./landmarks";
 
 export interface GeometryOptions {
@@ -35,14 +36,6 @@ const validateConfidence = (options: GeometryOptions) => {
 		throw new RangeError("minVisibility must be between 0 and 1");
 	return minimum;
 };
-const hasConfidence = (joint: Landmark, minimum: number) => {
-	if (joint.visibility === undefined) return false;
-	if (!Number.isFinite(joint.visibility)) return false;
-	if (joint.visibility < minimum || joint.visibility > 1) return false;
-	if (joint.presence === undefined) return true;
-	if (!Number.isFinite(joint.presence)) return false;
-	return joint.presence >= minimum && joint.presence <= 1;
-};
 const readPoints = (
 	landmarks: readonly Landmark[],
 	names: readonly LandmarkName[],
@@ -54,7 +47,7 @@ const readPoints = (
 	for (const name of names) {
 		const joint = landmarks[LANDMARK_NAMES.indexOf(name)];
 		if (!joint) return { status: "unavailable", reason: "missing-landmark" };
-		if (!hasConfidence(joint, minimum))
+		if (!hasLandmarkConfidence(joint, minimum))
 			return { status: "unavailable", reason: "uncertain-landmark" };
 		const point = project(joint);
 		if (!point.every(Number.isFinite))

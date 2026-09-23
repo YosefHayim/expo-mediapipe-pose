@@ -1,4 +1,5 @@
 import type { Landmark, PoseFrame } from "../contracts";
+import { hasLandmarkConfidence } from "./confidence";
 import { getNamedLandmarks, type LandmarkName } from "./landmarks";
 
 export type PoseRuleStatus = "pass" | "fail" | "unknown";
@@ -66,12 +67,7 @@ export const evaluatePoseRule = <Name extends LandmarkName>(
 			Number.isFinite,
 		);
 		if (!coordinatesAreFinite) return true;
-		if (joint.visibility === undefined) return true;
-		if (!Number.isFinite(joint.visibility)) return true;
-		if (joint.visibility < minimumConfidence) return true;
-		if (joint.presence === undefined) return false;
-		if (!Number.isFinite(joint.presence)) return true;
-		return joint.presence < minimumConfidence;
+		return !hasLandmarkConfidence(joint, minimumConfidence);
 	});
 	if (hasUncertainLandmark) return "unknown";
 	// Every requested key has been checked above; other landmarks remain optional internally.

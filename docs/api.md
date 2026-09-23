@@ -74,7 +74,7 @@ Connect `update` to `onLandmark`, and `reset` to camera configuration/error call
 
 `getWorldJointAngle({ worldLandmarks }, start, vertex, end, options?)` and `getWorldDistance({ worldLandmarks }, start, end, options?)` use all three world axes. Angles are 0–180 degrees, with the middle named joint as the vertex. World distances are model estimates in meters, not calibrated physical measurements. These coordinate definitions follow [Google's Pose Landmarker output contract](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/python#handle_and_display_results).
 
-Every helper returns `{ status: "available", value, unit }` or `{ status: "unavailable", reason }`. Units are `degrees`, `pixels` or `meters`. Reasons are `missing-landmark`, `uncertain-landmark`, `invalid-coordinates` and `degenerate-angle`. Coincident angle endpoints are degenerate; zero distance is valid. Input arrays are never modified. `minVisibility` defaults to 0.6; present presence must also meet the threshold. Missing visibility remains unknown. Invalid confidence options or non-positive/non-finite image dimensions throw `RangeError`.
+Every helper returns `{ status: "available", value, unit }` or `{ status: "unavailable", reason }`. Units are `degrees`, `pixels` or `meters`. Reasons are `missing-landmark`, `uncertain-landmark`, `invalid-coordinates` and `degenerate-angle`. An endpoint coinciding with the vertex makes the angle degenerate; zero distance is valid. Input arrays are never modified. `minVisibility` defaults to 0.6; present presence must also meet the threshold. Missing visibility remains unknown. Invalid confidence options or non-positive/non-finite image dimensions throw `RangeError`.
 
 ```tsx
 const bentElbow = usePoseRule({
