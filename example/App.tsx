@@ -2,6 +2,7 @@ import { useCameraPermissions } from "expo-camera";
 import {
 	type InferenceError,
 	PoseCameraView,
+	type PosePerformanceMetrics,
 	type PoseRuleStatus,
 	usePoseRule,
 } from "expo-mediapipe-pose";
@@ -37,6 +38,10 @@ export default function App() {
 	);
 	const [failure, setFailure] = React.useState<InferenceError | null>(null);
 	const [cameraKey, setCameraKey] = React.useState(0);
+	const [frameLimit, setFrameLimit] = React.useState(15);
+	const [metrics, setMetrics] = React.useState<PosePerformanceMetrics | null>(
+		null,
+	);
 	const isActive = foreground && !paused;
 	const raisedArm = usePoseRule({
 		landmarks: ["leftWrist", "leftShoulder"],
@@ -103,7 +108,10 @@ export default function App() {
 				style={styles.camera}
 				cameraFacing={cameraFacing}
 				isActive={isActive}
-				frameLimit={15}
+				frameLimit={frameLimit}
+				previewFps={30}
+				callbackFps={5}
+				onPerformanceMetrics={setMetrics}
 				onLandmark={raisedArm.update}
 				onCameraConfigured={handleConfiguration}
 				onInferenceError={handleFailure}
@@ -112,6 +120,16 @@ export default function App() {
 					bodyParts: ["leftArm", "torso"],
 					joints: { leftWrist: { radius: 8 } },
 				}}
+			/>
+			{metrics && (
+				<Text style={styles.text}>
+					Inference: {metrics.inferenceFps.toFixed(1)} fps · Results:{" "}
+					{metrics.resultFps.toFixed(1)} fps
+				</Text>
+			)}
+			<Button
+				title={`Inference limit: ${frameLimit} fps`}
+				onPress={() => setFrameLimit((previous) => (previous === 15 ? 30 : 15))}
 			/>
 			{failure && (
 				<View>

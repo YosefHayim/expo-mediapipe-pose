@@ -4,7 +4,7 @@ public class ExpoMediaPipePoseModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ExpoMediaPipePose")
     View(ExpoMediaPipePoseView.self) {
-      Events("onCameraConfigured", "onLandmark", "onInferenceError")
+      Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
       Prop("isActive") { (view: ExpoMediaPipePoseView, active: Bool) in view.isActive = active }
       Prop("cameraFacing") { (view: ExpoMediaPipePoseView, facing: String) in
         view.options.facing = facing
@@ -14,7 +14,15 @@ public class ExpoMediaPipePoseModule: Module {
         view.options.zoom = zoom
       }
       Prop("frameLimit") { (view: ExpoMediaPipePoseView, limit: Int) in
-        view.options.frameLimit = limit
+        view.processingOptions.frameLimit = limit
+      }
+      Prop("previewFps") { (view: ExpoMediaPipePoseView, fps: Int) in view.options.previewFps = fps
+      }
+      Prop("callbackFps") { (view: ExpoMediaPipePoseView, fps: Int) in
+        view.processingOptions.callbackFps = fps
+      }
+      Prop("performanceMetricsEnabled") { (view: ExpoMediaPipePoseView, enabled: Bool) in
+        view.processingOptions.metricsEnabled = enabled
       }
       Prop("poseModelVariant") { (view: ExpoMediaPipePoseView, variant: String) in
         view.options.modelVariant = variant

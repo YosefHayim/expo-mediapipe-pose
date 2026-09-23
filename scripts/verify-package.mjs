@@ -36,11 +36,13 @@ try {
 		"ios/ExpoMediaPipePoseModule.swift",
 		"ios/ExpoMediaPipePoseView.swift",
 		"ios/PoseCameraOptions.swift",
+		"ios/PoseFrameTiming.swift",
 		"android/build.gradle",
 		"android/src/main/AndroidManifest.xml",
 		"android/src/main/java/expo/modules/mediapipepose/ExpoMediaPipePoseModule.kt",
 		"android/src/main/java/expo/modules/mediapipepose/ExpoMediaPipePoseView.kt",
 		"android/src/main/java/expo/modules/mediapipepose/PoseCameraOptions.kt",
+		"android/src/main/java/expo/modules/mediapipepose/PoseFrameTiming.kt",
 		"assets/pose_landmarker_full.task",
 	];
 	for (const definition of Object.values(manifest.exports)) {

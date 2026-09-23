@@ -10,7 +10,9 @@ The component accepts React Native `ViewProps`, including `style`, `onLayout` an
 | `cameraFacing` | `front` | `front` or `back`. Preview and inference input mirror together on front. |
 | `cameraLens` | `auto` | `auto`/`wide` select the default wide camera. Explicit `ultraWide` works on supported iOS cameras; unavailable requests fail. Android rejects `ultraWide`. |
 | `cameraZoomFactor` | `1` | Finite value at least 1, clamped to supported device bounds. Applied zoom is acknowledged. |
-| `frameLimit` | `30` | Integer 1–60; caps inference cadence. Actual cadence depends on camera and inference throughput. |
+| `frameLimit` | `30` | Integer 1–60; caps inference cadence without restarting the detector. |
+| `previewFps` | `30` | Integer 1–60; native capture target. Unsupported device rates report `cameraConfiguration`. Changes reconfigure capture. |
+| `callbackFps` | `30` | Integer 1–60; caps landmark events delivered to JavaScript without restarting capture. |
 | `poseModelVariant` | `full` | `full`, `lite` or `heavy`. Only full is bundled. |
 | `poseModelAssetPath` | `null` | Absolute local file path or `file://` URI. Required for lite/heavy. No model download occurs in the module. |
 | `minPoseDetectionConfidence` | `0.35` | MediaPipe detector threshold, 0–1. |
@@ -19,6 +21,14 @@ The component accepts React Native `ViewProps`, including `style`, `onLayout` an
 | `skeleton` | `true` | `false`, `true`, or `SkeletonOptions`. Disabled overlays avoid internal per-frame React state updates. |
 
 `onCameraConfigured(configuration)` acknowledges effective facing/lens/zoom, mirroring and actual inference dimensions before landmarks. `onLandmark(frame)` is optional. `onInferenceError(error)` reports a stable code. Changing capture/model options restarts capture; changing skeleton styles does not. Backgrounding/detaching stops native work. Events from earlier capture generations are discarded.
+
+## Frame rates and performance
+
+For a 30 fps capture target with at most 15 inferences and 5 JavaScript landmark events per second, set `previewFps={30}`, `frameLimit={15}` and `callbackFps={5}`. These are independent targets/caps, not guaranteed throughput. Result cadence cannot exceed inference cadence. Lowering callback FPS reduces event conversion/bridge work; it does not reduce detector work. Lowering the inference limit skips detector calls while keeping preview capture active. Intermediate camera frames may also be dropped by the platform when the analyzer is busy.
+
+`onPerformanceMetrics(metrics)` enables optional measurements approximately once per second while frames arrive. `intervalMs` is the measured window. `observedFrames`, `inferenceCount`, `resultCount` and `skippedInferenceFrames` count analyzer arrivals, completed inferences, dispatched results and rate-limited inference skips. `observedFps`, `inferenceFps` and `resultFps` divide their counts by the window duration. `averageInferenceDurationMs` is null when the window contains no completed inference. Observed FPS is analyzer throughput, not display refresh or the sensor's total frame count; platform-dropped frames are not counted. Stopping capture stops metrics, and restarting resets the window. Changing processing rates preserves detector tracking and frame numbering.
+
+Low callback rates require an appropriate `usePoseRule.staleAfterMs`; the hook's default remains 500 ms. Metrics exclude preprocessing and bridge delivery time. No automatic quality switching or thermal policy is applied.
 
 ## Frames and coordinates
 
@@ -36,7 +46,7 @@ Metadata includes dimensions, effective camera settings, frame number, model sou
 
 Supported body parts: `face`, `leftArm`, `rightArm`, `leftWrist`, `rightWrist`, `torso`, `leftLeg`, `rightLeg`, `leftAnkle`, `rightAnkle`. Wrist groups include the hand landmarks; ankle groups include heel and foot landmarks. An omitted list selects all groups, an empty list selects none. Selected groups form a union; shared joints appear once. An optional `landmarks` list further restricts the selection. This reproduces the body-region controls of the preceding ThinkSys integration with one typed selection API.
 
-`joints` maps landmark names to `{ color, radius }` overrides. `connections` maps keys such as `leftElbow:leftWrist` to `{ color, width }` overrides; see exported `POSE_CONNECTIONS` for canonical order. An edge renders only when both endpoints are selected and visible. Missing visibility is treated as unknown and is not rendered. The camera clears stale overlay frames after 500 ms and clears them on camera reconfiguration/error.
+`joints` maps landmark names to `{ color, radius }` overrides. `connections` maps keys such as `leftElbow:leftWrist` to `{ color, width }` overrides; see exported `POSE_CONNECTIONS` for canonical order. An edge renders only when both endpoints are selected and visible. Missing visibility is treated as unknown and is not rendered. The camera clears stale overlay frames after the greater of 500 ms or two expected result intervals (`2000 / Math.min(frameLimit, callbackFps)`) and clears them on camera reconfiguration/error.
 
 `PoseSkeleton` is also exported independently. Supply `frame`, view `width`/`height`, and the styling options. Its parent is responsible for clipping, stale-frame handling and using a matching preview transform.
 

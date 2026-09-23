@@ -4,7 +4,7 @@ struct PoseCameraOptions: Equatable {
   var facing = "front"
   var lens = "auto"
   var zoom = 1.0
-  var frameLimit = 30
+  var previewFps = 30
   var modelVariant = "full"
   var modelPath: String?
   var orientation = AVCaptureVideoOrientation.portrait
@@ -16,7 +16,7 @@ struct PoseCameraOptions: Equatable {
     guard ["auto", "wide", "ultraWide"].contains(lens) else { return false }
     guard ["lite", "full", "heavy"].contains(modelVariant) else { return false }
     guard zoom.isFinite && zoom >= 1 else { return false }
-    guard (1...60).contains(frameLimit) else { return false }
+    guard (1...60).contains(previewFps) else { return false }
     let confidenceValues = [
       minPoseDetectionConfidence, minPosePresenceConfidence, minTrackingConfidence,
     ]

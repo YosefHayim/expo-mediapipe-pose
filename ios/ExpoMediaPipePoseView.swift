@@ -4,9 +4,11 @@ import MediaPipeTasksVision
 
 final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelegate {
   var options = PoseCameraOptions()
+  var processingOptions = PoseProcessingOptions()
   var isActive = true
   let onCameraConfigured = EventDispatcher()
   let onLandmark = EventDispatcher()
+  let onPerformanceMetrics = EventDispatcher()
   let onInferenceError = EventDispatcher()
 
   private let session = AVCaptureSession()
@@ -25,6 +27,8 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   private var acknowledged = false
   private var frameNumber = 0
   private var lastTimestamp = -1
+  private var appliedProcessingOptions = PoseProcessingOptions()
+  private var frameTiming = PoseFrameTiming()
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
@@ -90,6 +94,13 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     let viewIsVisible = window != nil && !bounds.isEmpty
     let shouldCapture = isActive && applicationIsActive && viewIsVisible
     let desired = shouldCapture ? options : nil
+    if shouldCapture && !processingOptions.isValid {
+      requestedOptions = desired
+      emitFailure("cameraConfiguration", token: generation)
+      return
+    }
+    let processing = processingOptions
+    worker.async { [weak self] in self?.appliedProcessingOptions = processing }
     guard desired != requestedOptions else { return }
     requestedOptions = desired
     generation += 1
@@ -141,6 +152,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
       acknowledged = false
       frameNumber = 0
       lastTimestamp = -1
+      frameTiming = PoseFrameTiming()
       session.startRunning()
     } catch {
       stopCapture()
@@ -214,23 +226,24 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     videoOutput = output
     try camera.lockForConfiguration()
     defer { camera.unlockForConfiguration() }
-    let frameRate = Double(requested.frameLimit)
+    let frameRate = Double(requested.previewFps)
     let formats = camera.formats.filter { format in
       format.videoSupportedFrameRateRanges.contains {
         $0.minFrameRate <= frameRate && $0.maxFrameRate >= frameRate
       }
     }
-    if let format = formats.min(by: { first, second in
-      let firstSize = CMVideoFormatDescriptionGetDimensions(first.formatDescription)
-      let secondSize = CMVideoFormatDescriptionGetDimensions(second.formatDescription)
-      return abs(Int(firstSize.width) * Int(firstSize.height) - 1280 * 720)
-        < abs(Int(secondSize.width) * Int(secondSize.height) - 1280 * 720)
-    }) {
-      camera.activeFormat = format
-      let interval = CMTime(value: 1, timescale: Int32(requested.frameLimit))
-      camera.activeVideoMinFrameDuration = interval
-      camera.activeVideoMaxFrameDuration = interval
-    }
+    guard
+      let format = formats.min(by: { first, second in
+        let firstSize = CMVideoFormatDescriptionGetDimensions(first.formatDescription)
+        let secondSize = CMVideoFormatDescriptionGetDimensions(second.formatDescription)
+        return abs(Int(firstSize.width) * Int(firstSize.height) - 1280 * 720)
+          < abs(Int(secondSize.width) * Int(secondSize.height) - 1280 * 720)
+      })
+    else { throw CameraFailure.unavailableCamera }
+    camera.activeFormat = format
+    let interval = CMTime(value: 1, timescale: Int32(requested.previewFps))
+    camera.activeVideoMinFrameDuration = interval
+    camera.activeVideoMaxFrameDuration = interval
     appliedZoom = min(
       max(requested.zoom, max(1, Double(camera.minAvailableVideoZoomFactor))),
       min(100, Double(camera.maxAvailableVideoZoomFactor)))
@@ -258,10 +271,15 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
       let pixels = CMSampleBufferGetImageBuffer(sampleBuffer)
     else { return }
     let token = captureGeneration
-    let timestamp = Int(CACurrentMediaTime() * 1000)
-    guard timestamp > lastTimestamp,
-      lastTimestamp < 0 || timestamp - lastTimestamp >= 1000 / requested.frameLimit
-    else { return }
+    let nowMs = CACurrentMediaTime() * 1000
+    let processing = appliedProcessingOptions
+    let performance = frameTiming.observeFrame(at: nowMs)
+    if processing.metricsEnabled, let performance {
+      emit(onPerformanceMetrics, performance.event, token: token)
+    }
+    guard frameTiming.shouldInfer(at: nowMs, fps: processing.frameLimit) else { return }
+    let timestamp = Int(nowMs)
+    guard timestamp > lastTimestamp else { return }
     lastTimestamp = timestamp
     let width = CVPixelBufferGetWidth(pixels)
     let height = CVPixelBufferGetHeight(pixels)
@@ -282,6 +300,8 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
       let inferenceStartedAt = CACurrentMediaTime()
       let inference = try detector.detect(videoFrame: frame, timestampInMilliseconds: timestamp)
       let inferenceDurationMs = (CACurrentMediaTime() - inferenceStartedAt) * 1000
+      frameTiming.recordInference(durationMs: inferenceDurationMs)
+      guard frameTiming.shouldDeliver(at: nowMs, fps: processing.callbackFps) else { return }
       let landmarks = (inference.landmarks.first ?? []).map { joint -> [String: Any] in
         var coordinates: [String: Any] = ["x": joint.x, "y": joint.y, "z": joint.z]
         if let visibility = joint.visibility { coordinates["visibility"] = visibility }

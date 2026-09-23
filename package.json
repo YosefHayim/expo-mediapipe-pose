@@ -7,7 +7,7 @@
 	"files": [
 		"src",
 		"ios/*.swift",
-		"android/src",
+		"android/src/main",
 		"android/build.gradle",
 		"assets",
 		"ExpoMediaPipePose.podspec",

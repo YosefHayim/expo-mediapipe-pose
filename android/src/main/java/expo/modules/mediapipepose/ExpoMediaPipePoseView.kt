@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.os.SystemClock
+import android.util.Range
 import android.util.Size
 import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
@@ -43,9 +44,12 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
     ExpoView(context, appContext), LifecycleEventObserver {
     override val shouldUseAndroidLayout = true
     var options = PoseCameraOptions()
+    var processingOptions = PoseProcessingOptions()
+    @Volatile private var appliedProcessingOptions = PoseProcessingOptions()
     var isActive = true
     private val onCameraConfigured by EventDispatcher()
     private val onLandmark by EventDispatcher()
+    private val onPerformanceMetrics by EventDispatcher<Map<String, Any?>>()
     private val onInferenceError by EventDispatcher()
     private val previewView =
         PreviewView(context).apply {
@@ -125,6 +129,12 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         val lifecycleIsStarted = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
         if (destroyed || !viewIsVisible) return
         if (!lifecycleIsStarted) return
+        if (!processingOptions.isValid()) {
+            requestedOptions = options
+            emitFailure("cameraConfiguration", generation.get())
+            return
+        }
+        appliedProcessingOptions = processingOptions
         if (requestedOptions == options) return
         stopCapture()
         val requested = options
@@ -209,8 +219,15 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                 try {
                     val activeProvider = cameraProvider.get()
                     provider = activeProvider
+                    val selector =
+                        if (requested.facing == "front") CameraSelector.DEFAULT_FRONT_CAMERA
+                        else CameraSelector.DEFAULT_BACK_CAMERA
+                    val cameraInfo = activeProvider.getCameraInfo(selector)
+                    val targetFrameRate = Range(requested.previewFps, requested.previewFps)
+                    require(cameraInfo.supportedFrameRateRanges.contains(targetFrameRate))
                     val cameraPreview =
                         Preview.Builder()
+                            .setTargetFrameRate(targetFrameRate)
                             .setTargetResolution(Size(1280, 720))
                             .setTargetRotation(requested.rotation)
                             .build()
@@ -224,11 +241,6 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                     preview = cameraPreview
                     analysis = cameraAnalysis
                     cameraPreview.setSurfaceProvider(previewView.surfaceProvider)
-                    // Explicit ultra-wide selection is rejected until physical lens selection is
-                    // supported.
-                    val selector =
-                        if (requested.facing == "front") CameraSelector.DEFAULT_FRONT_CAMERA
-                        else CameraSelector.DEFAULT_BACK_CAMERA
                     val viewport = requireNotNull(previewView.viewPort)
                     val useCases =
                         UseCaseGroup.Builder()
@@ -279,17 +291,24 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         var frameNumber = 0
         var lastTimestamp = -1L
         var failed = false
+        val frameTiming = PoseFrameTiming()
         cameraAnalysis.setAnalyzer(worker) { cameraImage ->
             var rotatedPixels: Bitmap? = null
             var inputImage: MPImage? = null
             try {
-                val timestamp = SystemClock.uptimeMillis()
                 if (generation.get() != token) return@setAnalyzer
                 if (failed) return@setAnalyzer
+                val nowMs = SystemClock.elapsedRealtimeNanos() / 1_000_000.0
+                val processing = appliedProcessingOptions
+                val performance = frameTiming.observeFrame(nowMs)
+                val metricsRequested = processing.metricsEnabled && performance != null
+                if (metricsRequested) {
+                    val event = requireNotNull(performance).event
+                    emit(token) { onPerformanceMetrics(event) }
+                }
+                if (!frameTiming.shouldInfer(nowMs, processing.frameLimit)) return@setAnalyzer
+                val timestamp = nowMs.toLong()
                 if (timestamp <= lastTimestamp) return@setAnalyzer
-                val frameArrivedTooSoon =
-                    lastTimestamp >= 0 && timestamp - lastTimestamp < 1000 / requested.frameLimit
-                if (frameArrivedTooSoon) return@setAnalyzer
                 lastTimestamp = timestamp
                 val activeDetector = detector ?: return@setAnalyzer
                 val receivedAt = System.currentTimeMillis()
@@ -315,6 +334,8 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                 val inference = activeDetector.detectForVideo(image, timestamp)
                 val inferenceDurationMs =
                     (SystemClock.elapsedRealtimeNanos() - inferenceStartedAt) / 1_000_000.0
+                frameTiming.recordInference(inferenceDurationMs)
+                if (!frameTiming.shouldDeliver(nowMs, processing.callbackFps)) return@setAnalyzer
                 val landmarks =
                     inference.landmarks().firstOrNull().orEmpty().map { joint ->
                         mutableMapOf<String, Any>(
