@@ -93,6 +93,24 @@ const bentElbow = usePoseRule({
 
 The example app displays this rule alongside wrist-height feedback. Applications choose their own thresholds; the library does not assign exercise correctness or clinical meaning.
 
+## Tracking feedback
+
+`usePoseTracking({ landmarks, minVisibility, holdMs, staleAfterMs, isActive, onChange })` returns `{ status, missingLandmarks, uncertainLandmarks, update, reset }`. Pass `update` to camera/replay frame handling, `reset` to camera configuration/error handling, and the camera's active intent to `isActive`. Required landmarks must be a non-empty list. Confidence defaults to 0.6, acquisition hold to 0 ms and stale expiry to 500 ms; validation matches pose rules.
+
+| Status | Meaning |
+| --- | --- |
+| `searching` | Active, awaiting a result after mount/reset/options change. |
+| `acquiring` | All required joints are usable, but the acquisition hold is not complete. |
+| `found` | Required joints have remained usable for the configured hold. |
+| `lost` | The latest result contains no pose landmarks. |
+| `incomplete` | A pose was detected but required landmarks are missing or uncertain. |
+| `stale` | No update arrived before `staleAfterMs`; no new frame is needed to expire feedback. |
+| `inactive` | Application paused tracking. Incoming updates are ignored. |
+
+`missingLandmarks` lists absent required joints; `uncertainLandmarks` lists joints with insufficient/unknown confidence or invalid coordinates. Lists are deduplicated in configuration order and are empty outside `incomplete`. `onChange(state)` fires only when the status or either list changes, using the latest committed callback; initial state is not a notification. Use `state.status === "found"` or `"lost"` for application triggers.
+
+Loss and uncertainty invalidate tracking immediately. `holdMs` stabilizes acquisition only. Stale input and restarted frame counters discard the acquisition history. Updating confidence, required joints, durations or active state resets tracking; unmount clears its timer. Timing uses the hook's monotonic wall clock. This describes landmark availability, not persistent person identity or exercise correctness. `inspectPoseTracking(frame, options)` exposes the immediate frame inspection without React, hold timing or stale timers. The example displays left-arm positioning feedback.
+
 ## Errors and recovery
 
 Codes: `cameraPermission`, `cameraConfiguration`, `cameraRuntime`, `modelInitialization`, `inferenceRuntime`, `nativeViewInitialization`, `invalidNativeEvent`. Native payloads never include raw exceptions or device paths. Invalid payloads report `invalidNativeEvent`, rather than being presented as valid detection results.
