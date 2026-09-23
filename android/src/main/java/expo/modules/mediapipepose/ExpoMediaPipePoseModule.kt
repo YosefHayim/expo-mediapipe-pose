@@ -1,10 +1,15 @@
 package expo.modules.mediapipepose
 
 import expo.modules.kotlin.Promise
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class ExpoMediaPipePoseModule : Module() {
+    private val photoDispatcher = Dispatchers.Default.limitedParallelism(1)
+
     override fun definition() = ModuleDefinition {
         Name("ExpoMediaPipePose")
         AsyncFunction("getCameraCapabilities") { promise: Promise ->
@@ -15,9 +20,13 @@ class ExpoMediaPipePoseModule : Module() {
             }
             PoseCameraCapabilities.discover(context, promise)
         }
-        AsyncFunction("analyzePoseImage") { location: String, options: PoseImageOptions ->
-            PoseImageAnalysis.analyze(requireNotNull(appContext.reactContext), location, options)
-        }
+        AsyncFunction("analyzePoseImage") Coroutine
+            { location: String, options: PoseImageOptions ->
+                val context = requireNotNull(appContext.reactContext).applicationContext
+                withContext(photoDispatcher) {
+                    PoseImageAnalysis.analyze(context, location, options)
+                }
+            }
         View(ExpoMediaPipePoseView::class) {
             Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
             Prop("isActive") { view: ExpoMediaPipePoseView, active: Boolean ->
