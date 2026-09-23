@@ -12,7 +12,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   let onInferenceError = EventDispatcher()
 
   private let session = AVCaptureSession()
-  var maskStore: PoseMaskStore?
+  private var maskStore: PoseMaskStore?
   private let worker = DispatchQueue(label: "expo.modules.mediapipepose", qos: .userInitiated)
   private lazy var preview = AVCaptureVideoPreviewLayer(session: session)
   // Main-thread identity invalidates queued events as soon as props or lifecycle change.
@@ -89,6 +89,10 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   }
 
   @objc private func cameraFailed() { cameraInterrupted() }
+
+  func setMaskStore(_ store: PoseMaskStore) {
+    worker.async { self.maskStore = store }
+  }
 
   func applyChanges() {
     let applicationIsActive = UIApplication.shared.applicationState == .active

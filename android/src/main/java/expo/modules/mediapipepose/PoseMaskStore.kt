@@ -45,6 +45,7 @@ internal class PoseMaskStore {
         maximumDimension: Int,
     ): Map<String, Any> {
         check(!closed.get()) { "Mask owner is closed" }
+        cleanPreviousProcessFiles(context.cacheDir)
         if (result.landmarks().isEmpty()) return mapOf("status" to "empty")
         if (leases.size >= 2) return mapOf("status" to "backpressure")
         val masks =
@@ -53,7 +54,6 @@ internal class PoseMaskStore {
             }
         check(masks.size == result.landmarks().size)
         val id = UUID.randomUUID().toString()
-        cleanPreviousProcessFiles(context.cacheDir)
         val root = File(context.cacheDir, directoryName)
         directory = root
         val folder = File(root, id)
@@ -106,8 +106,10 @@ internal class PoseMaskStore {
         CompletableFuture.runAsync {
             synchronized(this) {
                 val root = directory
-                if (root != null && !root.deleteRecursively())
+                if (root != null && !root.deleteRecursively()) {
                     Log.e("PoseMasks", "Mask cleanup failed")
+                    return@synchronized
+                }
                 leases.clear()
             }
         }

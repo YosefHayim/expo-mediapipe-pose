@@ -65,83 +65,111 @@ export async function runSegmentationChecks(
 	video: string,
 	cases: string[],
 ) {
-	const orphan = new Directory(
-		Paths.cache,
-		"expo-mediapipe-pose-masks-orphan-fixture",
-	);
-	orphan.create({ idempotent: true });
-	new File(orphan, "interrupted.txt").write("interrupted earlier process");
-	const beforeDisabled = maskFiles();
-	const disabled = await analyzePoseImage(photo);
-	verify(
-		disabled.segmentation === undefined,
-		"Segmentation must be disabled by default",
-	);
-	verify(
-		maskFiles() === beforeDisabled,
-		"Disabled mode must not write mask files",
-	);
-	cases.push("segmentation disabled without mask output");
-	const first = available(
-		await analyzePoseImage(photo, { segmentationEnabled: true }),
-	);
-	const firstFile = inspectMask(first, "mask-upright.png");
-	verify(!orphan.exists, "First mask output must clear previous-process files");
-	cases.push("previous-process mask cleanup");
-	const second = available(
-		await analyzePoseImage(rotated, { segmentationEnabled: true }),
-	);
-	const secondFile = inspectMask(second, "mask-rotated.png");
-	verify(
-		first.imageSize.width === second.imageSize.width &&
-			first.imageSize.height === second.imageSize.height,
-		"Mask image orientation must be upright",
-	);
-	cases.push("bounded RGBA masks and orientation metadata");
-	const blocked = await analyzePoseImage(photo, { segmentationEnabled: true });
-	verify(
-		blocked.segmentation?.status === "backpressure",
-		"Two outstanding leases must apply backpressure",
-	);
-	verify(
-		firstFile.exists && secondFile.exists,
-		"Backpressure must preserve leased masks",
-	);
-	await releasePoseSegmentation(first.leaseId);
-	await releasePoseSegmentation(first.leaseId);
-	verify(
-		!firstFile.exists && secondFile.exists,
-		"Release is idempotent and only deletes its own lease",
-	);
-	cases.push("mask backpressure and explicit isolated cleanup");
-	const people = available(
-		await analyzePoseImage(multiple, {
-			maxPoses: 2,
+	const leases = new Set<string>();
+	const failures: unknown[] = [];
+	const tracked = (detection: PoseDetection) => {
+		const segmentation = available(detection);
+		leases.add(segmentation.leaseId);
+		return segmentation;
+	};
+	try {
+		const orphan = new Directory(
+			Paths.cache,
+			"expo-mediapipe-pose-masks-orphan-fixture",
+		);
+		orphan.create({ idempotent: true });
+		new File(orphan, "interrupted.txt").write("interrupted earlier process");
+		const beforeDisabled = maskFiles();
+		const disabled = await analyzePoseImage(photo);
+		verify(
+			disabled.segmentation === undefined,
+			"Segmentation must be disabled by default",
+		);
+		verify(
+			maskFiles() === beforeDisabled,
+			"Disabled mode must not write mask files",
+		);
+		cases.push("segmentation disabled without mask output");
+		const noPerson = await analyzePoseImage(empty, {
 			segmentationEnabled: true,
-			maskMaxDimension: 64,
-		}),
-	);
-	verify(people.masks.length === 2, "Each detected person must have a mask");
-	verify(
-		people.masks.every((mask) => Math.max(mask.width, mask.height) <= 64),
-		"Custom mask dimension must apply to every pose",
-	);
-	await releasePoseSegmentation(people.leaseId);
-	await releasePoseSegmentation(second.leaseId);
-	verify(!secondFile.exists, "Second lease must be removed");
-	cases.push("multiple masks and custom bounds");
-	const noPerson = await analyzePoseImage(empty, { segmentationEnabled: true });
-	verify(
-		noPerson.segmentation?.status === "empty",
-		"No pose must report empty segmentation",
-	);
-	for await (const sample of analyzePoseVideo(video, {
-		segmentationEnabled: true,
-	})) {
-		const masks = available(sample.detection);
-		await releasePoseSegmentation(masks.leaseId);
-		break;
+		});
+		verify(
+			noPerson.segmentation?.status === "empty",
+			"No pose must report empty segmentation",
+		);
+		verify(
+			!orphan.exists,
+			"First enabled no-pose request must clear previous-process files",
+		);
+		cases.push("previous-process mask cleanup after an empty detection");
+		const first = tracked(
+			await analyzePoseImage(photo, { segmentationEnabled: true }),
+		);
+		const firstFile = inspectMask(first, "mask-upright.png");
+		const second = tracked(
+			await analyzePoseImage(rotated, { segmentationEnabled: true }),
+		);
+		const secondFile = inspectMask(second, "mask-rotated.png");
+		verify(
+			first.imageSize.width === second.imageSize.width &&
+				first.imageSize.height === second.imageSize.height,
+			"Mask image orientation must be upright",
+		);
+		cases.push("bounded RGBA masks and orientation metadata");
+		const blocked = await analyzePoseImage(photo, {
+			segmentationEnabled: true,
+		});
+		verify(
+			blocked.segmentation?.status === "backpressure",
+			"Two outstanding leases must apply backpressure",
+		);
+		verify(
+			firstFile.exists && secondFile.exists,
+			"Backpressure must preserve leased masks",
+		);
+		await releasePoseSegmentation(first.leaseId);
+		await releasePoseSegmentation(first.leaseId);
+		verify(
+			!firstFile.exists && secondFile.exists,
+			"Release is idempotent and only deletes its own lease",
+		);
+		cases.push("mask backpressure and explicit isolated cleanup");
+		const people = tracked(
+			await analyzePoseImage(multiple, {
+				maxPoses: 2,
+				segmentationEnabled: true,
+				maskMaxDimension: 64,
+			}),
+		);
+		verify(people.masks.length === 2, "Each detected person must have a mask");
+		verify(
+			people.masks.every((mask) => Math.max(mask.width, mask.height) <= 64),
+			"Custom mask dimension must apply to every pose",
+		);
+		await releasePoseSegmentation(people.leaseId);
+		await releasePoseSegmentation(second.leaseId);
+		verify(!secondFile.exists, "Second lease must be removed");
+		cases.push("multiple masks and custom bounds");
+		for await (const sample of analyzePoseVideo(video, {
+			segmentationEnabled: true,
+		})) {
+			const masks = tracked(sample.detection);
+			await releasePoseSegmentation(masks.leaseId);
+			break;
+		}
+		verify(maskFiles() === 0, "Fixture must release every mask lease");
+		cases.push("empty segmentation and video mask cleanup");
+	} catch (error) {
+		failures.push(error);
+	} finally {
+		const cleanup = await Promise.allSettled(
+			[...leases].map(releasePoseSegmentation),
+		);
+		for (const result of cleanup) {
+			if (result.status === "rejected") failures.push(result.reason);
+		}
 	}
-	verify(maskFiles() === 0, "Fixture must release every mask lease");
-	cases.push("empty segmentation and video mask cleanup");
+	if (failures.length === 1) throw failures[0];
+	if (failures.length > 1)
+		throw new AggregateError(failures, "Mask fixture and cleanup failures");
 }

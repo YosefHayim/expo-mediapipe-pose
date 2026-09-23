@@ -46,7 +46,14 @@ export const PoseSegmentationOverlay = React.memo(
 			<View
 				pointerEvents="none"
 				accessible={false}
-				style={{ position: "absolute", width, height, overflow: "hidden" }}
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width,
+					height,
+					overflow: "hidden",
+				}}
 			>
 				<Image
 					source={{ uri: mask.uri }}

@@ -25,7 +25,15 @@ export async function analyzePoseImage(
 	try {
 		return Schema.decodeUnknownSync(PoseDetection)(result);
 	} catch (error) {
-		await discardResultSegmentation(result);
+		try {
+			await discardResultSegmentation(result);
+		} catch (cleanupError) {
+			throw new AggregateError(
+				[error, cleanupError],
+				"Image result validation and mask cleanup failed",
+				{ cause: error },
+			);
+		}
 		throw error;
 	}
 }

@@ -160,7 +160,7 @@ const tracking = usePoseTracking({
 
 JavaScript prop validation (including frame rates, `maxPoses`, mask dimensions and the required segmentation consumer) throws during render before that configuration reaches the native view. Validate dynamic configuration before rendering or handle programmer/configuration errors with a React error boundary. `onInferenceError` reports native failures and malformed native events; it does not intercept JavaScript validation errors.
 
-Codes: `cameraPermission`, `cameraConfiguration`, `cameraRuntime`, `modelInitialization`, `inferenceRuntime`, `nativeViewInitialization`, `invalidNativeEvent`. Native payloads never include raw exceptions or device paths. Invalid payloads report `invalidNativeEvent`, rather than being presented as valid detection results.
+Codes: `cameraPermission`, `cameraConfiguration`, `cameraRuntime`, `modelInitialization`, `inferenceRuntime`, `nativeViewInitialization`, `invalidNativeEvent`, `segmentationCleanup`. The last code means that discarding an undelivered mask lease failed. Native payloads never include raw exceptions or device paths. Invalid payloads report `invalidNativeEvent`, rather than being presented as valid detection results.
 
 Native failures release camera/detector resources and invalidate queued frames. The application owns recovery. After correcting permissions/options, toggle `isActive` or remount using a new React `key`. Use bounded retries appropriate to your UI. Empty detections are not errors.
 
@@ -304,20 +304,32 @@ Each mask is a local **RGBA8 PNG**: nontransparent pixels have white RGB and alp
 `PoseSegmentationOverlay` renders one mask with aspect-fill alignment, using `segmentation`, `width`, `height`, optional `poseIndex` (default 0), `color`, `opacity` (default 0.5), and standard image `onError`. It renders nothing for empty/backpressure/missing selection. It does **not** own or release the files. The photo example shows it over the analyzed image and releases the previous result on replacement/unmount.
 
 ```ts
-const detection = await analyzePoseImage(localUri, {
-  segmentationEnabled: true,
-  maskMaxDimension: 256,
-});
-try {
-  await consumeMaskFiles(detection.segmentation);
-} finally {
-  if (detection.segmentation?.status === "available") {
-    await releasePoseSegmentation(detection.segmentation.leaseId);
+import { File } from "expo-file-system";
+import { analyzePoseImage, releasePoseSegmentation } from "expo-mediapipe-pose";
+
+async function readPoseMasks(localUri: string) {
+  const detection = await analyzePoseImage(localUri, {
+    segmentationEnabled: true,
+    maskMaxDimension: 256,
+  });
+  const segmentation = detection.segmentation;
+  if (segmentation === undefined) throw new Error("Requested masks were not returned");
+  if (segmentation.status !== "available") return segmentation;
+  try {
+    const pngs: Uint8Array[] = [];
+    for (const mask of segmentation.masks) {
+      pngs.push(await new File(mask.uri).bytes());
+    }
+    return { status: "available" as const, pngs };
+  } finally {
+    await releasePoseSegmentation(segmentation.leaseId);
   }
 }
 ```
 
-Ownership transfers to the consumer when a result is delivered. Call `releasePoseSegmentation(leaseId)` after every use, including errors, or after the UI stops displaying that result. Release is idempotent and deletes only that lease. At most **two result leases**, each with at most six mask files, exist per module. They are app-cache resources, invalid after release or module teardown; do not persist their URIs. Startup removes files left by an interrupted previous process before creating new masks. Cache eviction can also invalidate a URI; use `onError` where needed.
+Ownership transfers to the consumer when a result is delivered. Call `releasePoseSegmentation(leaseId)` after every use, including errors, or after the UI stops displaying that result. Release is idempotent and deletes only that lease. At most **two result leases**, each with at most six mask files, exist per module. They are app-cache resources, invalid after release or module teardown; do not persist their URIs. The first enabled segmentation result in a process removes files left by an interrupted previous process, including when no pose is detected. Cache eviction can also invalidate a URI; use `onError` where needed.
+
+The reader above uses the optional `expo-file-system` package and copies PNG bytes before releasing the files. If image result validation and mask cleanup both fail, `analyzePoseImage` rejects with an `AggregateError` whose `cause` is the validation error and whose `errors` retain both failures.
 
 Camera segmentation requires an `onLandmark` consumer. The library releases masks for discarded native generations, inactive/invalid JS events and synchronously failing handlers. Image/video decoding failures and video cancellation release masks that were never delivered. Already-delivered masks remain consumer-owned, even after video cancellation or `break`. Always release them in your consumer's `finally` block. Recording APIs deliberately omit segmentation handles and neither persist nor release consumer-owned mask files.
 

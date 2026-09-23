@@ -18,13 +18,13 @@ internal final class PoseMaskStore {
   {
     try worker.sync {
       guard !closed else { throw PoseMediaError.maskUnavailable }
+      let cache = try FileManager.default.url(
+        for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+      try Self.cleanPreviousProcessFiles(in: cache)
       if result.landmarks.isEmpty { return ["status": "empty"] }
       guard leases.count < 2 else { return ["status": "backpressure"] }
       let masks = result.segmentationMasks
       guard masks.count == result.landmarks.count else { throw PoseMediaError.maskUnavailable }
-      let cache = try FileManager.default.url(
-        for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-      try Self.cleanPreviousProcessFiles(in: cache)
       let root = cache.appendingPathComponent(directoryName)
       directory = root
       let id = UUID().uuidString

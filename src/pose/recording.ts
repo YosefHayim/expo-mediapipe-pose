@@ -47,10 +47,11 @@ function withoutSegmentation(value: unknown): unknown {
 	const { segmentation: _segmentation, ...landmarks } = value;
 	return landmarks;
 }
+const decodeRecordedFrame = Schema.decodeUnknownSync(RecordedFrame, {
+	onExcessProperty: "error",
+});
 const decodeFrame = (value: unknown) =>
-	Schema.decodeUnknownSync(RecordedFrame, { onExcessProperty: "error" })(
-		withoutSegmentation(value),
-	);
+	decodeRecordedFrame(withoutSegmentation(value));
 
 export function parsePoseRecording(json: string): PoseRecording {
 	if (json.length > maximumJsonCharacters)
@@ -144,6 +145,9 @@ const RecordedDetection = PoseDetection.pipe(Schema.omit("segmentation")).pipe(
 	),
 );
 export const PoseDetectionRecording = recordingSchema(RecordedDetection);
+const decodeRecordedDetection = Schema.decodeUnknownSync(RecordedDetection, {
+	onExcessProperty: "error",
+});
 export type PoseDetectionRecording = Schema.Schema.Type<
 	typeof PoseDetectionRecording
 >;
@@ -178,10 +182,7 @@ export function createPoseDetectionRecorder(
 ) {
 	return createRecorder<PoseDetection, PoseDetectionRecording>(
 		options,
-		(value) =>
-			Schema.decodeUnknownSync(RecordedDetection, {
-				onExcessProperty: "error",
-			})(withoutSegmentation(value)),
+		(value) => decodeRecordedDetection(withoutSegmentation(value)),
 		copyPoseDetectionRecording,
 	);
 }

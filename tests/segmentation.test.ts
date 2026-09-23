@@ -145,6 +145,18 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 		await assert.rejects(analyzePoseImage("/photo.jpg"));
 		assert.deepEqual(calls, [leaseId]);
 		calls.length = 0;
+		releaseFailure = new Error("image mask release failed");
+		await assert.rejects(analyzePoseImage("/photo.jpg"), (error: unknown) => {
+			assert.ok(error instanceof AggregateError);
+			assert.equal(error.errors.length, 2);
+			assert.equal(error.cause, error.errors[0]);
+			assert.notEqual(error.cause, releaseFailure);
+			assert.equal(error.errors[1], releaseFailure);
+			return true;
+		});
+		assert.deepEqual(calls, [leaseId]);
+		releaseFailure = undefined;
+		calls.length = 0;
 		const { analyzePoseVideo } = await import("../src/native/videoAnalysis");
 		const controller = new AbortController();
 		await assert.rejects(

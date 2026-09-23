@@ -49,7 +49,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
-    internal var maskStore: PoseMaskStore? = null
+    @Volatile internal var maskStore: PoseMaskStore? = null
     private val worker = Executors.newSingleThreadExecutor()
     private val mainExecutor = ContextCompat.getMainExecutor(context)
     private val generation = AtomicInteger()

@@ -73,7 +73,7 @@ public class ExpoMediaPipePoseModule: Module {
         view.options.minTrackingConfidence = confidence
       }
       OnViewDidUpdateProps { (view: ExpoMediaPipePoseView) in
-        view.maskStore = self.videos.masks
+        view.setMaskStore(self.videos.masks)
         view.applyChanges()
       }
     }
