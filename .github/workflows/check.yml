@@ -35,7 +35,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter pose-camera-example exec expo prebuild --platform android --no-install
       - run: ./gradlew :app:assembleDebug --console=plain
