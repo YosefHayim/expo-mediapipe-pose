@@ -191,7 +191,9 @@ test("video detections record and replay without inventing camera metadata", asy
 	};
 	recorder.start();
 	recorder.append(detection, 200);
-	detection.landmarks[0]!.x = 0.1;
+	const originalNose = detection.landmarks[0];
+	assert.ok(originalNose);
+	originalNose.x = 0.1;
 	recorder.append(detection, 700);
 	assert.equal(recorder.status, "full");
 	const recording = parsePoseDetectionRecording(
@@ -205,7 +207,9 @@ test("video detections record and replay without inventing camera metadata", asy
 	const replay = createPoseDetectionReplay(recording, {
 		onFrame(frame) {
 			assert.equal("additionalData" in frame, false);
-			received.push(frame.landmarks[0]!.x);
+			const nose = frame.landmarks[0];
+			assert.ok(nose);
+			received.push(nose.x);
 		},
 	});
 	replay.play();
