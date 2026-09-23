@@ -31,13 +31,8 @@ const elbowFeedback = jointFeedbackStyles("leftElbow");
 
 export default function App() {
 	const [permission, requestPermission] = useCameraPermissions();
-	const [cameraSelection, setCameraSelection] = React.useState<CameraSelection>(
-		{
-			facing: "front",
-			lens: "wide",
-			previewFps: 30,
-		},
-	);
+	const [cameraSelection, setCameraSelection] =
+		React.useState<CameraSelection | null>(null);
 	const [paused, setPaused] = React.useState(false);
 	const [foreground, setForeground] = React.useState(
 		AppState.currentState === "active",
@@ -172,21 +167,28 @@ export default function App() {
 			<Text style={styles.text}>
 				Elbow feedback: {feedback.statuses.elbowBend}
 			</Text>
-			<PoseCameraView
-				key={cameraKey}
-				style={styles.camera}
-				cameraFacing={cameraSelection.facing}
-				cameraLens={cameraSelection.lens}
-				isActive={isActive}
-				frameLimit={frameLimit}
-				previewFps={cameraSelection.previewFps}
-				callbackFps={5}
-				onPerformanceMetrics={setMetrics}
-				onLandmark={handleLandmark}
-				onCameraConfigured={handleConfiguration}
-				onInferenceError={handleFailure}
-				skeleton={feedbackSkeleton}
-			/>
+			{cameraSelection && (
+				<PoseCameraView
+					key={cameraKey}
+					style={styles.camera}
+					cameraFacing={cameraSelection.facing}
+					cameraLens={cameraSelection.lens}
+					isActive={isActive}
+					frameLimit={frameLimit}
+					previewFps={cameraSelection.previewFps}
+					callbackFps={5}
+					onPerformanceMetrics={setMetrics}
+					onLandmark={handleLandmark}
+					onCameraConfigured={handleConfiguration}
+					onInferenceError={handleFailure}
+					skeleton={feedbackSkeleton}
+				/>
+			)}
+			{!cameraSelection && (
+				<Text style={styles.text}>
+					Choose an available camera below to start.
+				</Text>
+			)}
 			{displayedMetrics && (
 				<Text style={styles.text}>
 					Inference: {displayedMetrics.inferenceFps.toFixed(1)} fps · Results:{" "}
@@ -203,8 +205,8 @@ export default function App() {
 					<Button title="Retry camera" onPress={retryCamera} />
 				</View>
 			)}
+			<CameraControls selection={cameraSelection} onSelect={selectCamera} />
 			<View style={styles.actions}>
-				<CameraControls selection={cameraSelection} onSelect={selectCamera} />
 				<Button
 					title={paused ? "Resume" : "Pause"}
 					onPress={() => setPaused((value) => !value)}

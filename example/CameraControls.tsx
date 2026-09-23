@@ -4,7 +4,7 @@ import {
 	getCameraCapabilities,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import { Button, Text, View } from "react-native";
+import { Button, ScrollView, Text, View } from "react-native";
 
 export type CameraSelection = {
 	facing: "front" | "back";
@@ -16,7 +16,7 @@ export function CameraControls({
 	selection,
 	onSelect,
 }: {
-	selection: CameraSelection;
+	selection: CameraSelection | null;
 	onSelect: (selection: CameraSelection) => void;
 }) {
 	const [capabilities, setCapabilities] =
@@ -45,11 +45,9 @@ export function CameraControls({
 		return <Text style={{ color: "white" }}>Discovering cameras…</Text>;
 	if (capabilities.status !== "available")
 		return <Text style={{ color: "white" }}>{capabilities.status}</Text>;
-	const selectedCamera = findCameraCapability(
-		capabilities,
-		selection.facing,
-		selection.lens,
-	);
+	const selectedCamera = selection
+		? findCameraCapability(capabilities, selection.facing, selection.lens)
+		: undefined;
 	return (
 		<View>
 			{capabilities.cameras.map((camera) => {
@@ -79,20 +77,22 @@ export function CameraControls({
 				</Text>
 			)}
 			{selectedCamera && (
-				<View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-					{selectedCamera.modes
-						.filter((mode) => [15, 24, 30, 60].includes(mode.previewFps))
-						.map((mode) => (
-							<Button
-								key={mode.previewFps}
-								title={`${mode.previewFps} fps`}
-								disabled={selection.previewFps === mode.previewFps}
-								onPress={() =>
-									onSelect({ ...selection, previewFps: mode.previewFps })
-								}
-							/>
-						))}
-				</View>
+				<ScrollView horizontal>
+					{selectedCamera.modes.map((mode) => (
+						<Button
+							key={mode.previewFps}
+							title={`${mode.previewFps} fps`}
+							disabled={selection?.previewFps === mode.previewFps}
+							onPress={() =>
+								onSelect({
+									facing: selectedCamera.facing,
+									lens: selectedCamera.lens,
+									previewFps: mode.previewFps,
+								})
+							}
+						/>
+					))}
+				</ScrollView>
 			)}
 		</View>
 	);
