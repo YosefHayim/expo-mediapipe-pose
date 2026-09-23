@@ -159,6 +159,7 @@ export default function App() {
 				<Button title={permissionLabel} onPress={permissionAction} />
 				<Button
 					title="Analyze a local photo"
+					disabled={recordingActive}
 					onPress={() => setPhotoVisible(true)}
 				/>
 			</View>
@@ -221,6 +222,7 @@ export default function App() {
 			<Text style={styles.title}>MediaPipe Pose</Text>
 			<Button
 				title="Analyze a local photo"
+				disabled={recordingActive}
 				onPress={() => setPhotoVisible(true)}
 			/>
 			<Text style={styles.text}>{trackingLabels[tracking.status]}</Text>
