@@ -210,6 +210,7 @@ it("maintains independent named rules through changes, expiry, removal and reset
 	} finally {
 		const notifications = updatedTransitions.length;
 		await act(() => root.unmount());
+		await act(() => current().update(poseFrame()));
 		await advanceTime(1000);
 		assert.equal(updatedTransitions.length, notifications);
 		test.mock.timers.reset();

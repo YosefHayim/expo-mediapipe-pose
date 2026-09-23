@@ -121,6 +121,9 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 		() => () => {
 			for (const runtime of runtimes.current.values())
 				clearTimeout(runtime.timer);
+			runtimes.current.clear();
+			latest.current = {};
+			revision.current += 1;
 		},
 		[],
 	);
