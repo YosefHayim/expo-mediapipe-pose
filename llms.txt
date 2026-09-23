@@ -6,7 +6,7 @@ Use this library for camera pose events, customizable skeletons, named geometry,
 
 The supported consumer API is TypeScript for Expo/React Native. Native inference requires an iOS/Android development build with compatible Expo modules; Expo Go and browser inference are unsupported. The internal Swift/Kotlin bridge is not a standalone native SDK distribution. The core entry point provides pure helpers, not inference.
 
-Version matters: main includes unreleased features. The v0.2.0 tag contains the earlier camera API, and a source snapshot can still declare version 0.2.0 without matching that tag. Read the docs for the exact installed tag or commit. No npm release containing the newer additions is claimed.
+Install expo-mediapipe-pose@^0.3.0 from npm for the APIs in these guides. Version matters: main may advance independently. The older v0.2.0 GitHub tag contains the earlier camera API. Read the documentation for the installed version.
 
 Coordinates, missing/unknown states, pose-index identity limits, cancellation and mask-lease ownership are part of the API contract. Physical-device performance, persistent person identity, repetition counting, exercise scoring and medical accuracy must not be inferred from build or fixture success. Landmark recordings do not contain camera video or mask files.
 
@@ -15,10 +15,14 @@ Coordinates, missing/unknown states, pose-index identity limits, cancellation an
 - [README](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/README.md): Current feature overview, installation choices, FAQ, scope and a copyable integration prompt.
 - [Current API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/api.md): Public exports, native integration boundaries, props, coordinates, geometry, feedback, discovery, recording/replay, image/video analysis, multiple poses, masks and errors.
 - [Tagged v0.2.0 API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/v0.2.0/docs/api.md): Earlier camera API for the tagged-source installation; do not assume it includes main's newer features.
-- [Feature snapshot API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/54f6f37c0a91243e2096264dc25dc27eed16e05e/docs/api.md): API at the pinned source snapshot containing the ten newer additions.
+- [Version 0.3.0 API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/v0.3.0/docs/api.md): Versioned reference for the npm package.
+- [Changelog](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/CHANGELOG.md): Release history and compatibility notes.
 
 ## Examples and verification
 
+- [Expo pose detection guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/guides/expo-pose-detection.md): npm installation, camera permission, foreground/screen lifecycle, error handling and processing rates.
+- [Skeleton styling guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/guides/custom-skeleton-styling.md): Typed body-part selection, joint/connection overrides and overlay visibility.
+- [Angle feedback guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/guides/angle-triggered-feedback.md): Image-plane elbow measurement, hysteresis, hold/stale timing, unknown states and application transition callbacks.
 - [Example application](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/App.tsx): Camera permissions, lifecycle controls, feedback and entry points for photo/video analysis.
 - [Photo and segmentation example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/PhotoPanel.tsx): Local photo inference, pose selection, mask display and cleanup.
 - [Video example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/VideoPanel.tsx): Sampled local-video inference, progress and cancellation.

@@ -45,4 +45,6 @@ Test observable behavior: coordinate transforms, empty/uncertain detections, rul
 
 ## Delivery
 
+The npm package uses compiled `build/` JavaScript and declarations; `pnpm build` generates them and `prepack` runs the build. Keep both public entry points working in the packed archive. `pnpm verify:package` checks declarations, native/model files and Node ESM/CommonJS imports of the pure core. Native example builds from a checkout also need `pnpm build` first.
+
 Preserve unrelated work and all license/third-party notices. Do not change SDK/model bytes as an incidental refactor. Keep package/native identity, autolinking, exports and packed files consistent on rename. Do not claim npm publication, production readiness, physical-device validation or performance improvements without evidence. Do not put secrets, camera captures or personal recordings into fixtures. Publishing or deleting external resources requires user authorization.

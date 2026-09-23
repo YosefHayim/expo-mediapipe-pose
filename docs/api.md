@@ -1,6 +1,6 @@
 # API
 
-This document describes `main`, including unreleased additions. For the tagged source installation, use the [v0.2.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.2.0/docs/api.md).
+This document describes the 0.3.0 API. Use the [versioned reference](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.3.0/docs/api.md) when `main` advances. The older [v0.2.0 source API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.2.0/docs/api.md) predates the additional geometry, rules and file-analysis features.
 
 ## Public API and native integration
 

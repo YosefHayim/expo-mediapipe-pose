@@ -38,6 +38,7 @@ jobs:
       - uses: android-actions/setup-android@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter pose-camera-example exec expo prebuild --platform android --no-install
+      - run: pnpm build
       - run: ./gradlew :expo-mediapipe-pose:testDebugUnitTest :app:assembleDebug --console=plain
         working-directory: example/android
   ios:
@@ -53,6 +54,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter pose-camera-example exec expo prebuild --platform ios --no-install
+      - run: pnpm build
       - run: mkdir -p scripts/dev && xcrun swiftc ios/PoseFrameTiming.swift tests/native/FrameTimingTests.swift -o scripts/dev/frame-timing-tests && scripts/dev/frame-timing-tests
       - run: pod install
         working-directory: example/ios

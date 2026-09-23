@@ -21,14 +21,17 @@ For Expo and React Native developers building camera interactions, movement visu
 | Select among multiple detected poses | [Multiple poses](docs/api.md#multiple-poses-and-explicit-selection) |
 | Composite opt-in masks with explicit cleanup and backpressure | [Segmentation](docs/api.md#opt-in-segmentation-masks) |
 
-These additions are implemented on `main`; the installation choices below distinguish the older tag from the newer source snapshot. Styling and rules are configurable without replacing Google's model.
+Version 0.3.0 includes these features. Styling and rules are configurable without replacing Google's model. See the [changelog](CHANGELOG.md) for release history.
 
 ## Status and requirements
 
-The feature set on `main` is unreleased; the tagged v0.2.0 source below provides the earlier camera API. Current development targets Expo SDK 57, React Native 0.86, and React 19.2. Requires an iOS/Android development build; Expo Go cannot load this native module. Native builds, TypeScript, packaging and automated behavior tests are checked. Physical-device alignment, long-session performance and accuracy comparisons remain release evaluation work; no performance advantage over other wrappers is claimed.
+Version 0.3.0 targets Expo SDK 57, React Native 0.86, and React 19.2. Requires an iOS/Android development build; Expo Go cannot load this native module. Native builds, TypeScript, packaging and automated behavior tests are checked. Physical-device alignment, long-session performance and accuracy comparisons remain release evaluation work; no performance advantage over other wrappers is claimed.
 
 ## Documentation
 
+- [Pose detection in Expo / React Native](docs/guides/expo-pose-detection.md): installation, permissions, lifecycle and a camera screen.
+- [Custom skeleton styling](docs/guides/custom-skeleton-styling.md): body regions, landmark colors, joint sizes and connection styles.
+- [Angle-triggered feedback](docs/guides/angle-triggered-feedback.md): stable thresholds, red/green/unknown states and transition callbacks.
 - [API reference](docs/api.md): components, hooks, file analysis, coordinates, errors and resource ownership.
 - [FAQ](#faq): platform support, native use, privacy, models, performance and limitations.
 - [Integration prompt](#integrate-with-a-coding-assistant): copyable instructions for your app's coding assistant.
@@ -37,28 +40,14 @@ The feature set on `main` is unreleased; the tagged v0.2.0 source below provides
 
 ## Install
 
-Until an npm release is published, install the tagged source with [pnpm](https://pnpm.io/):
-
-The command below installs v0.2.0. Its [versioned API documentation](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.2.0/docs/api.md) matches that release; the [API on main](docs/api.md) also describes unreleased features.
+Install [expo-mediapipe-pose from npm](https://www.npmjs.com/package/expo-mediapipe-pose) with [pnpm](https://pnpm.io/):
 
 ```sh
-pnpm add https://github.com/YosefHayim/expo-mediapipe-pose/archive/refs/tags/v0.2.0.tar.gz effect@^3.21.4
+pnpm add expo-mediapipe-pose@^0.3.0 effect@^3.21.4
 pnpm exec expo install react-native-svg expo-camera
 ```
 
-<details>
-<summary>Try the newer features from a pinned source snapshot</summary>
-
-For the FPS, geometry, tracking, multiple-rule, discovery, recording/replay, photo/video, multiple-pose and segmentation additions, install the tested source snapshot at [`54f6f37`](https://github.com/YosefHayim/expo-mediapipe-pose/commit/54f6f37c0a91243e2096264dc25dc27eed16e05e):
-
-```sh
-pnpm add https://github.com/YosefHayim/expo-mediapipe-pose/archive/54f6f37c0a91243e2096264dc25dc27eed16e05e.tar.gz effect@^3.21.4
-pnpm exec expo install react-native-svg expo-camera
-```
-
-Use the [API at that commit](https://github.com/YosefHayim/expo-mediapipe-pose/blob/54f6f37c0a91243e2096264dc25dc27eed16e05e/docs/api.md). This is an unreleased source snapshot, even though its package manifest still says `0.2.0`; it is not the `v0.2.0` tag or an npm release. Native dependency or configuration changes require a new development build.
-
-</details>
+The package includes compiled JavaScript, TypeScript declarations, native Swift/Kotlin sources and the full pose model. Use the [v0.3.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.3.0/docs/api.md) for this release; `main` may advance independently. Native dependency or configuration changes require a new development build. The older `v0.2.0` GitHub tag contains the earlier camera API.
 
 [Effect](https://effect.website/) validates events at the native boundary. [react-native-svg](https://docs.expo.dev/versions/latest/sdk/svg/) draws the optional overlay. The example uses [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) for permissions; another permission provider is also fine.
 
@@ -213,7 +202,7 @@ The supported consumer API is TypeScript for Expo/React Native. The Swift and Ko
 <details>
 <summary>Which installation includes all the listed features?</summary>
 
-The `v0.2.0` tag provides the earlier camera API. The pinned source snapshot above includes the ten newer additions. Always read documentation for the installed tag or commit; `main` can advance independently. An npm release containing these additions has not been published.
+Install `expo-mediapipe-pose@^0.3.0` from npm for the features listed here. The older `v0.2.0` GitHub tag provides the earlier camera API. Read the documentation for your installed version; `main` can advance independently.
 
 </details>
 
@@ -273,8 +262,8 @@ Repository: https://github.com/YosefHayim/expo-mediapipe-pose
 Inspect this app's instructions, Expo/React Native versions, navigation,
 permission handling and existing camera code before changing anything.
 Read the README and API documentation for the exact installed tag/commit.
-The v0.2.0 tag predates the newer APIs on main. State the selected source
-revision and check compatibility; do not assume an npm release exists.
+The npm 0.3.0 API includes the current guides; the older v0.2.0 GitHub tag
+predates the newer APIs. Check the installed version and compatibility.
 
 Use supported exports from expo-mediapipe-pose; import pure helpers from
 expo-mediapipe-pose/core. Do not invent API names or treat the internal
