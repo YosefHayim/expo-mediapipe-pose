@@ -59,6 +59,7 @@ internal object PoseImageAnalysis {
                     val result = detector.detect(image)
                     outputMasks = result.segmentationMasks().orElse(emptyList())
                     val duration = (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
+                    val landmarkPayload = PoseLandmarkPayload.make(result)
                     val segmentation =
                         if (options.segmentationEnabled)
                             mapOf(
@@ -72,7 +73,7 @@ internal object PoseImageAnalysis {
                                     )
                             )
                         else emptyMap()
-                    return PoseLandmarkPayload.make(result) +
+                    return landmarkPayload +
                         segmentation +
                         mapOf(
                             "imageSize" to

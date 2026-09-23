@@ -158,6 +158,7 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                         val inferenceDurationMs =
                             (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
                         outputMasks = result.segmentationMasks().orElse(emptyList())
+                        val landmarkPayload = PoseLandmarkPayload.make(result)
                         val segmentation =
                             if (current.options.segmentationEnabled)
                                 mapOf(
@@ -172,7 +173,7 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                                 )
                             else emptyMap()
                         val detection =
-                            PoseLandmarkPayload.make(result) +
+                            landmarkPayload +
                                 segmentation +
                                 mapOf(
                                     "imageSize" to

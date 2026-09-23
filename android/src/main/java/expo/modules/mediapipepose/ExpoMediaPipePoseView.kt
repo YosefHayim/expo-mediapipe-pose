@@ -336,6 +336,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                         "poseModelSource" to
                             if (requested.modelPath == null) "bundled" else "local",
                     )
+                val landmarkPayload = PoseLandmarkPayload.make(inference)
                 val segmentation =
                     if (requested.segmentationEnabled)
                         requireNotNull(maskStore)
@@ -348,7 +349,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                             )
                     else null
                 val frame =
-                    PoseLandmarkPayload.make(inference) +
+                    landmarkPayload +
                         mapOf("additionalData" to metadata) +
                         (if (segmentation == null) emptyMap()
                         else mapOf("segmentation" to segmentation))

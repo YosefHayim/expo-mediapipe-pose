@@ -6,6 +6,7 @@ Unmodified Google MediaPipe test assets, used by the upstream [Pose Landmarker t
 | --- | --- | --- |
 | pose.jpg | https://storage.googleapis.com/mediapipe-assets/pose.jpg | c8a830ed683c0276d713dd5aeda28f415f10cd6291972084a40d0d8b934ed62b |
 | man-woman-okay.jpg | https://storage.googleapis.com/mediapipe-assets/man-woman-okay.jpg | 064bbf589dc1a2e05dff7e3fdddd00bbe5c5feadf4fd350f0e515f5a6bbfbbc4 |
+| pose-segmentation-golden.png | https://storage.googleapis.com/mediapipe-assets/pose_segmentation_mask_golden.png | 62ee418e18f317327572da5fcc988af703eb31e6f0b9e0bf3d55e6f4797d6953 |
 | burger.jpg | https://storage.googleapis.com/mediapipe-assets/burger.jpg | 97c15bbbf3cf3615063b1031c85d669de55839f59262bbe145d15ca75b36ecbf |
 
 Set `EXPO_PUBLIC_POSE_NATIVE_CHECKS=1` before bundling/running the example to execute the public native API checks instead of starting a camera. The screen shows the result and writes `pose-native-checks.json` into the app's documents directory for automated inspection. Both the native SDK and bundled model run on the simulator/emulator; these checks do not prove physical camera behavior.
@@ -18,7 +19,7 @@ Set `EXPO_PUBLIC_POSE_NATIVE_CHECKS=1` before bundling/running the example to ex
 
 `man-woman-okay.jpg` contains two people and exercises native `maxPoses: 2`, both image/world landmark arrays, first-pose compatibility and explicit selection. Their partly cropped bodies are not used to assert visibility or full-body accuracy.
 
-`pose-segmentation-golden.png` is Google's unmodified reference mask from https://storage.googleapis.com/mediapipe-assets/pose_segmentation_mask_golden.png, SHA-256 `62ee418e18f317327572da5fcc988af703eb31e6f0b9e0bf3d55e6f4797d6953`. The native runner saves test-only copies `mask-upright.png` and `mask-rotated.png` in Documents, then releases all leased originals. Copy those artifacts into `scripts/dev/masks-ios` / `scripts/dev/masks-android` and run:
+`pose-segmentation-golden.png` is Google's unmodified reference mask. The native runner saves test-only copies `mask-upright.png` and `mask-rotated.png` in Documents, then releases all leased originals. Copy those artifacts into `scripts/dev/masks-ios` / `scripts/dev/masks-android` and run:
 
 ```sh
 python3 scripts/verify-mask-fixtures.py scripts/dev/masks-ios
