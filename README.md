@@ -1,12 +1,12 @@
 # expo-mediapipe-pose
 
-An on-device pose camera for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), powered by Google's [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). Includes a customizable skeleton, named landmarks, and hooks for developer-defined feedback.
+On-device pose detection for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), powered by Google's [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). Integrates camera, photo and video inference with customizable skeletons, named landmarks and developer-defined feedback.
 
 Community-maintained; not an official Google or Expo package. Frames stay on the device. The module does not download models or upload camera data.
 
 ## Status and requirements
 
-Early release targeting Expo SDK 57, React Native 0.86, and React 19.2. Requires an iOS/Android development build; Expo Go cannot load this native module. Native builds, TypeScript, packaging and automated behavior tests are checked. Physical-device alignment, long-session performance and accuracy comparisons remain release evaluation work; no performance advantage over other wrappers is claimed.
+The feature set on `main` is unreleased; the tagged v0.2.0 source below provides the earlier camera API. Current development targets Expo SDK 57, React Native 0.86, and React 19.2. Requires an iOS/Android development build; Expo Go cannot load this native module. Native builds, TypeScript, packaging and automated behavior tests are checked. Physical-device alignment, long-session performance and accuracy comparisons remain release evaluation work; no performance advantage over other wrappers is claimed.
 
 ## Install
 
@@ -129,11 +129,24 @@ pnpm --filter pose-camera-example ios
 # or: pnpm --filter pose-camera-example android
 ```
 
-`pnpm check` runs [Biome](https://biomejs.dev/), [TypeScript](https://www.typescriptlang.org/) checks for the package/example, and tests. CI builds both native example applications. Use physical phones to assess front/back alignment, all interface orientations, zoom, interruptions, permissions, model changes, repeated mounts and sustained capture. Include device, OS, SDK and model details when reporting bugs through [GitHub Issues](https://github.com/YosefHayim/expo-mediapipe-pose/issues).
+`pnpm check` runs [Biome](https://biomejs.dev/), [TypeScript](https://www.typescriptlang.org/) checks for the package/example, and tests. CI builds both native example applications. The [native fixture runner](example/fixtures/README.md) exercises real SDK inference on public images/videos; it runs separately from CI build checks. Use physical phones to assess front/back alignment, all interface orientations, zoom, interruptions, permissions, model changes, repeated mounts and sustained capture. Include device, OS, SDK and model details when reporting bugs through [GitHub Issues](https://github.com/YosefHayim/expo-mediapipe-pose/issues).
 
 ## API and scope
 
-See [API details](docs/api.md) for props, coordinate semantics, errors and migration notes. The unreleased API supports camera/photo/video analysis with `maxPoses` from 1 to 6 (default 1), explicit pose selection and landmark recording/replay. Result indices are not persistent person IDs. It does not record video pixels or provide repetition counting or exercise scoring. Only the full pose model is bundled; lite/heavy require local model files.
+See [API details](docs/api.md) for props, coordinate semantics, ownership, errors and migration notes. Unreleased features on `main` include:
+
+| Need | API guide |
+| --- | --- |
+| Control preview, inference and callback rates; inspect measured metrics | [Frame rates and performance](docs/api.md#frame-rates-and-performance) |
+| Measure named angles/distances and react to pose presence | [Geometry](docs/api.md#angles-and-distances), [tracking feedback](docs/api.md#tracking-feedback) |
+| Evaluate independent rules with hysteresis and joint-specific feedback | [Multiple rules](docs/api.md#multiple-rules-and-independent-feedback) |
+| Discover selectable cameras and frame rates | [Camera discovery](docs/api.md#camera-discovery) |
+| Record/replay bounded landmark sessions | [Recording and replay](docs/api.md#landmark-recording-and-replay) |
+| Analyze local photos and sample local videos with cancellation | [Photo analysis](docs/api.md#local-photo-analysis), [video analysis](docs/api.md#local-video-analysis) |
+| Select among multiple detected poses | [Multiple poses](docs/api.md#multiple-poses-and-explicit-selection) |
+| Composite opt-in masks with explicit cleanup and backpressure | [Segmentation](docs/api.md#opt-in-segmentation-masks) |
+
+Recordings contain landmarks/metadata, not camera video. Result indices are not persistent person identities. Repetition counting, exercise scoring and medical interpretation remain application responsibilities. Only the full pose model is bundled; lite/heavy require local model files.
 
 Native inference uses [Swift](https://www.swift.org/) with AVFoundation on iOS and [Kotlin](https://kotlinlang.org/) with CameraX on Android. Detector ownership stays on a serial worker, with camera backpressure and stale-generation rejection. This is an Expo integration, not a replacement pose model.
 
