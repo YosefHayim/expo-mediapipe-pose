@@ -47,6 +47,10 @@ it("builds stateless typed threshold rules with configuration reset keys", () =>
 		measure: (pose: { leftWrist: { y: number } }) => pose.leftWrist.y,
 	};
 	const rule = createThresholdRule(options);
+	assert.throws(
+		() => createThresholdRule({ ...options, resetKey: NaN }),
+		RangeError,
+	);
 	assert.equal(evaluatePoseRule(poseFrame(), rule), "unknown");
 	assert.equal(evaluatePoseRule(poseFrame(), rule, "pass"), "pass");
 	assert.equal(evaluatePoseRule(poseFrame(), rule, "fail"), "fail");

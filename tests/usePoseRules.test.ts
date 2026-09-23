@@ -3,7 +3,7 @@ import { it } from "node:test";
 import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import type { PoseRuleOptions } from "../src/core";
+import { createThresholdRule, type PoseRuleOptions } from "../src/core";
 import { usePoseRules } from "../src/hooks/usePoseRules";
 import { poseFrame } from "./fixtures";
 
@@ -123,6 +123,32 @@ it("maintains independent named rules through changes, expiry, removal and reset
 			transitions.filter((value) => value === "elbow:unknown").length,
 			0,
 		);
+		let measuredAngle = 80;
+		const thresholdRule = (enterThreshold = 85, exitThreshold = 95) =>
+			createThresholdRule({
+				landmarks: ["leftElbow"],
+				direction: "below",
+				enterThreshold,
+				exitThreshold,
+				measure: () => measuredAngle,
+			});
+		await render({ elbow: thresholdRule() });
+		await send();
+		assert.equal(current().statuses.elbow, "pass");
+		measuredAngle = 90;
+		await render({ elbow: thresholdRule() });
+		await send();
+		assert.equal(current().statuses.elbow, "pass");
+		await render({ elbow: thresholdRule(70, 75) });
+		assert.equal(current().statuses.elbow, "unknown");
+		await send();
+		assert.equal(current().statuses.elbow, "fail");
+		measuredAngle = 72;
+		await send();
+		assert.equal(current().statuses.elbow, "fail");
+		measuredAngle = 69;
+		await send();
+		assert.equal(current().statuses.elbow, "pass");
 		await render({});
 		assert.deepEqual(current().statuses, {});
 		let followingEvaluations = 0;
