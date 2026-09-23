@@ -48,7 +48,10 @@ class ExpoMediaPipePoseModule : Module() {
         AsyncFunction("closePoseVideo") { id: String, promise: Promise ->
             videos.close(id, promise)
         }
-        AsyncFunction("releasePoseSegmentation") { id: String -> masks.release(id) }
+        AsyncFunction("releasePoseSegmentation") Coroutine
+            { id: String ->
+                withContext(Dispatchers.IO) { masks.release(id) }
+            }
         OnDestroy {
             videos.destroy()
             masks.destroy()
