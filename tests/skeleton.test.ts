@@ -9,6 +9,19 @@ import {
 import { poseFrame } from "./fixtures";
 
 describe("Pose presentation", () => {
+	it("rejects invalid visibility thresholds before rendering", () => {
+		for (const minVisibility of [NaN, Infinity, -0.1, 1.1]) {
+			assert.throws(
+				() =>
+					createSkeleton(
+						poseFrame(),
+						{ width: 360, height: 640 },
+						{ minVisibility },
+					),
+				RangeError,
+			);
+		}
+	});
 	it("exposes anatomical landmark names without changing raw results", () => {
 		const frame = poseFrame();
 		assert.equal(getLandmark(frame, "leftWrist"), frame.landmarks[15]);

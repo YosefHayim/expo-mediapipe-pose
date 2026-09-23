@@ -451,7 +451,13 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
     }
 
     private fun emitFailure(code: String, token: Int) {
-        emit(token) { onInferenceError(mapOf("code" to code)) }
+        emit(token) {
+            val failedOptions = requestedOptions
+            stopCapture()
+            // Keep the failed request latched until configuration or active state changes.
+            requestedOptions = failedOptions
+            onInferenceError(mapOf("code" to code))
+        }
     }
 
     private fun emit(token: Int, callback: () -> Unit) {

@@ -79,7 +79,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   @objc private func cameraInterrupted() {
     DispatchQueue.main.async { [weak self] in
       guard let self, self.requestedOptions != nil else { return }
-      self.onInferenceError(["code": "cameraRuntime"])
+      self.emitFailure("cameraRuntime", token: self.generation)
     }
   }
 
@@ -346,7 +346,13 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   }
 
   private func emitFailure(_ code: String, token: Int) {
-    emit(onInferenceError, ["code": code], token: token)
+    DispatchQueue.main.async { [weak self] in
+      guard let self, self.generation == token, self.requestedOptions != nil else { return }
+      self.generation += 1
+      // Keep requestedOptions until props or lifecycle change, avoiding an automatic retry loop.
+      self.worker.async { self.stopCapture() }
+      self.onInferenceError(["code": code])
+    }
   }
 
   private func emit(_ dispatcher: EventDispatcher, _ event: [String: Any], token: Int) {

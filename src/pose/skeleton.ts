@@ -74,6 +74,11 @@ export const createSkeleton = (
 	options: SkeletonOptions = {},
 ) => {
 	const style = { ...defaultSkeletonStyle, ...options };
+	const visibilityInRange =
+		style.minVisibility >= 0 && style.minVisibility <= 1;
+	if (!Number.isFinite(style.minVisibility) || !visibilityInRange) {
+		throw new RangeError("minVisibility must be between 0 and 1");
+	}
 	let selectedNames: readonly LandmarkName[] = LANDMARK_NAMES;
 	if (options.bodyParts)
 		selectedNames = options.bodyParts.flatMap((part) => [...BODY_PARTS[part]]);
