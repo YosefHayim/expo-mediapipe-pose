@@ -86,7 +86,7 @@ export default function App() {
 	const tracking = usePoseTracking({
 		landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
 		isActive,
-		holdMs: 150,
+		holdMs: 400,
 	});
 	const handleLandmark = React.useCallback(
 		(frame: PoseFrame) => {

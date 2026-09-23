@@ -50,8 +50,12 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		return null;
 	};
 	let frameNumber = 0;
-	const send = async (elapsed: number, visible = true) => {
+	const advanceTime = async (elapsed: number) => {
 		now += elapsed;
+		await act(() => test.mock.timers.tick(elapsed));
+	};
+	const send = async (elapsed: number, visible = true) => {
+		await advanceTime(elapsed);
 		frameNumber += 1;
 		const frame = poseFrame();
 		await act(() =>
@@ -84,8 +88,7 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 				}),
 			),
 		);
-		now += 500;
-		await act(() => test.mock.timers.tick(500));
+		await advanceTime(500);
 		assert.equal(currentTracking().status, "stale");
 		assert.deepEqual(latestTransitions, ["stale"]);
 		await send(0);
@@ -99,7 +102,7 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		);
 		await send(100);
 		assert.equal(currentTracking().status, "inactive");
-		await act(() => test.mock.timers.tick(1000));
+		await advanceTime(1000);
 		assert.equal(currentTracking().status, "inactive");
 		await act(() => root.render(createElement(Harness, options)));
 		assert.equal(currentTracking().status, "searching");
@@ -136,14 +139,14 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		);
 		await send(0);
 		assert.equal(currentTracking().status, "searching");
-		await act(() => test.mock.timers.tick(1000));
+		await advanceTime(1000);
 		assert.equal(currentTracking().status, "searching");
 		await act(() => root.render(createElement(Harness, options)));
 		await send(0);
 	} finally {
 		const callbackCount = transitions.length + latestTransitions.length;
 		await act(() => root.unmount());
-		await act(() => test.mock.timers.tick(1000));
+		await advanceTime(1000);
 		assert.equal(transitions.length + latestTransitions.length, callbackCount);
 		test.mock.timers.reset();
 		dom.window.close();

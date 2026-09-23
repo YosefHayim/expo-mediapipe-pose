@@ -114,7 +114,7 @@ Loss and uncertainty invalidate tracking immediately. `holdMs` stabilizes acquis
 ```tsx
 const tracking = usePoseTracking({
   landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
-  holdMs: 150,
+  holdMs: 400,
   isActive,
   onChange: state => {
     if (state.status === "found") beginInteraction();
