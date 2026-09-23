@@ -26,12 +26,11 @@ const validateThreshold = (threshold: PoseThreshold) => {
 			"Enter and exit thresholds must define a non-empty hysteresis band",
 		);
 };
-export const evaluatePoseThreshold = (
+const compareThreshold = (
 	value: number | null,
 	previous: PoseRuleStatus,
 	threshold: PoseThreshold,
 ): boolean | "unknown" => {
-	validateThreshold(threshold);
 	if (value === null || !Number.isFinite(value)) return "unknown";
 	const hasEntered =
 		threshold.direction === "above"
@@ -45,6 +44,14 @@ export const evaluatePoseThreshold = (
 	if (hasExited) return false;
 	if (previous === "unknown") return "unknown";
 	return previous === "pass";
+};
+export const evaluatePoseThreshold = (
+	value: number | null,
+	previous: PoseRuleStatus,
+	threshold: PoseThreshold,
+): boolean | "unknown" => {
+	validateThreshold(threshold);
+	return compareThreshold(value, previous, threshold);
 };
 export interface ThresholdRuleOptions<Name extends LandmarkName>
 	extends Omit<PoseRuleOptions<Name>, "evaluate">,
@@ -71,6 +78,6 @@ export const createThresholdRule = <Name extends LandmarkName>(
 			exitThreshold,
 		]),
 		evaluate: (pose, frame, previous) =>
-			evaluatePoseThreshold(measure(pose, frame), previous, threshold),
+			compareThreshold(measure(pose, frame), previous, threshold),
 	};
 };

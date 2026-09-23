@@ -37,8 +37,14 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 	rules: NamedPoseRules<Selection>,
 ) => {
 	type Id = Extract<keyof Selection, string>;
-	for (const options of Object.values<PoseRuleOptions>(rules))
-		validatePoseRuleOptions(options);
+	const configurations = React.useMemo(
+		() =>
+			Object.entries<PoseRuleOptions>(rules).map(([id, options]) => {
+				validatePoseRuleOptions(options);
+				return { id, identity: ruleIdentity(options) };
+			}),
+		[rules],
+	);
 	const latest = React.useRef<Readonly<Record<string, PoseRuleOptions>>>(rules);
 	const runtimes = React.useRef(new Map<string, RuleRuntime>());
 	const revision = React.useRef(0);
@@ -89,8 +95,7 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 			runtimes.current.delete(id);
 			configurationChanged = true;
 		}
-		for (const [id, options] of Object.entries<PoseRuleOptions>(rules)) {
-			const identity = ruleIdentity(options);
+		for (const { id, identity } of configurations) {
 			const runtime = runtimes.current.get(id);
 			if (!runtime) {
 				runtimes.current.set(id, {
@@ -116,7 +121,7 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 					]),
 				) as Record<Id, PoseRuleStatus>,
 			);
-	});
+	}, [rules, configurations, resetRuntime]);
 	React.useLayoutEffect(
 		() => () => {
 			for (const runtime of runtimes.current.values())
