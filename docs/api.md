@@ -297,7 +297,7 @@ A result's optional `segmentation` is one of:
 | `empty` | No pose was detected; no mask files are created. |
 | `backpressure` | Two result leases are already outstanding. Landmarks still arrive, but no additional mask files are created. |
 
-Each mask is a local **RGBA8 PNG**: white RGB and alpha = foreground confidence quantized to 0–255. Masks are sampled at output pixel centers and refer to the same upright, already-mirrored image coordinates as the result landmarks. `poseIndex` pairs with that result's `poses` array; it is not an identity. Use the supplied source `imageSize` for projection, since integer thumbnail dimensions may differ slightly in aspect ratio.
+Each mask is a local **RGBA8 PNG**: nontransparent pixels have white RGB and alpha = foreground confidence quantized to 0–255. RGB values at alpha zero are unspecified; read alpha for probabilities. Masks are sampled at output pixel centers and refer to the same upright, already-mirrored image coordinates as the result landmarks. `poseIndex` pairs with that result's `poses` array; it is not an identity. Use the supplied source `imageSize` for projection, since integer thumbnail dimensions may differ slightly in aspect ratio.
 
 `PoseSegmentationOverlay` renders one mask with aspect-fill alignment, using `segmentation`, `width`, `height`, optional `poseIndex` (default 0), `color`, `opacity` (default 0.5), and standard image `onError`. It renders nothing for empty/backpressure/missing selection. It does **not** own or release the files. The photo example shows it over the analyzed image and releases the previous result on replacement/unmount.
 

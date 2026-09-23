@@ -1,4 +1,7 @@
-"""Check exported native PNG masks against Google's pose segmentation reference."""
+"""Check exported native PNG masks against Google's pose segmentation reference.
+
+Requires Pillow 11.3.0: python3 -m pip install Pillow==11.3.0
+"""
 import argparse
 import json
 from pathlib import Path
@@ -22,6 +25,8 @@ for name in ("upright", "rotated"):
     union = sum(actual >= 128 or golden >= 128 for actual, golden in values)
     overlap = intersection / union
     assert overlap >= 0.90, f"Mask does not align with reference: IoU={overlap}"
-    assert all(min(pixel[:3]) >= 250 for pixel in image.getdata() if pixel[3] >= 128), "Foreground must encode white RGB with probability alpha"
+    assert all(
+        pixel[:3] == (255, 255, 255) for pixel in image.getdata() if pixel[3] > 0
+    ), "Nontransparent pixels must encode white RGB with probability alpha"
     results.append({"fixture": name, "width": image.width, "height": image.height, "intersectionOverUnion": overlap})
 print(json.dumps({"status": "passed", "artifacts": str(args.artifacts), "checks": results}, indent=2))
