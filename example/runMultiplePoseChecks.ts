@@ -20,6 +20,10 @@ export async function runMultiplePoseChecks(location: string, cases: string[]) {
 		);
 	}
 	verify(
+		JSON.stringify(detection.poses[0]) !== JSON.stringify(detection.poses[1]),
+		"The two-person fixture must return distinct pose data",
+	);
+	verify(
 		JSON.stringify(detection.landmarks) ===
 			JSON.stringify(detection.poses[0]?.landmarks),
 		"First-pose image alias must match index zero",
