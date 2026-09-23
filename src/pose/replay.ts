@@ -77,7 +77,14 @@ export function createPoseReplay(
 			nextFrame += 1;
 			try {
 				callbacks.onFrame(
-					JSON.parse(JSON.stringify(entry.frame)) as PoseFrame,
+					{
+						...entry.frame,
+						landmarks: entry.frame.landmarks.map((joint) => ({ ...joint })),
+						worldLandmarks: entry.frame.worldLandmarks.map((joint) => ({
+							...joint,
+						})),
+						additionalData: { ...entry.frame.additionalData },
+					},
 					entry.timestampMs,
 				);
 			} catch (error) {

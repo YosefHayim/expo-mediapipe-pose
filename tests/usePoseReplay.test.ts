@@ -59,7 +59,14 @@ test("replay hook uses current callbacks, resets replaced sessions, and cancels 
 				delivered.push(label);
 				rule.update(frame);
 			},
-			onReset: rule.reset,
+			onReset: () => {
+				if (label !== "reset failure") {
+					rule.reset();
+					return;
+				}
+				current().play();
+				throw new Error("reset failed");
+			},
 		});
 		return null;
 	}
@@ -91,6 +98,10 @@ test("replay hook uses current callbacks, resets replaced sessions, and cancels 
 		assert.equal(status, "unknown");
 		await act(() => current().play());
 		assert.equal(current().status, "ended");
+		await assert.rejects(render(recording, "reset failure"), /reset failed/);
+		context.mock.timers.tick(500);
+		assert.deepEqual(delivered, ["first", "latest"]);
+		assert.throws(() => current().play(), /mounted/);
 		await render(recording, "unmount");
 		await act(() => current().play());
 		await act(() => root.unmount());

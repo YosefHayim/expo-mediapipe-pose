@@ -62,6 +62,7 @@ export function createPoseRecorder(options: { maxFrames?: number } = {}) {
 	let frames: Array<PoseRecording["frames"][number]> = [];
 	let startedAt: number | undefined;
 	let previousTimestamp = -1;
+	let serializedCharacters = JSON.stringify({ version: 1, frames: [] }).length;
 	return {
 		get status() {
 			return status;
@@ -73,6 +74,7 @@ export function createPoseRecorder(options: { maxFrames?: number } = {}) {
 			frames = [];
 			startedAt = undefined;
 			previousTimestamp = -1;
+			serializedCharacters = JSON.stringify({ version: 1, frames: [] }).length;
 			status = "recording";
 		},
 		append(frame: PoseFrame, now = performance.now()): boolean {
@@ -85,18 +87,25 @@ export function createPoseRecorder(options: { maxFrames?: number } = {}) {
 				throw new RangeError("Recording timestamps must strictly increase");
 			if (timestampMs > 86_400_000)
 				throw new RangeError("Recordings cannot exceed 24 hours");
-			const snapshot = JSON.parse(
-				JSON.stringify(decodeFrame(frame)),
-			) as PoseFrame;
-			frames.push({ timestampMs, frame: snapshot });
+			const snapshot = { timestampMs, frame: decodeFrame(frame) };
+			const entry = JSON.stringify(snapshot);
+			const separatorLength = frames.length === 0 ? 0 : 1;
+			const nextSize = serializedCharacters + separatorLength + entry.length;
+			if (nextSize > maximumJsonCharacters)
+				throw new RangeError(
+					"Recording JSON exceeds 64 Mi characters; stop to retrieve captured frames",
+				);
+			frames.push(snapshot);
+			serializedCharacters = nextSize;
 			startedAt = origin;
 			previousTimestamp = timestampMs;
 			if (frames.length === capacity) status = "full";
 			return true;
 		},
 		stop(): PoseRecording {
+			const recording = copyPoseRecording({ version: 1, frames });
 			if (status === "recording") status = "stopped";
-			return copyPoseRecording({ version: 1, frames });
+			return recording;
 		},
 	};
 }

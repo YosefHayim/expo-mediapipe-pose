@@ -8,20 +8,20 @@ import {
 } from "expo-mediapipe-pose";
 import * as React from "react";
 import { Button, Text, View } from "react-native";
+import { raisedArmRule } from "./poseRules";
 
 export function ReplayPanel({
 	recording,
+	notice,
 	onClose,
 }: {
 	recording: PoseRecording;
+	notice: string | null;
 	onClose: () => void;
 }) {
 	const [frame, setFrame] = React.useState<PoseFrame | null>(null);
 	const [size, setSize] = React.useState({ width: 0, height: 0 });
-	const rule = usePoseRule({
-		landmarks: ["leftWrist", "leftShoulder"],
-		evaluate: (pose) => pose.leftWrist.y < pose.leftShoulder.y,
-	});
+	const rule = usePoseRule(raisedArmRule);
 	const tracking = usePoseTracking({
 		landmarks: ["leftWrist", "leftShoulder"],
 	});
@@ -39,6 +39,7 @@ export function ReplayPanel({
 	});
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
+			{notice && <Text style={{ color: "#fca5a5" }}>{notice}</Text>}
 			<Text style={{ color: "white" }}>
 				Landmark replay · {recording.frames.length} frames
 			</Text>

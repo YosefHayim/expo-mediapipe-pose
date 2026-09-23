@@ -28,6 +28,7 @@ import {
 	trackingLabels,
 } from "./poseFeedback";
 
+import { raisedArmRule } from "./poseRules";
 import { ReplayPanel } from "./ReplayPanel";
 
 const wristFeedback = jointFeedbackStyles("leftWrist");
@@ -42,6 +43,9 @@ export default function App() {
 	);
 	const [recording, setRecording] = React.useState<PoseRecording | null>(null);
 	const [recordingActive, setRecordingActive] = React.useState(false);
+	const [recordingError, setRecordingError] = React.useState<string | null>(
+		null,
+	);
 	const [paused, setPaused] = React.useState(false);
 	const [foreground, setForeground] = React.useState(
 		AppState.currentState === "active",
@@ -61,10 +65,8 @@ export default function App() {
 	}, [isActive]);
 	const feedback = usePoseRules({
 		raisedArm: {
-			landmarks: ["leftWrist", "leftShoulder"],
-			holdMs: 250,
+			...raisedArmRule,
 			isActive,
-			evaluate: (pose) => pose.leftWrist.y < pose.leftShoulder.y,
 		},
 		elbowBend: createThresholdRule({
 			landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
@@ -105,7 +107,14 @@ export default function App() {
 		(frame: PoseFrame) => {
 			tracking.update(frame);
 			feedback.update(frame);
-			if (!recorder.append(frame)) return;
+			try {
+				if (!recorder.append(frame)) return;
+			} catch (error) {
+				setRecordingError(String(error));
+				setRecordingActive(false);
+				setRecording(recorder.stop());
+				return;
+			}
 			if (recorder.status !== "full") return;
 			setRecordingActive(false);
 			setRecording(recorder.stop());
@@ -147,15 +156,22 @@ export default function App() {
 	if (recording)
 		return (
 			<View style={styles.screen}>
-				<ReplayPanel recording={recording} onClose={() => setRecording(null)} />
+				<ReplayPanel
+					notice={recordingError}
+					recording={recording}
+					onClose={() => setRecording(null)}
+				/>
 			</View>
 		);
+	const cameraReadyToRecord = cameraSelection !== null && isActive;
+	const canToggleRecording = recordingActive || cameraReadyToRecord;
 	const toggleRecording = () => {
 		if (recordingActive) {
 			setRecordingActive(false);
 			setRecording(recorder.stop());
 			return;
 		}
+		setRecordingError(null);
 		recorder.start();
 		setRecordingActive(true);
 	};
@@ -237,6 +253,7 @@ export default function App() {
 						: "Record up to 300 landmark frames"
 				}
 				onPress={toggleRecording}
+				disabled={!canToggleRecording}
 			/>
 			{failure && (
 				<View>

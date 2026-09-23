@@ -34,7 +34,13 @@ export function usePoseReplay(
 		});
 		controller.current = replay;
 		setState(replay.state);
-		latestCallbacks.current.onReset?.();
+		try {
+			latestCallbacks.current.onReset?.();
+		} catch (error) {
+			replay.dispose();
+			controller.current = null;
+			throw error;
+		}
 		return () => {
 			replay.dispose();
 			controller.current = null;

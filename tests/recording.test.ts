@@ -70,3 +70,46 @@ test("recording rejects invalid chronology, excess fields, invalid landmarks and
 	for (const maxFrames of [0, 10001, 1.5, NaN])
 		assert.throws(() => createPoseRecorder({ maxFrames }));
 });
+
+test("recording rejects an oversized append while keeping earlier frames exportable", () => {
+	const frame = poseFrame();
+	const landmark = {
+		x: 1.2345678901234567e300,
+		y: -1.2345678901234567e300,
+		z: 1.2345678901234567e300,
+		visibility: 0.12345678901234566,
+		presence: 0.12345678901234566,
+	};
+	frame.landmarks.splice(
+		0,
+		frame.landmarks.length,
+		...Array.from({ length: 33 }, () => ({ ...landmark })),
+	);
+	frame.worldLandmarks.push(
+		...Array.from({ length: 33 }, () => ({ ...landmark })),
+	);
+	const recorder = createPoseRecorder({ maxFrames: 10000 });
+	recorder.start();
+	let rejectedAt = -1;
+	for (let index = 0; index < 10000; index += 1) {
+		try {
+			recorder.append(frame, index);
+		} catch (error) {
+			assert.match(String(error), /64 Mi/);
+			rejectedAt = index;
+			break;
+		}
+	}
+	assert.ok(rejectedAt > 0);
+	assert.equal(recorder.frameCount, rejectedAt);
+	const recording = recorder.stop();
+	assert.equal(recording.frames.length, rejectedAt);
+	assert.ok(serializePoseRecording(recording).length <= 64 * 1024 * 1024);
+});
+
+test("recording parser rejects oversized JSON before parsing", () => {
+	assert.throws(
+		() => parsePoseRecording(" ".repeat(64 * 1024 * 1024 + 1)),
+		/64 Mi/,
+	);
+});
