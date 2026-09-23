@@ -11,7 +11,7 @@ internal struct PoseImageOptions: Record {
   @Field var minPosePresenceConfidence: Double = 0.35
 
   func validate() throws {
-    guard (256...4096).contains(maxImageDimension) else { throw PoseMediaError.invalidOptions }
+    guard (256...2048).contains(maxImageDimension) else { throw PoseMediaError.invalidOptions }
     let confidences = [minPoseDetectionConfidence, minPosePresenceConfidence]
     guard confidences.allSatisfy({ $0.isFinite && (0...1).contains($0) }) else {
       throw PoseMediaError.invalidOptions
@@ -24,8 +24,24 @@ internal enum PoseImageAnalysis {
     try autoreleasepool {
       try options.validate()
       let url = try PoseModel.localURL(location)
-      guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+      guard
+        let source = CGImageSourceCreateWithURL(
+          url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary)
+      else {
         throw PoseMediaError.invalidImage
+      }
+      guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+        let width = properties[kCGImagePropertyPixelWidth] as? NSNumber,
+        let height = properties[kCGImagePropertyPixelHeight] as? NSNumber,
+        width.doubleValue > 0, height.doubleValue > 0
+      else { throw PoseMediaError.invalidImage }
+      guard width.doubleValue * height.doubleValue <= 16_777_216 else {
+        throw NSError(
+          domain: "ExpoMediaPipePose", code: 1,
+          userInfo: [
+            NSLocalizedDescriptionKey:
+              "Source image exceeds 16,777,216 pixels; resize it before analysis."
+          ])
       }
       let decoding: [CFString: Any] = [
         kCGImageSourceCreateThumbnailFromImageAlways: true,

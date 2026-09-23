@@ -21,7 +21,7 @@ internal class PoseImageOptions : Record {
     @Field var minPosePresenceConfidence: Double = 0.35
 
     fun validate() {
-        require(maxImageDimension in 256..4096)
+        require(maxImageDimension in 256..2048)
         val confidences = listOf(minPoseDetectionConfidence, minPosePresenceConfidence)
         require(confidences.all { it.isFinite() && it in 0.0..1.0 })
     }
@@ -72,6 +72,9 @@ internal object PoseImageAnalysis {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.path, bounds)
         require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Image could not be decoded" }
+        require(bounds.outWidth.toLong() * bounds.outHeight <= 16_777_216L) {
+            "Source image exceeds 16,777,216 pixels; resize it before analysis."
+        }
         val largestDimension = maxOf(bounds.outWidth, bounds.outHeight)
         var sampleSize = 1
         while (largestDimension > maximumDimension.toLong() * sampleSize) sampleSize *= 2

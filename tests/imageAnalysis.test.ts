@@ -37,7 +37,7 @@ test("photo analysis validates local inputs and bounded model options", () => {
 		}).modelVariant,
 		"lite",
 	);
-	for (const maxImageDimension of [0, 255, 4097, NaN])
+	for (const maxImageDimension of [0, 255, 2049, NaN])
 		assert.throws(() => resolvePoseImageOptions({ maxImageDimension }));
 	assert.throws(() =>
 		resolvePoseImageOptions({ minPoseDetectionConfidence: 2 }),

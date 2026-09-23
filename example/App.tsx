@@ -154,7 +154,8 @@ export default function App() {
 		return (
 			<View style={styles.screen}>
 				<Text style={styles.text}>
-					Pose detection runs on your device. Camera access is required.
+					Pose detection runs on your device. Camera access is required for live
+					detection. Local file analysis does not need it.
 				</Text>
 				<Button title={permissionLabel} onPress={permissionAction} />
 				<Button

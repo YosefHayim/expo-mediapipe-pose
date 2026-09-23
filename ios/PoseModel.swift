@@ -23,6 +23,9 @@ internal enum PoseModel {
   }
 
   private static func readableFile(_ url: URL) throws -> URL {
+    guard FileManager.default.isReadableFile(atPath: url.path) else {
+      throw PoseMediaError.invalidFile
+    }
     let values = try url.resourceValues(forKeys: [.isRegularFileKey])
     guard values.isRegularFile == true, FileManager.default.isReadableFile(atPath: url.path) else {
       throw PoseMediaError.invalidFile

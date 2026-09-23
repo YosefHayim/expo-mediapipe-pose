@@ -13,6 +13,34 @@ async function localAsset(module: number) {
 }
 export async function runNativeChecks() {
 	const cases: string[] = [];
+	const nativeFailures: { label: string; code: string; message: string }[] = [];
+	async function expectNativeFailure(
+		label: string,
+		operation: () => Promise<unknown>,
+		expectedMessage?: string,
+	) {
+		try {
+			await operation();
+		} catch (error) {
+			verify(
+				typeof error === "object" && error !== null,
+				`${label}: expected native error`,
+			);
+			verify(
+				"code" in error && typeof error.code === "string",
+				`${label}: expected native error code`,
+			);
+			const message = String(error);
+			if (expectedMessage)
+				verify(
+					message.includes(expectedMessage),
+					`${label}: unexpected error: ${message}`,
+				);
+			nativeFailures.push({ label, code: error.code, message });
+			return;
+		}
+		throw new Error(`${label}: expected rejection`);
+	}
 	writeReport({ status: "running", platform: Platform.OS, cases });
 	try {
 		const capabilities = await getCameraCapabilities();
@@ -97,34 +125,29 @@ export async function runNativeChecks() {
 		cases.push("bounded image decoding");
 		const invalid = new File(Paths.cache, "pose-invalid-image.txt");
 		invalid.write("not an image");
-		let rejected = false;
 		try {
-			await analyzePoseImage(invalid.uri);
-		} catch {
-			rejected = true;
+			await expectNativeFailure("invalid image", () =>
+				analyzePoseImage(invalid.uri),
+			);
 		} finally {
 			invalid.delete();
 		}
-		verify(rejected, "Invalid file must reject");
 		cases.push("invalid local image rejected");
-		let missingRejected = false;
-		try {
-			await analyzePoseImage(
-				new File(Paths.cache, "pose-missing-image.jpg").uri,
-			);
-		} catch {
-			missingRejected = true;
-		}
-		verify(missingRejected, "Missing local file must reject");
+		await expectNativeFailure("missing image", () =>
+			analyzePoseImage(new File(Paths.cache, "pose-missing-image.jpg").uri),
+		);
 		cases.push("missing local image rejected");
-		let modelRejected = false;
-		try {
-			await analyzePoseImage(photo, { modelPath: photo });
-		} catch {
-			modelRejected = true;
-		}
-		verify(modelRejected, "Invalid model must reject after image decoding");
+		await expectNativeFailure("invalid model", () =>
+			analyzePoseImage(photo, { modelPath: photo }),
+		);
 		cases.push("invalid local model rejected");
+		const oversized = await localAsset(require("./fixtures/oversized.png"));
+		await expectNativeFailure(
+			"oversized image",
+			() => analyzePoseImage(oversized),
+			"16,777,216 pixels",
+		);
+		cases.push("oversized source rejected before pixel decoding");
 
 		const recovery = await analyzePoseImage(photo);
 		verify(
@@ -132,12 +155,18 @@ export async function runNativeChecks() {
 			"Analysis must recover after invalid input",
 		);
 		cases.push("resources reusable after failure");
-		return writeReport({ status: "passed", platform: Platform.OS, cases });
+		return writeReport({
+			status: "passed",
+			platform: Platform.OS,
+			cases,
+			nativeFailures,
+		});
 	} catch (error) {
 		return writeReport({
 			status: "failed",
 			platform: Platform.OS,
 			cases,
+			nativeFailures,
 			error: String(error),
 		});
 	}
@@ -146,6 +175,7 @@ function writeReport(report: {
 	status: string;
 	platform: string;
 	cases: string[];
+	nativeFailures?: { label: string; code: string; message: string }[];
 	error?: string;
 }) {
 	new File(Paths.document, "pose-native-checks.json").write(

@@ -1,6 +1,9 @@
-"""Generate EXIF fixtures with identical upright content from Google's pose test image."""
+"""Generate EXIF and source-size fixtures.
+
+Requires Pillow 11.3.0: python3 -m pip install Pillow==11.3.0
+"""
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageOps
 
 fixtures = Path(__file__).resolve().parent.parent / "example" / "fixtures"
 transforms = {
@@ -17,4 +20,10 @@ with Image.open(fixtures / "pose.jpg") as source:
         stored = source.transpose(transform)
         exif = Image.Exif()
         exif[274] = orientation
-        stored.save(fixtures / f"pose-exif-{orientation}.jpg", quality=95, subsampling=0, exif=exif)
+        output = fixtures / f"pose-exif-{orientation}.jpg"
+        stored.save(output, quality=95, subsampling=0, exif=exif)
+        with Image.open(output) as encoded:
+            assert encoded.getexif()[274] == orientation
+            assert ImageOps.exif_transpose(encoded).size == source.size
+
+Image.new("RGB", (5000, 4000)).save(fixtures / "oversized.png")

@@ -8,7 +8,7 @@ export const PoseImageOptions = Schema.Struct({
 	}),
 	modelPath: Schema.optional(Schema.String),
 	maxImageDimension: Schema.optionalWith(
-		Schema.Number.pipe(Schema.int(), Schema.between(256, 4096)),
+		Schema.Number.pipe(Schema.int(), Schema.between(256, 2048)),
 		{ default: () => 2048 },
 	),
 	minPoseDetectionConfidence: Schema.optionalWith(Confidence, {

@@ -15,6 +15,8 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 	const [busy, setBusy] = React.useState(false);
 	const [error, setError] = React.useState<string | null>(null);
 	const [size, setSize] = React.useState({ width: 0, height: 0 });
+	const hasLocation = location.trim().length > 0;
+	const canAnalyze = hasLocation && !busy;
 	const request = React.useRef(0);
 	React.useEffect(
 		() => () => {
@@ -59,7 +61,7 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 			<Button
 				title={busy ? "Analyzing…" : "Analyze"}
 				onPress={analyze}
-				disabled={busy}
+				disabled={!canAnalyze}
 			/>
 			{error && <Text style={{ color: "#fca5a5" }}>{error}</Text>}
 			{result && (
