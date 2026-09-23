@@ -11,3 +11,4 @@ export * from "./pose/skeleton";
 export * from "./pose/skeletonFeedback";
 export * from "./pose/thresholdRule";
 export * from "./pose/tracking";
+export * from "./pose/videoAnalysis";

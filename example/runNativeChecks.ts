@@ -2,6 +2,7 @@ import { Asset } from "expo-asset";
 import { File, Paths } from "expo-file-system";
 import { analyzePoseImage, getCameraCapabilities } from "expo-mediapipe-pose";
 import { Platform } from "react-native";
+import { runVideoChecks } from "./runVideoChecks";
 
 function verify(condition: boolean, message: string): asserts condition {
 	if (!condition) throw new Error(message);
@@ -155,6 +156,12 @@ export async function runNativeChecks() {
 			"Analysis must recover after invalid input",
 		);
 		cases.push("resources reusable after failure");
+		await runVideoChecks(
+			await localAsset(require("./fixtures/pose-video.mp4")),
+			await localAsset(require("./fixtures/pose-video-rotated.mp4")),
+			result,
+			cases,
+		);
 		return writeReport({
 			status: "passed",
 			platform: Platform.OS,
@@ -167,7 +174,10 @@ export async function runNativeChecks() {
 			platform: Platform.OS,
 			cases,
 			nativeFailures,
-			error: String(error),
+			error:
+				error instanceof Error
+					? `${error.message}\n${error.stack}`
+					: String(error),
 		});
 	}
 }
