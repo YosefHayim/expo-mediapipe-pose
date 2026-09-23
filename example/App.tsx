@@ -71,10 +71,13 @@ export default function App() {
 			return angle.value < 90;
 		},
 	});
-	const handleLandmark = (frame: PoseFrame) => {
-		raisedArm.update(frame);
-		elbowBend.update(frame);
-	};
+	const handleLandmark = React.useCallback(
+		(frame: PoseFrame) => {
+			raisedArm.update(frame);
+			elbowBend.update(frame);
+		},
+		[raisedArm.update, elbowBend.update],
+	);
 
 	React.useEffect(() => {
 		const subscription = AppState.addEventListener("change", (state) =>
