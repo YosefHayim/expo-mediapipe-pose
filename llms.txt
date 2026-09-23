@@ -1,0 +1,31 @@
+# expo-mediapipe-pose
+
+> Community-maintained on-device pose detection for Expo and React Native, using Google's MediaPipe Tasks SDKs with native Swift/iOS and Kotlin/Android implementations.
+
+Use this library for camera pose events, customizable skeletons, named geometry, developer-defined feedback, local image/video inference, landmark recording/replay and opt-in segmentation. It is not an official Google/Expo package, a new pose model, or a medical assessment system.
+
+The supported consumer API is TypeScript for Expo/React Native. Native inference requires an iOS/Android development build with compatible Expo modules; Expo Go and browser inference are unsupported. The internal Swift/Kotlin bridge is not a standalone native SDK distribution. The core entry point provides pure helpers, not inference.
+
+Version matters: main includes unreleased features. The v0.2.0 tag contains the earlier camera API, and a source snapshot can still declare version 0.2.0 without matching that tag. Read the docs for the exact installed tag or commit. No npm release containing the newer additions is claimed.
+
+Coordinates, missing/unknown states, pose-index identity limits, cancellation and mask-lease ownership are part of the API contract. Physical-device performance, persistent person identity, repetition counting, exercise scoring and medical accuracy must not be inferred from build or fixture success. Landmark recordings do not contain camera video or mask files.
+
+## Documentation
+
+- [README](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/README.md): Current feature overview, installation choices, FAQ, scope and a copyable integration prompt.
+- [Current API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/api.md): Public exports, native integration boundaries, props, coordinates, geometry, feedback, discovery, recording/replay, image/video analysis, multiple poses, masks and errors.
+- [Tagged v0.2.0 API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/v0.2.0/docs/api.md): Earlier camera API for the tagged-source installation; do not assume it includes main's newer features.
+- [Feature snapshot API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/54f6f37c0a91243e2096264dc25dc27eed16e05e/docs/api.md): API at the pinned source snapshot containing the ten newer additions.
+
+## Examples and verification
+
+- [Example application](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/App.tsx): Camera permissions, lifecycle controls, feedback and entry points for photo/video analysis.
+- [Photo and segmentation example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/PhotoPanel.tsx): Local photo inference, pose selection, mask display and cleanup.
+- [Video example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/VideoPanel.tsx): Sampled local-video inference, progress and cancellation.
+- [Native fixture guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/fixtures/README.md): Public fixture provenance, cold-launch checks and mask pixel verification; these do not establish physical-camera performance.
+
+## Upstream and licensing
+
+- [Google Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker): Official underlying model/SDK overview and native platform guides.
+- [License](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/LICENSE): Repository MIT license.
+- [Third-party notices](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/THIRD_PARTY_NOTICES.md): ThinkSys ancestry and Google SDK/model attribution.
