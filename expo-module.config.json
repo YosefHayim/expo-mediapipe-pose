@@ -1,17 +1,10 @@
 {
-  "platforms": [
-    "apple",
-    "android"
-  ],
-  "apple": {
-    "podspecPath": "OlyPoseCamera.podspec",
-    "modules": [
-      "OlyPoseCameraModule"
-    ]
-  },
-  "android": {
-    "modules": [
-      "expo.modules.olyposecamera.OlyPoseCameraModule"
-    ]
-  }
+	"platforms": ["apple", "android"],
+	"apple": {
+		"podspecPath": "ExpoMediaPipePose.podspec",
+		"modules": ["ExpoMediaPipePoseModule"]
+	},
+	"android": {
+		"modules": ["expo.modules.mediapipepose.ExpoMediaPipePoseModule"]
+	}
 }

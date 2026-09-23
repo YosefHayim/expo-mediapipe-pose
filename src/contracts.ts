@@ -36,6 +36,7 @@ export const InferenceError = Schema.Struct({
 		"inferenceRuntime",
 		"modelInitialization",
 		"nativeViewInitialization",
+		"invalidNativeEvent",
 	),
 });
 
@@ -49,19 +50,26 @@ export const PoseFrame = Schema.Struct({
 		cameraLens: Schema.Literal("wide", "ultraWide"),
 		cameraMirrored: Schema.Boolean,
 		cameraZoomFactor: Finite.pipe(Schema.between(1, 100)),
-		capturedAtMs: NonNegative,
+		receivedAtMs: NonNegative,
 		frameNumber: NonNegative.pipe(Schema.int()),
 		inferenceDurationMs: NonNegative,
 		luminance: Confidence,
 		poseCount: NonNegative.pipe(Schema.int()),
 		poseModelDelegate: Schema.Literal("CPU", "GPU"),
-		poseModelSource: Schema.Literal("bundled", "downloaded"),
+		poseModelSource: Schema.Literal("bundled", "local"),
 		poseModelVariant: ModelVariant,
-		thermalState: Schema.Literal("nominal", "fair", "serious", "critical"),
+		thermalState: Schema.Literal(
+			"nominal",
+			"fair",
+			"serious",
+			"critical",
+			"unknown",
+		),
 	}),
 });
 
 export type PoseFrame = Schema.Schema.Type<typeof PoseFrame>;
+export type Landmark = Schema.Schema.Type<typeof Landmark>;
 export type CameraConfiguration = Schema.Schema.Type<
 	typeof CameraConfiguration
 >;
