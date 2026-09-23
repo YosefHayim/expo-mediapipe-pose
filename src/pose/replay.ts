@@ -1,5 +1,11 @@
 import type { PoseFrame } from "../contracts";
-import { copyPoseRecording, type PoseRecording } from "./recording";
+import type { PoseDetection } from "./imageAnalysis";
+import {
+	copyPoseDetectionRecording,
+	copyPoseRecording,
+	type PoseDetectionRecording,
+	type PoseRecording,
+} from "./recording";
 
 export type PoseReplayStatus = "paused" | "playing" | "ended" | "disposed";
 export interface PoseReplayState {
@@ -8,8 +14,8 @@ export interface PoseReplayState {
 	durationMs: number;
 	speed: number;
 }
-export interface PoseReplayCallbacks {
-	onFrame: (frame: PoseFrame, timestampMs: number) => void;
+export interface PoseReplayCallbacks<Frame = PoseFrame> {
+	onFrame: (frame: Frame, timestampMs: number) => void;
 	onReset?: () => void;
 	onStateChange?: (state: PoseReplayState) => void;
 }
@@ -17,7 +23,41 @@ export function createPoseReplay(
 	recording: PoseRecording,
 	callbacks: PoseReplayCallbacks,
 ) {
-	let session = copyPoseRecording(recording);
+	return createReplay(copyPoseRecording(recording), callbacks, (frame) => ({
+		...frame,
+		landmarks: frame.landmarks.map((joint) => ({ ...joint })),
+		worldLandmarks: frame.worldLandmarks.map((joint) => ({ ...joint })),
+		additionalData: { ...frame.additionalData },
+	}));
+}
+export function createPoseDetectionReplay(
+	recording: PoseDetectionRecording,
+	callbacks: PoseReplayCallbacks<PoseDetection>,
+) {
+	return createReplay(
+		copyPoseDetectionRecording(recording),
+		callbacks,
+		(frame) => ({
+			...frame,
+			landmarks: frame.landmarks.map((joint) => ({ ...joint })),
+			worldLandmarks: frame.worldLandmarks.map((joint) => ({ ...joint })),
+			imageSize: { ...frame.imageSize },
+			model: { ...frame.model },
+		}),
+	);
+}
+function createReplay<Frame>(
+	recording: {
+		readonly version: 1;
+		readonly frames: ReadonlyArray<{
+			readonly timestampMs: number;
+			readonly frame: Frame;
+		}>;
+	},
+	callbacks: PoseReplayCallbacks<Frame>,
+	copyFrame: (frame: Frame) => Frame,
+) {
+	let session = recording;
 	const durationMs = session.frames.at(-1)?.timestampMs ?? 0;
 	let status: PoseReplayStatus = "paused";
 	let speed = 1;
@@ -76,17 +116,7 @@ export function createPoseReplay(
 			timer = undefined;
 			nextFrame += 1;
 			try {
-				callbacks.onFrame(
-					{
-						...entry.frame,
-						landmarks: entry.frame.landmarks.map((joint) => ({ ...joint })),
-						worldLandmarks: entry.frame.worldLandmarks.map((joint) => ({
-							...joint,
-						})),
-						additionalData: { ...entry.frame.additionalData },
-					},
-					entry.timestampMs,
-				);
+				callbacks.onFrame(copyFrame(entry.frame), entry.timestampMs);
 			} catch (error) {
 				stopAfterCallbackFailure(error);
 			}

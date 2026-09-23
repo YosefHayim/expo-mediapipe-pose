@@ -1,13 +1,26 @@
 import ExpoModulesCore
 
 public class ExpoMediaPipePoseModule: Module {
-  private let mediaWorker = DispatchQueue(label: "expo.pose.media")
+  private let videos = PoseVideoAnalysis()
+  private var mediaWorker: DispatchQueue { videos.worker }
   public func definition() -> ModuleDefinition {
     Name("ExpoMediaPipePose")
     AsyncFunction("getCameraCapabilities") { PoseCameraCapabilities.discover() }
     AsyncFunction("analyzePoseImage") { (location: String, options: PoseImageOptions) in
       try PoseImageAnalysis.analyze(location, options: options)
     }.runOnQueue(mediaWorker)
+    AsyncFunction("openPoseVideo") {
+      (location: String, options: PoseImageOptions, trackingConfidence: Double) async throws
+        -> [String: Any] in
+      try await self.videos.open(location, options: options, trackingConfidence: trackingConfidence)
+    }
+    AsyncFunction("readPoseVideoFrame") {
+      (id: String, timestampMs: Int) async throws -> [String: Any] in
+      try await self.videos.read(id, timestampMs: timestampMs)
+    }
+    AsyncFunction("closePoseVideo") { (id: String) in self.videos.close(id) }.runOnQueue(
+      mediaWorker)
+    OnDestroy { self.mediaWorker.async { self.videos.destroy() } }
     View(ExpoMediaPipePoseView.self) {
       Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
       Prop("isActive") { (view: ExpoMediaPipePoseView, active: Bool) in view.isActive = active }

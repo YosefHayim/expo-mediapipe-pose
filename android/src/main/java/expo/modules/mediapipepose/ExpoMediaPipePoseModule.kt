@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 
 class ExpoMediaPipePoseModule : Module() {
     private val photoDispatcher = Dispatchers.Default.limitedParallelism(1)
+    private val videos = PoseVideoAnalysis()
 
     override fun definition() = ModuleDefinition {
         Name("ExpoMediaPipePose")
@@ -27,6 +28,26 @@ class ExpoMediaPipePoseModule : Module() {
                     PoseImageAnalysis.analyze(context, location, options)
                 }
             }
+        AsyncFunction("openPoseVideo") {
+            location: String,
+            options: PoseImageOptions,
+            trackingConfidence: Double,
+            promise: Promise ->
+            videos.open(
+                requireNotNull(appContext.reactContext),
+                location,
+                options,
+                trackingConfidence,
+                promise,
+            )
+        }
+        AsyncFunction("readPoseVideoFrame") { id: String, timestampMs: Long, promise: Promise ->
+            videos.read(id, timestampMs, promise)
+        }
+        AsyncFunction("closePoseVideo") { id: String, promise: Promise ->
+            videos.close(id, promise)
+        }
+        OnDestroy { videos.destroy() }
         View(ExpoMediaPipePoseView::class) {
             Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
             Prop("isActive") { view: ExpoMediaPipePoseView, active: Boolean ->

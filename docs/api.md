@@ -227,3 +227,37 @@ const elbow = getImageJointAngle(detection, "leftShoulder", "leftElbow", "leftWr
 ```
 
 The example includes a local-file photo screen and a native fixture mode covering real pose/no-pose images, all EXIF orientations, decode bounds, invalid inputs and recovery. See [fixture instructions](../example/fixtures/README.md). Implementation follows Google's [iOS IMAGE guide](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/ios) and [Android IMAGE guide](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/android), [ImageIO thumbnail decoding](https://developer.apple.com/documentation/imageio/cgimagesourcecreatethumbnailatindex(_:_:_:)) and [ExifInterface's flip-before-rotation convention](https://developer.android.com/reference/androidx/exifinterface/media/ExifInterface#getRotationDegrees()).
+
+## Local video analysis
+
+`analyzePoseVideo(location, options)` is an async iterator over bounded local video samples. It uses the official MediaPipe **VIDEO** mode with one persistent CPU detector per session. It accepts the same absolute paths/file URIs and image/model options as photo analysis; copy picker results into readable app storage first. Android video decoding requires API 27+. Container/codec support comes from the platform decoder; unsupported input rejects. H.264 MP4 fixtures are exercised on both platforms.
+
+```ts
+import { analyzePoseVideo, createPoseDetectionRecorder } from "expo-mediapipe-pose";
+
+const cancellation = new AbortController();
+const recorder = createPoseDetectionRecorder({ maxFrames: 300 });
+recorder.start();
+for await (const sample of analyzePoseVideo(localUri, {
+  samplingFps: 5,
+  startMs: 0,
+  endMs: 10_000,
+  maxFrames: 300,
+  signal: cancellation.signal,
+  onProgress: ({ completedFrames, totalFrames }) => updateProgress(completedFrames / totalFrames),
+})) {
+  recorder.append(sample.detection, sample.timestampMs);
+  showSkeleton(sample.detection);
+}
+const recording = recorder.stop();
+```
+
+Sampling defaults: `samplingFps: 5` (integer 1–60), `startMs: 0`, `endMs: duration`, `maxFrames: 1000` (1–10,000), `minTrackingConfidence: 0.35`. Explicit range boundaries are integer milliseconds, start inclusive/end exclusive, up to 24 hours. A range beyond the file duration or a plan exceeding `maxFrames` rejects; it is never silently truncated. Sampling rate is a media-time selection rate, not a throughput promise. Increasing it above encoded FPS can decode the same source frame more than once.
+
+Each `PoseVideoFrame` contains `timestampMs` (requested monotonic media time), `decodedTimestampMs` (actual decoded time on iOS; `null` on Android because its retriever does not expose it), and `detection: PoseDetection`. Landmarks/dimensions refer to bounded, upright decoded pixels, including container rotation. No pixels cross the JS boundary. Progress fires after each successful sample, before it is yielded.
+
+Only one video session can be open per native module. The next frame is decoded only when the consumer requests it; results are not accumulated. Completion, errors and `break` close the session. Abort rejects with `AbortError`, closes even while paused at a yield, and suppresses pending result delivery. An already-running native decode/inference may finish before cleanup. A cleanup failure rejects too; if analysis and cleanup both fail, the rejection is an `AggregateError` with the primary failure as `cause` and first `errors` entry. Its name preserves `AbortError` for cancellation. Always use `for await`/`return()` or an AbortSignal; abandoning an iterator without either cannot notify its owner.
+
+`createPoseDetectionRecorder`, `PoseDetectionRecording`, `parsePoseDetectionRecording`, `serializePoseDetectionRecording` and `createPoseDetectionReplay` provide the same bounded recording/replay controls for file detections. Pass sampled media timestamps to `append`; the first becomes relative time zero. These recordings preserve detection metadata without manufacturing camera fields. The camera recorder/replay API remains unchanged. Both formats store landmarks and metadata only, with the same 10,000-frame, 24-hour and 64 Mi-character limits. Neither writes files automatically.
+
+The native fixture suite includes short encoded upright/rotated videos, timestamps, cancellation and resource reuse. These static-scene fixtures verify decoding/orientation and lifecycle, not motion-tracking accuracy or device throughput. See the official [iOS VIDEO workflow](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/ios) and [Android VIDEO workflow](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/android).

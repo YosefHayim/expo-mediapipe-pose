@@ -31,6 +31,7 @@ import {
 
 import { raisedArmRule } from "./poseRules";
 import { ReplayPanel } from "./ReplayPanel";
+import { VideoPanel } from "./VideoPanel";
 
 const wristFeedback = jointFeedbackStyles("leftWrist");
 const elbowFeedback = jointFeedbackStyles("leftElbow");
@@ -47,7 +48,9 @@ export default function App() {
 	const [recordingError, setRecordingError] = React.useState<string | null>(
 		null,
 	);
-	const [photoVisible, setPhotoVisible] = React.useState(false);
+	const [mediaMode, setMediaMode] = React.useState<
+		"camera" | "photo" | "video"
+	>("camera");
 	const [paused, setPaused] = React.useState(false);
 	const [foreground, setForeground] = React.useState(
 		AppState.currentState === "active",
@@ -58,7 +61,7 @@ export default function App() {
 	const [metrics, setMetrics] = React.useState<PosePerformanceMetrics | null>(
 		null,
 	);
-	const liveCameraVisible = recording === null && !photoVisible;
+	const liveCameraVisible = recording === null && mediaMode === "camera";
 	const cameraInForeground = foreground && liveCameraVisible;
 	const isActive = cameraInForeground && !paused;
 	const displayedMetrics = isActive ? metrics : null;
@@ -132,10 +135,16 @@ export default function App() {
 		return () => subscription.remove();
 	}, []);
 
-	if (photoVisible)
+	if (mediaMode === "video")
 		return (
 			<View style={styles.screen}>
-				<PhotoPanel onClose={() => setPhotoVisible(false)} />
+				<VideoPanel onClose={() => setMediaMode("camera")} />
+			</View>
+		);
+	if (mediaMode === "photo")
+		return (
+			<View style={styles.screen}>
+				<PhotoPanel onClose={() => setMediaMode("camera")} />
 			</View>
 		);
 	if (!permission)
@@ -157,11 +166,16 @@ export default function App() {
 					Pose detection runs on your device. Camera access is required for live
 					detection. Local file analysis does not need it.
 				</Text>
+				<Button
+					title="Analyze a local video"
+					disabled={recordingActive}
+					onPress={() => setMediaMode("video")}
+				/>
 				<Button title={permissionLabel} onPress={permissionAction} />
 				<Button
 					title="Analyze a local photo"
 					disabled={recordingActive}
-					onPress={() => setPhotoVisible(true)}
+					onPress={() => setMediaMode("photo")}
 				/>
 			</View>
 		);
@@ -224,7 +238,12 @@ export default function App() {
 			<Button
 				title="Analyze a local photo"
 				disabled={recordingActive}
-				onPress={() => setPhotoVisible(true)}
+				onPress={() => setMediaMode("photo")}
+			/>
+			<Button
+				title="Analyze a local video"
+				disabled={recordingActive}
+				onPress={() => setMediaMode("video")}
 			/>
 			<Text style={styles.text}>{trackingLabels[tracking.status]}</Text>
 			<Text style={styles.text}>

@@ -4,6 +4,7 @@ internal enum PoseMediaError: Error {
   case invalidFile
   case invalidOptions
   case invalidImage
+  case videoUnavailable
   case invalidModel
 }
 
