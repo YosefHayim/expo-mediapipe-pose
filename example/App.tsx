@@ -6,7 +6,9 @@ import {
 	type PoseFrame,
 	type PosePerformanceMetrics,
 	type PoseRuleStatus,
+	type PoseTrackingStatus,
 	usePoseRule,
+	usePoseTracking,
 } from "expo-mediapipe-pose";
 import * as React from "react";
 import {
@@ -27,6 +29,16 @@ const feedbackLabels: Record<PoseRuleStatus, string> = {
 	pass: "Wrist raised",
 	fail: "Raise your left wrist above your shoulder",
 	unknown: "Keep your left arm visible",
+};
+
+const trackingLabels: Record<PoseTrackingStatus, string> = {
+	searching: "Waiting for a camera result",
+	acquiring: "Keep your left arm visible briefly",
+	found: "Left arm tracked",
+	lost: "Step into the frame",
+	incomplete: "Keep your left shoulder, elbow and wrist visible",
+	stale: "Waiting for fresh camera results",
+	inactive: "Tracking paused",
 };
 
 export default function App() {
@@ -71,12 +83,18 @@ export default function App() {
 			return angle.value < 90;
 		},
 	});
+	const tracking = usePoseTracking({
+		landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
+		isActive,
+		holdMs: 400,
+	});
 	const handleLandmark = React.useCallback(
 		(frame: PoseFrame) => {
+			tracking.update(frame);
 			raisedArm.update(frame);
 			elbowBend.update(frame);
 		},
-		[raisedArm.update, elbowBend.update],
+		[tracking.update, raisedArm.update, elbowBend.update],
 	);
 
 	React.useEffect(() => {
@@ -114,6 +132,7 @@ export default function App() {
 		setMetrics(null);
 		raisedArm.reset();
 		elbowBend.reset();
+		tracking.reset();
 		setCameraFacing((previous) => (previous === "front" ? "back" : "front"));
 	};
 	const retryCamera = () => {
@@ -121,24 +140,28 @@ export default function App() {
 		setFailure(null);
 		raisedArm.reset();
 		elbowBend.reset();
+		tracking.reset();
 		setCameraKey((previous) => previous + 1);
 	};
 	const handleFailure = (error: InferenceError) => {
 		setMetrics(null);
 		raisedArm.reset();
 		elbowBend.reset();
+		tracking.reset();
 		setFailure(error);
 	};
 	const handleConfiguration = () => {
 		setMetrics(null);
 		raisedArm.reset();
 		elbowBend.reset();
+		tracking.reset();
 		setFailure(null);
 	};
 
 	return (
 		<View style={styles.screen}>
 			<Text style={styles.title}>MediaPipe Pose</Text>
+			<Text style={styles.text}>{trackingLabels[tracking.status]}</Text>
 			<Text style={styles.text}>{feedbackLabels[raisedArm.status]}</Text>
 			<Text style={styles.text}>Elbow below 90°: {elbowBend.status}</Text>
 			<PoseCameraView

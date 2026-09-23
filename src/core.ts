@@ -4,3 +4,4 @@ export * from "./pose/geometry";
 export * from "./pose/landmarks";
 export * from "./pose/poseRule";
 export * from "./pose/skeleton";
+export * from "./pose/tracking";
