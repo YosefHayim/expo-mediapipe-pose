@@ -1,4 +1,5 @@
 export * from "./contracts";
+export * from "./pose/cameraCapabilities";
 export * from "./pose/frameRates";
 export * from "./pose/geometry";
 export * from "./pose/landmarks";

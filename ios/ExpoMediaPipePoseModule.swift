@@ -3,6 +3,7 @@ import ExpoModulesCore
 public class ExpoMediaPipePoseModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ExpoMediaPipePose")
+    AsyncFunction("getCameraCapabilities") { PoseCameraCapabilities.discover() }
     View(ExpoMediaPipePoseView.self) {
       Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
       Prop("isActive") { (view: ExpoMediaPipePoseView, active: Bool) in view.isActive = active }

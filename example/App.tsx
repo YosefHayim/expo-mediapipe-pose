@@ -19,6 +19,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { CameraControls, type CameraSelection } from "./CameraControls";
 import {
 	feedbackLabels,
 	jointFeedbackStyles,
@@ -30,8 +31,12 @@ const elbowFeedback = jointFeedbackStyles("leftElbow");
 
 export default function App() {
 	const [permission, requestPermission] = useCameraPermissions();
-	const [cameraFacing, setCameraFacing] = React.useState<"front" | "back">(
-		"front",
+	const [cameraSelection, setCameraSelection] = React.useState<CameraSelection>(
+		{
+			facing: "front",
+			lens: "wide",
+			previewFps: 30,
+		},
 	);
 	const [paused, setPaused] = React.useState(false);
 	const [foreground, setForeground] = React.useState(
@@ -129,11 +134,13 @@ export default function App() {
 		);
 	}
 
-	const switchCamera = () => {
+	const selectCamera = (selection: CameraSelection) => {
 		setMetrics(null);
 		feedback.reset();
 		tracking.reset();
-		setCameraFacing((previous) => (previous === "front" ? "back" : "front"));
+		setCameraSelection(selection);
+		setFailure(null);
+		setCameraKey((previous) => previous + 1);
 	};
 	const retryCamera = () => {
 		setMetrics(null);
@@ -168,10 +175,11 @@ export default function App() {
 			<PoseCameraView
 				key={cameraKey}
 				style={styles.camera}
-				cameraFacing={cameraFacing}
+				cameraFacing={cameraSelection.facing}
+				cameraLens={cameraSelection.lens}
 				isActive={isActive}
 				frameLimit={frameLimit}
-				previewFps={30}
+				previewFps={cameraSelection.previewFps}
 				callbackFps={5}
 				onPerformanceMetrics={setMetrics}
 				onLandmark={handleLandmark}
@@ -196,7 +204,7 @@ export default function App() {
 				</View>
 			)}
 			<View style={styles.actions}>
-				<Button title="Switch camera" onPress={switchCamera} />
+				<CameraControls selection={cameraSelection} onSelect={selectCamera} />
 				<Button
 					title={paused ? "Resume" : "Pause"}
 					onPress={() => setPaused((value) => !value)}

@@ -12,7 +12,6 @@ import android.os.SystemClock
 import android.util.Range
 import android.util.Size
 import androidx.camera.core.CameraInfo
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraState
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -130,7 +129,8 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         if (destroyed || !viewIsVisible) return
         if (!lifecycleIsStarted) return
         if (!processingOptions.isValid()) {
-            // Terminal errors require an isActive toggle or remount, including invalid processing props.
+            // Terminal errors require an isActive toggle or remount, including invalid processing
+            // props.
             requestedOptions = options
             emitFailure("cameraConfiguration", generation.get())
             return
@@ -220,9 +220,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                 try {
                     val activeProvider = cameraProvider.get()
                     provider = activeProvider
-                    val selector =
-                        if (requested.facing == "front") CameraSelector.DEFAULT_FRONT_CAMERA
-                        else CameraSelector.DEFAULT_BACK_CAMERA
+                    val selector = PoseCameraCapabilities.selector(requested.facing)
                     val cameraInfo = activeProvider.getCameraInfo(selector)
                     val targetFrameRate = Range(requested.previewFps, requested.previewFps)
                     require(cameraInfo.supportedFrameRateRanges.contains(targetFrameRate))

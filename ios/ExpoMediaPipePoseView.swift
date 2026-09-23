@@ -201,14 +201,8 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   }
 
   private func configureCamera(_ requested: PoseCameraOptions) throws {
-    let position: AVCaptureDevice.Position = requested.facing == "front" ? .front : .back
-    let cameras = AVCaptureDevice.DiscoverySession(
-      deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera], mediaType: .video,
-      position: position
-    ).devices
-    let requestedDeviceType: AVCaptureDevice.DeviceType =
-      requested.lens == "ultraWide" ? .builtInUltraWideCamera : .builtInWideAngleCamera
-    guard let camera = cameras.first(where: { $0.deviceType == requestedDeviceType }) else {
+    guard let camera = PoseCameraCapabilities.camera(facing: requested.facing, lens: requested.lens)
+    else {
       throw CameraFailure.unavailableCamera
     }
     let input = try AVCaptureDeviceInput(device: camera)
@@ -227,20 +221,10 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     videoOutput = output
     try camera.lockForConfiguration()
     defer { camera.unlockForConfiguration() }
-    let frameRate = Double(requested.previewFps)
-    let formats = camera.formats.filter { format in
-      format.videoSupportedFrameRateRanges.contains {
-        $0.minFrameRate <= frameRate && $0.maxFrameRate >= frameRate
-      }
+    guard let format = PoseCameraCapabilities.format(camera: camera, fps: requested.previewFps)
+    else {
+      throw CameraFailure.unavailableCamera
     }
-    guard
-      let format = formats.min(by: { first, second in
-        let firstSize = CMVideoFormatDescriptionGetDimensions(first.formatDescription)
-        let secondSize = CMVideoFormatDescriptionGetDimensions(second.formatDescription)
-        return abs(Int(firstSize.width) * Int(firstSize.height) - 1280 * 720)
-          < abs(Int(secondSize.width) * Int(secondSize.height) - 1280 * 720)
-      })
-    else { throw CameraFailure.unavailableCamera }
     camera.activeFormat = format
     let interval = CMTime(value: 1, timescale: Int32(requested.previewFps))
     camera.activeVideoMinFrameDuration = interval
