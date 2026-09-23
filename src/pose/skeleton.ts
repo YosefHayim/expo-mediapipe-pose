@@ -68,8 +68,8 @@ const defaultSkeletonStyle = {
 	minVisibility: 0.5,
 };
 
-export const createSkeleton = (
-	frame: PoseFrame,
+export const createDetectionSkeleton = (
+	detection: { landmarks: readonly Landmark[]; imageSize: Dimensions },
 	view: Dimensions,
 	options: SkeletonOptions = {},
 ) => {
@@ -85,7 +85,7 @@ export const createSkeleton = (
 	const selected = new Set(selectedNames);
 
 	const points = LANDMARK_NAMES.flatMap((name, index) => {
-		const joint = frame.landmarks[index];
+		const joint = detection.landmarks[index];
 		if (!joint || !selected.has(name)) return [];
 		const excludedBySelection =
 			options.landmarks && !options.landmarks.includes(name);
@@ -101,7 +101,7 @@ export const createSkeleton = (
 		return [
 			{
 				name,
-				...projectLandmark(joint, frame.additionalData, view),
+				...projectLandmark(joint, detection.imageSize, view),
 				...jointStyle,
 			},
 		];
@@ -122,3 +122,14 @@ export const createSkeleton = (
 	});
 	return { points, lines };
 };
+
+export const createSkeleton = (
+	frame: PoseFrame,
+	view: Dimensions,
+	options: SkeletonOptions = {},
+) =>
+	createDetectionSkeleton(
+		{ landmarks: frame.landmarks, imageSize: frame.additionalData },
+		view,
+		options,
+	);

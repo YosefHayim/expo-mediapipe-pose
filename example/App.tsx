@@ -22,6 +22,7 @@ import {
 	View,
 } from "react-native";
 import { CameraControls, type CameraSelection } from "./CameraControls";
+import { PhotoPanel } from "./PhotoPanel";
 import {
 	feedbackLabels,
 	jointFeedbackStyles,
@@ -46,6 +47,7 @@ export default function App() {
 	const [recordingError, setRecordingError] = React.useState<string | null>(
 		null,
 	);
+	const [photoVisible, setPhotoVisible] = React.useState(false);
 	const [paused, setPaused] = React.useState(false);
 	const [foreground, setForeground] = React.useState(
 		AppState.currentState === "active",
@@ -56,7 +58,7 @@ export default function App() {
 	const [metrics, setMetrics] = React.useState<PosePerformanceMetrics | null>(
 		null,
 	);
-	const liveCameraVisible = recording === null;
+	const liveCameraVisible = recording === null && !photoVisible;
 	const cameraInForeground = foreground && liveCameraVisible;
 	const isActive = cameraInForeground && !paused;
 	const displayedMetrics = isActive ? metrics : null;
@@ -130,6 +132,12 @@ export default function App() {
 		return () => subscription.remove();
 	}, []);
 
+	if (photoVisible)
+		return (
+			<View style={styles.screen}>
+				<PhotoPanel onClose={() => setPhotoVisible(false)} />
+			</View>
+		);
 	if (!permission)
 		return (
 			<View style={styles.screen}>
@@ -146,9 +154,15 @@ export default function App() {
 		return (
 			<View style={styles.screen}>
 				<Text style={styles.text}>
-					Pose detection runs on your device. Camera access is required.
+					Pose detection runs on your device. Camera access is required for live
+					detection. Local file analysis does not need it.
 				</Text>
 				<Button title={permissionLabel} onPress={permissionAction} />
+				<Button
+					title="Analyze a local photo"
+					disabled={recordingActive}
+					onPress={() => setPhotoVisible(true)}
+				/>
 			</View>
 		);
 	}
@@ -207,6 +221,11 @@ export default function App() {
 	return (
 		<View style={styles.screen}>
 			<Text style={styles.title}>MediaPipe Pose</Text>
+			<Button
+				title="Analyze a local photo"
+				disabled={recordingActive}
+				onPress={() => setPhotoVisible(true)}
+			/>
 			<Text style={styles.text}>{trackingLabels[tracking.status]}</Text>
 			<Text style={styles.text}>
 				{feedbackLabels[feedback.statuses.raisedArm]}

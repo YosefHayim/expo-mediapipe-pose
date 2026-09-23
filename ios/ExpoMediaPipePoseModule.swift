@@ -1,9 +1,13 @@
 import ExpoModulesCore
 
 public class ExpoMediaPipePoseModule: Module {
+  private let mediaWorker = DispatchQueue(label: "expo.pose.media")
   public func definition() -> ModuleDefinition {
     Name("ExpoMediaPipePose")
     AsyncFunction("getCameraCapabilities") { PoseCameraCapabilities.discover() }
+    AsyncFunction("analyzePoseImage") { (location: String, options: PoseImageOptions) in
+      try PoseImageAnalysis.analyze(location, options: options)
+    }.runOnQueue(mediaWorker)
     View(ExpoMediaPipePoseView.self) {
       Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
       Prop("isActive") { (view: ExpoMediaPipePoseView, active: Bool) in view.isActive = active }
