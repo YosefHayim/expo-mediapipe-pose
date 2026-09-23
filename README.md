@@ -133,7 +133,7 @@ pnpm --filter pose-camera-example ios
 
 ## API and scope
 
-See [API details](docs/api.md) for props, coordinate semantics, errors and migration notes. This version detects one person. It does not provide recording, persistent person identity, repetition counting or exercise scoring. Only the full pose model is bundled; lite/heavy require local model files.
+See [API details](docs/api.md) for props, coordinate semantics, errors and migration notes. The unreleased API supports camera/photo/video analysis with `maxPoses` from 1 to 6 (default 1), explicit pose selection and landmark recording/replay. Result indices are not persistent person IDs. It does not record video pixels or provide repetition counting or exercise scoring. Only the full pose model is bundled; lite/heavy require local model files.
 
 Native inference uses [Swift](https://www.swift.org/) with AVFoundation on iOS and [Kotlin](https://kotlinlang.org/) with CameraX on Android. Detector ownership stays on a serial worker, with camera backpressure and stale-generation rejection. This is an Expo integration, not a replacement pose model.
 

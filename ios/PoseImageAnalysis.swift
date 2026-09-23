@@ -66,7 +66,7 @@ internal enum PoseImageAnalysis {
       let started = ProcessInfo.processInfo.systemUptime
       let result = try detector.detect(image: image)
       let duration = (ProcessInfo.processInfo.systemUptime - started) * 1000
-      var payload = PoseLandmarkPayload.make(result)
+      var payload = try PoseLandmarkPayload.make(result)
       payload["imageSize"] = ["width": pixels.width, "height": pixels.height]
       payload["inferenceDurationMs"] = duration
       payload["model"] = [

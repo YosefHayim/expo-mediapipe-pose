@@ -22,12 +22,23 @@ export async function runMultiplePoseChecks(location: string, cases: string[]) {
 	verify(
 		JSON.stringify(detection.landmarks) ===
 			JSON.stringify(detection.poses[0]?.landmarks),
-		"First-pose alias must match index zero",
+		"First-pose image alias must match index zero",
+	);
+	verify(
+		JSON.stringify(detection.worldLandmarks) ===
+			JSON.stringify(detection.poses[0]?.worldLandmarks),
+		"First-pose world alias must match index zero",
 	);
 	const second = selectPose(detection, 1);
 	verify(
-		second.landmarks[0]?.x !== detection.landmarks[0]?.x,
-		"Selection must expose the other pose",
+		JSON.stringify(second.landmarks) ===
+			JSON.stringify(detection.poses[1]?.landmarks),
+		"Selection must expose the second pose image landmarks",
+	);
+	verify(
+		JSON.stringify(second.worldLandmarks) ===
+			JSON.stringify(detection.poses[1]?.worldLandmarks),
+		"Selection must expose the second pose world landmarks",
 	);
 	verify(
 		selectPose(detection, 2).landmarks.length === 0,

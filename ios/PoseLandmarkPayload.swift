@@ -1,7 +1,12 @@
 import MediaPipeTasksVision
 
 internal enum PoseLandmarkPayload {
-  static func make(_ result: PoseLandmarkerResult) -> [String: Any] {
+  private enum Failure: Error { case mismatchedPoseCounts }
+
+  static func make(_ result: PoseLandmarkerResult) throws -> [String: Any] {
+    guard result.landmarks.count == result.worldLandmarks.count else {
+      throw Failure.mismatchedPoseCounts
+    }
     let poses = result.landmarks.enumerated().map {
       index, image -> (landmarks: [[String: Any]], worldLandmarks: [[String: Any]]) in
       let landmarks = image.map { joint -> [String: Any] in

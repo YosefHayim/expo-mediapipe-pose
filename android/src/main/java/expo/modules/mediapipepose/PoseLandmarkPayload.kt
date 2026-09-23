@@ -4,6 +4,9 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
 
 internal object PoseLandmarkPayload {
     fun make(result: PoseLandmarkerResult): Map<String, Any> {
+        check(result.landmarks().size == result.worldLandmarks().size) {
+            "Image and world pose counts do not match"
+        }
         val poses =
             result.landmarks().mapIndexed { index, image ->
                 val landmarks = image.map { joint ->

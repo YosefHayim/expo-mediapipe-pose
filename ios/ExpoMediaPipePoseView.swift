@@ -282,7 +282,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
         "poseModelDelegate": "GPU", "poseModelVariant": requested.modelVariant,
         "poseModelSource": requested.modelPath == nil ? "bundled" : "local",
       ]
-      var event = PoseLandmarkPayload.make(inference)
+      var event = try PoseLandmarkPayload.make(inference)
       event["additionalData"] = metadata
       emit(onLandmark, event, token: token)
     } catch {
