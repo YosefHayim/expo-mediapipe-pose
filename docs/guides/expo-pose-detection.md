@@ -13,7 +13,7 @@ pnpm add expo-mediapipe-pose@^0.3.0 effect@^3.21.4
 pnpm exec expo install react-native-svg expo-camera
 ```
 
-Merge this permission configuration into your existing `app.json`; preserve its other plugins and settings:
+For projects using Expo's generated native projects, merge this permission configuration into your existing `app.json`; preserve its other plugins and settings:
 
 ```json
 {
@@ -29,6 +29,10 @@ Merge this permission configuration into your existing `app.json`; preserve its 
 ```
 
 [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) supplies the permission hook here. `PoseCameraView` owns the preview and inference; do not mount a second camera preview alongside it. Pose detection does not require microphone access.
+
+If your generated `ios/` or `android/` directories already exist, run `pnpm exec expo prebuild` to apply plugin changes before rebuilding. `expo run:*` only generates a missing native project automatically. Review the generated changes.
+
+For manually maintained native projects, follow [expo-camera's native setup](https://docs.expo.dev/versions/latest/sdk/camera/#are-you-using-this-library-in-an-existing-react-native-app), including `NSCameraUsageDescription` in the iOS app's `Info.plist` and Android camera permission. App config alone does not update those projects. Do not run Prebuild over hand-maintained native changes; apply the native configuration directly.
 
 Build and install your app on an iOS or Android phone:
 

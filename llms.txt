@@ -20,9 +20,9 @@ Coordinates, missing/unknown states, pose-index identity limits, cancellation an
 
 ## Examples and verification
 
-- [Expo pose detection guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/guides/expo-pose-detection.md): npm installation, camera permission, foreground/screen lifecycle, error handling and processing rates.
-- [Skeleton styling guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/guides/custom-skeleton-styling.md): Typed body-part selection, joint/connection overrides and overlay visibility.
-- [Angle feedback guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/guides/angle-triggered-feedback.md): Image-plane elbow measurement, hysteresis, hold/stale timing, unknown states and application transition callbacks.
+- [Expo pose detection guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/v0.3.0/docs/guides/expo-pose-detection.md): npm installation, camera permission, foreground/screen lifecycle, error handling and processing rates.
+- [Skeleton styling guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/v0.3.0/docs/guides/custom-skeleton-styling.md): Typed body-part selection, joint/connection overrides and overlay visibility.
+- [Angle feedback guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/v0.3.0/docs/guides/angle-triggered-feedback.md): Image-plane elbow measurement, hysteresis, hold/stale timing, unknown states and application transition callbacks.
 - [Example application](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/App.tsx): Camera permissions, lifecycle controls, feedback and entry points for photo/video analysis.
 - [Photo and segmentation example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/PhotoPanel.tsx): Local photo inference, pose selection, mask display and cleanup.
 - [Video example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/VideoPanel.tsx): Sampled local-video inference, progress and cancellation.
