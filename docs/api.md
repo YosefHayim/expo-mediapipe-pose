@@ -1,5 +1,7 @@
 # API
 
+This document describes `main`, including unreleased additions. For the tagged source installation, use the [v0.2.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.2.0/docs/api.md). The independent FPS controls, performance metrics and geometry helpers require a checkout containing their changes.
+
 ## PoseCameraView
 
 The component accepts React Native `ViewProps`, including `style`, `onLayout` and overlay children. Give it non-zero bounds. Obtain camera permission before mounting.

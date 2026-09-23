@@ -12,6 +12,8 @@ Early release targeting Expo SDK 57, React Native 0.86, and React 19.2. Requires
 
 Until an npm release is published, install the tagged source with [pnpm](https://pnpm.io/):
 
+The command below installs v0.2.0. Its [versioned API documentation](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.2.0/docs/api.md) matches that release; the [API on main](docs/api.md) also describes unreleased features.
+
 ```sh
 pnpm add https://github.com/YosefHayim/expo-mediapipe-pose/archive/refs/tags/v0.2.0.tar.gz effect@^3.21.4
 pnpm exec expo install react-native-svg expo-camera
