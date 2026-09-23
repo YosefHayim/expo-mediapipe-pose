@@ -93,6 +93,7 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 			<TextInput
 				value={location}
 				onChangeText={setLocation}
+				editable={!busy}
 				autoCapitalize="none"
 				placeholder="file:///… (copy picker results into app storage)"
 				placeholderTextColor="#94a3b8"
