@@ -1,11 +1,15 @@
 import type { Landmark, PoseFrame } from "../contracts";
+import { hasLandmarkConfidence } from "./confidence";
 import { getNamedLandmarks, type LandmarkName } from "./landmarks";
 
 export type PoseRuleStatus = "pass" | "fail" | "unknown";
 
 export interface PoseRuleOptions<Name extends LandmarkName = LandmarkName> {
 	landmarks: readonly Name[];
-	evaluate: (pose: Readonly<Record<Name, Landmark>>) => boolean;
+	evaluate: (
+		pose: Readonly<Record<Name, Landmark>>,
+		frame: PoseFrame,
+	) => boolean | "unknown";
 	minVisibility?: number;
 	holdMs?: number;
 	staleAfterMs?: number;
@@ -63,16 +67,13 @@ export const evaluatePoseRule = <Name extends LandmarkName>(
 			Number.isFinite,
 		);
 		if (!coordinatesAreFinite) return true;
-		if (joint.visibility === undefined) return true;
-		if (!Number.isFinite(joint.visibility)) return true;
-		if (joint.visibility < minimumConfidence) return true;
-		if (joint.presence === undefined) return false;
-		if (!Number.isFinite(joint.presence)) return true;
-		return joint.presence < minimumConfidence;
+		return !hasLandmarkConfidence(joint, minimumConfidence);
 	});
 	if (hasUncertainLandmark) return "unknown";
 	// Every requested key has been checked above; other landmarks remain optional internally.
-	return options.evaluate(pose as Record<Name, Landmark>) ? "pass" : "fail";
+	const outcome = options.evaluate(pose as Record<Name, Landmark>, frame);
+	if (outcome === "unknown") return "unknown";
+	return outcome ? "pass" : "fail";
 };
 
 /** Uses a caller-supplied monotonic clock. Unknown invalidates feedback immediately. */

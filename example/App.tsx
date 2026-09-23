@@ -1,7 +1,9 @@
 import { useCameraPermissions } from "expo-camera";
 import {
+	getImageJointAngle,
 	type InferenceError,
 	PoseCameraView,
+	type PoseFrame,
 	type PosePerformanceMetrics,
 	type PoseRuleStatus,
 	usePoseRule,
@@ -54,6 +56,29 @@ export default function App() {
 		evaluate: (pose) => pose.leftWrist.y < pose.leftShoulder.y,
 	});
 
+	const elbowBend = usePoseRule({
+		landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
+		isActive,
+		holdMs: 250,
+		evaluate: (_pose, frame) => {
+			const angle = getImageJointAngle(
+				{ landmarks: frame.landmarks, imageSize: frame.additionalData },
+				"leftShoulder",
+				"leftElbow",
+				"leftWrist",
+			);
+			if (angle.status === "unavailable") return "unknown";
+			return angle.value < 90;
+		},
+	});
+	const handleLandmark = React.useCallback(
+		(frame: PoseFrame) => {
+			raisedArm.update(frame);
+			elbowBend.update(frame);
+		},
+		[raisedArm.update, elbowBend.update],
+	);
+
 	React.useEffect(() => {
 		const subscription = AppState.addEventListener("change", (state) =>
 			setForeground(state === "active"),
@@ -88,22 +113,26 @@ export default function App() {
 	const switchCamera = () => {
 		setMetrics(null);
 		raisedArm.reset();
+		elbowBend.reset();
 		setCameraFacing((previous) => (previous === "front" ? "back" : "front"));
 	};
 	const retryCamera = () => {
 		setMetrics(null);
 		setFailure(null);
 		raisedArm.reset();
+		elbowBend.reset();
 		setCameraKey((previous) => previous + 1);
 	};
 	const handleFailure = (error: InferenceError) => {
 		setMetrics(null);
 		raisedArm.reset();
+		elbowBend.reset();
 		setFailure(error);
 	};
 	const handleConfiguration = () => {
 		setMetrics(null);
 		raisedArm.reset();
+		elbowBend.reset();
 		setFailure(null);
 	};
 
@@ -111,6 +140,7 @@ export default function App() {
 		<View style={styles.screen}>
 			<Text style={styles.title}>MediaPipe Pose</Text>
 			<Text style={styles.text}>{feedbackLabels[raisedArm.status]}</Text>
+			<Text style={styles.text}>Elbow below 90°: {elbowBend.status}</Text>
 			<PoseCameraView
 				key={cameraKey}
 				style={styles.camera}
@@ -120,7 +150,7 @@ export default function App() {
 				previewFps={30}
 				callbackFps={5}
 				onPerformanceMetrics={setMetrics}
-				onLandmark={raisedArm.update}
+				onLandmark={handleLandmark}
 				onCameraConfigured={handleConfiguration}
 				onInferenceError={handleFailure}
 				skeleton={{
