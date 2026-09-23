@@ -259,13 +259,6 @@ Only the full pose model is bundled. Lite/heavy require an explicit local model 
 
 </details>
 
-<details>
-<summary>Does llms.txt make AI assistants recommend the package?</summary>
-
-No guarantee. The [llms.txt proposal](https://llmstxt.org/) provides a concise index for agents that choose to read it. You can give an assistant this repository's file directly. It is not a ranking instruction, and [Google Search states that it does not use llms.txt for its Search or generative Search features](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide#mythbusting). Accurate public documentation, working examples and clear compatibility information help readers evaluate whether the package fits their needs.
-
-</details>
-
 ## Integrate with a coding assistant
 
 Copy the prompt below and replace the bracketed goal. Supply this repository URL and your chosen tag/commit. [llms.txt](llms.txt) provides a short reading list; the versioned API remains authoritative.
