@@ -158,6 +158,8 @@ const tracking = usePoseTracking({
 
 ## Errors and recovery
 
+JavaScript prop validation (including frame rates, `maxPoses`, mask dimensions and the required segmentation consumer) throws during render before that configuration reaches the native view. Validate dynamic configuration before rendering or handle programmer/configuration errors with a React error boundary. `onInferenceError` reports native failures and malformed native events; it does not intercept JavaScript validation errors.
+
 Codes: `cameraPermission`, `cameraConfiguration`, `cameraRuntime`, `modelInitialization`, `inferenceRuntime`, `nativeViewInitialization`, `invalidNativeEvent`. Native payloads never include raw exceptions or device paths. Invalid payloads report `invalidNativeEvent`, rather than being presented as valid detection results.
 
 Native failures release camera/detector resources and invalidate queued frames. The application owns recovery. After correcting permissions/options, toggle `isActive` or remount using a new React `key`. Use bounded retries appropriate to your UI. Empty detections are not errors.
