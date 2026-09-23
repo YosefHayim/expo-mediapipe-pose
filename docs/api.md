@@ -1,6 +1,6 @@
 # API
 
-This document describes `main`, including unreleased additions. For the tagged source installation, use the [v0.2.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.2.0/docs/api.md). The independent FPS controls, performance metrics and geometry helpers require a checkout containing their changes.
+This document describes `main`, including unreleased additions. For the tagged source installation, use the [v0.2.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.2.0/docs/api.md).
 
 ## PoseCameraView
 
@@ -110,6 +110,19 @@ The example app displays this rule alongside wrist-height feedback. Applications
 `missingLandmarks` lists absent required joints; `uncertainLandmarks` lists joints with insufficient/unknown confidence or invalid coordinates. Lists are deduplicated in configuration order and are empty outside `incomplete`. `onChange(state)` fires only when the status or either list changes, using the latest committed callback; initial state is not a notification. Use `state.status === "found"` or `"lost"` for application triggers.
 
 Loss and uncertainty invalidate tracking immediately. `holdMs` stabilizes acquisition only. Stale input and restarted frame counters discard the acquisition history. Updating confidence, required joints, durations or active state resets tracking; unmount clears its timer. Timing uses the hook's monotonic wall clock. This describes landmark availability, not persistent person identity or exercise correctness. `inspectPoseTracking(frame, options)` exposes the immediate frame inspection without React, hold timing or stale timers. The example displays left-arm positioning feedback.
+
+```tsx
+const tracking = usePoseTracking({
+  landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
+  holdMs: 150,
+  isActive,
+  onChange: state => {
+    if (state.status === "found") beginInteraction();
+    if (state.status === "lost") requestRepositioning();
+  },
+});
+// Connect tracking.update to frame handling and tracking.reset to camera changes.
+```
 
 ## Errors and recovery
 
