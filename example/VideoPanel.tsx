@@ -20,6 +20,8 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 	);
 	const [running, setRunning] = React.useState(false);
 	const [size, setSize] = React.useState({ width: 0, height: 0 });
+	const hasLocation = location.trim().length > 0;
+	const canAnalyze = hasLocation && !running;
 	const controller = React.useRef<AbortController | null>(null);
 	React.useEffect(
 		() => () => {
@@ -96,7 +98,7 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 				onPress={loadFixture}
 				disabled={running}
 			/>
-			<Button title="Analyze" onPress={analyze} disabled={running} />
+			<Button title="Analyze" onPress={analyze} disabled={!canAnalyze} />
 			<Button
 				title="Cancel"
 				onPress={() => controller.current?.abort()}

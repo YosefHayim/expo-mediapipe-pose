@@ -1,6 +1,10 @@
-"""Encode public pose.jpg into short, static H.264 decode/orientation fixtures."""
+"""Encode public pose.jpg into short, static H.264 decode/orientation fixtures.
+
+Requires FFmpeg and ffprobe 8.1.2 on PATH.
+"""
 from pathlib import Path
 import subprocess
+import json
 
 root = Path(__file__).resolve().parent.parent
 fixtures = root / "example" / "fixtures"
@@ -25,3 +29,17 @@ try:
     ], check=True)
 finally:
     rotated.unlink(missing_ok=True)
+
+for filename, dimensions, rotation in [
+    ("pose-video.mp4", (1000, 668), None),
+    ("pose-video-rotated.mp4", (668, 1000), 90),
+]:
+    probe = subprocess.run([
+        "ffprobe", "-v", "error", "-show_streams", "-of", "json", str(fixtures / filename)
+    ], check=True, capture_output=True, text=True)
+    stream = json.loads(probe.stdout)["streams"][0]
+    assert stream["codec_name"] == "h264"
+    assert (stream["width"], stream["height"]) == dimensions
+    assert float(stream["duration"]) == 2
+    if rotation is not None:
+        assert any(data.get("rotation") == rotation for data in stream["side_data_list"])

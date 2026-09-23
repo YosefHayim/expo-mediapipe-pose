@@ -1,3 +1,4 @@
+import { File, Paths } from "expo-file-system";
 import { analyzePoseVideo, type PoseDetection } from "expo-mediapipe-pose";
 
 function verify(condition: boolean, message: string): asserts condition {
@@ -62,6 +63,53 @@ export async function runVideoChecks(
 		"Fractional frame intervals must remain bounded",
 	);
 	cases.push("sampling between encoded frames");
+	const invalid = new File(Paths.cache, "pose-invalid-video.mp4");
+	invalid.write("not a video");
+	let invalidRejected = false;
+	try {
+		await analyzePoseVideo(invalid.uri).next();
+	} catch (error) {
+		verify(
+			typeof error === "object" && error !== null,
+			"Invalid video must reject with a native error",
+		);
+		verify(
+			"code" in error && typeof error.code === "string",
+			"Invalid video must fail at the native boundary",
+		);
+		invalidRejected = true;
+	} finally {
+		invalid.delete();
+	}
+	verify(invalidRejected, "Invalid video must reject");
+	cases.push("invalid native video rejected");
+	const active = analyzePoseVideo(video);
+	try {
+		await active.next();
+		let concurrentRejected = false;
+		try {
+			await analyzePoseVideo(video).next();
+		} catch (error) {
+			verify(
+				typeof error === "object" && error !== null,
+				"Concurrent video must reject with a native error",
+			);
+			verify(
+				"code" in error && typeof error.code === "string",
+				"Concurrent video must fail at the native boundary",
+			);
+			concurrentRejected = true;
+		}
+		verify(concurrentRejected, "Only one video session may be open");
+		const continued = await active.next();
+		verify(
+			continued.value?.timestampMs === 200,
+			"Rejected second session must preserve the active session",
+		);
+	} finally {
+		await active.return();
+	}
+	cases.push("concurrent video rejection preserves the active session");
 	const controller = new AbortController();
 	const stream = analyzePoseVideo(video, { signal: controller.signal });
 	await stream.next();
