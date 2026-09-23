@@ -104,12 +104,12 @@ export const BODY_PARTS = {
 export type BodyPart = keyof typeof BODY_PARTS;
 
 export const getLandmark = (
-	frame: PoseFrame,
+	frame: Pick<PoseFrame, "landmarks">,
 	name: LandmarkName,
 ): Landmark | undefined => frame.landmarks[LANDMARK_NAMES.indexOf(name)];
 
 export const getNamedLandmarks = (
-	frame: PoseFrame,
+	frame: Pick<PoseFrame, "landmarks">,
 ): Partial<Record<LandmarkName, Landmark>> => {
 	const named: Partial<Record<LandmarkName, Landmark>> = {};
 	LANDMARK_NAMES.forEach((name, index) => {

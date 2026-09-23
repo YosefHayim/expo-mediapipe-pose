@@ -6,3 +6,4 @@ export * from "./hooks/usePoseRule";
 export * from "./hooks/usePoseRules";
 export * from "./hooks/usePoseTracking";
 export * from "./native/cameraCapabilities";
+export * from "./native/imageAnalysis";

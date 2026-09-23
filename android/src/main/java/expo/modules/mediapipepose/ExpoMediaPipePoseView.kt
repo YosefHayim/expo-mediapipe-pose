@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.os.SystemClock
@@ -26,16 +25,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.MPImage
-import com.google.mediapipe.tasks.core.BaseOptions
-import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
-import java.io.File
-import java.io.FileInputStream
-import java.nio.channels.FileChannel
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -182,26 +176,10 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
     }
 
     private fun openDetector(requested: PoseCameraOptions): PoseLandmarker {
-        val base = BaseOptions.builder().setDelegate(Delegate.CPU)
-        val customPath = requested.modelPath
-        if (customPath == null) {
-            require(requested.modelVariant == "full")
-            base.setModelAssetPath("pose_landmarker_full.task")
-        } else {
-            val modelUri = Uri.parse(customPath)
-            require(modelUri.scheme == null || modelUri.scheme == "file")
-            val modelFile = File(requireNotNull(modelUri.path))
-            require(modelFile.isAbsolute && modelFile.isFile && modelFile.canRead())
-            FileInputStream(modelFile).use { stream ->
-                base.setModelAssetBuffer(
-                    stream.channel.map(FileChannel.MapMode.READ_ONLY, 0, stream.channel.size())
-                )
-            }
-        }
         return PoseLandmarker.createFromOptions(
             context,
             PoseLandmarker.PoseLandmarkerOptions.builder()
-                .setBaseOptions(base.build())
+                .setBaseOptions(PoseModel.options(requested.modelVariant, requested.modelPath))
                 .setRunningMode(RunningMode.VIDEO)
                 .setNumPoses(1)
                 .setMinPoseDetectionConfidence(requested.minPoseDetectionConfidence.toFloat())
@@ -335,38 +313,6 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                     (SystemClock.elapsedRealtimeNanos() - inferenceStartedAt) / 1_000_000.0
                 frameTiming.recordInference(inferenceDurationMs)
                 if (!frameTiming.shouldDeliver(nowMs, processing.callbackFps)) return@setAnalyzer
-                val landmarks =
-                    inference.landmarks().firstOrNull().orEmpty().map { joint ->
-                        mutableMapOf<String, Any>(
-                                "x" to joint.x(),
-                                "y" to joint.y(),
-                                "z" to joint.z(),
-                            )
-                            .apply {
-                                joint.visibility().ifPresent { confidence ->
-                                    put("visibility", confidence)
-                                }
-                                joint.presence().ifPresent { confidence ->
-                                    put("presence", confidence)
-                                }
-                            }
-                    }
-                val worldLandmarks =
-                    inference.worldLandmarks().firstOrNull().orEmpty().map { joint ->
-                        mutableMapOf<String, Any>(
-                                "x" to joint.x(),
-                                "y" to joint.y(),
-                                "z" to joint.z(),
-                            )
-                            .apply {
-                                joint.visibility().ifPresent { confidence ->
-                                    put("visibility", confidence)
-                                }
-                                joint.presence().ifPresent { confidence ->
-                                    put("presence", confidence)
-                                }
-                            }
-                    }
                 val metadata =
                     mapOf(
                         "width" to pixels.width,
@@ -387,11 +333,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                             if (requested.modelPath == null) "bundled" else "local",
                     )
                 val frame =
-                    mapOf(
-                        "landmarks" to landmarks,
-                        "worldLandmarks" to worldLandmarks,
-                        "additionalData" to metadata,
-                    )
+                    PoseLandmarkPayload.make(inference) + mapOf("additionalData" to metadata)
                 emit(token) { onLandmark(frame) }
             } catch (_: Exception) {
                 failed = true

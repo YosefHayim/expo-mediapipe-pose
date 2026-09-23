@@ -1,0 +1,144 @@
+import { Asset } from "expo-asset";
+import { File, Paths } from "expo-file-system";
+import { analyzePoseImage, getCameraCapabilities } from "expo-mediapipe-pose";
+import { Platform } from "react-native";
+
+function verify(condition: boolean, message: string): asserts condition {
+	if (!condition) throw new Error(message);
+}
+async function localAsset(module: number) {
+	const asset = await Asset.fromModule(module).downloadAsync();
+	verify(asset.localUri !== null, "Fixture must be downloaded before analysis");
+	return asset.localUri;
+}
+export async function runNativeChecks() {
+	const cases: string[] = [];
+	writeReport({ status: "running", platform: Platform.OS, cases });
+	try {
+		const capabilities = await getCameraCapabilities();
+		cases.push(`camera discovery: ${capabilities.status}`);
+		const photo = await localAsset(require("./fixtures/pose.jpg"));
+		const result = await analyzePoseImage(photo);
+		verify(
+			result.landmarks.length === 33,
+			"Pose image must produce 33 image landmarks",
+		);
+		verify(
+			result.worldLandmarks.length === 33,
+			"Pose image must produce 33 world landmarks",
+		);
+		verify(result.model.delegate === "CPU", "Photo analysis uses CPU");
+		verify(
+			!("additionalData" in result),
+			"Photo results must not invent camera metadata",
+		);
+		cases.push("real pose image and world landmarks");
+		const orientations = [
+			require("./fixtures/pose-exif-2.jpg"),
+			require("./fixtures/pose-exif-3.jpg"),
+			require("./fixtures/pose-exif-4.jpg"),
+			require("./fixtures/pose-exif-5.jpg"),
+			require("./fixtures/pose-exif-6.jpg"),
+			require("./fixtures/pose-exif-7.jpg"),
+			require("./fixtures/pose-exif-8.jpg"),
+		];
+		for (const [index, module] of orientations.entries()) {
+			const oriented = await analyzePoseImage(await localAsset(module));
+			verify(
+				oriented.imageSize.width === result.imageSize.width,
+				"EXIF upright width must match",
+			);
+			verify(
+				oriented.imageSize.height === result.imageSize.height,
+				"EXIF upright height must match",
+			);
+			verify(
+				oriented.landmarks.length === 33,
+				"EXIF image must produce a pose",
+			);
+			for (const [jointIndex, landmark] of oriented.landmarks.entries()) {
+				const reference = result.landmarks[jointIndex];
+				verify(reference !== undefined, "Reference landmark must exist");
+				verify(
+					Math.abs(landmark.x - reference.x) < 0.05,
+					"EXIF x must align with upright reference",
+				);
+				verify(
+					Math.abs(landmark.y - reference.y) < 0.05,
+					"EXIF y must align with upright reference",
+				);
+			}
+			cases.push(`EXIF orientation ${index + 2}`);
+		}
+
+		const emptyImage = await localAsset(require("./fixtures/burger.jpg"));
+		const empty = await analyzePoseImage(emptyImage);
+		verify(
+			empty.landmarks.length === 0,
+			"No-pose image must return empty landmarks",
+		);
+		cases.push("real no-pose image");
+		const bounded = await analyzePoseImage(photo, { maxImageDimension: 256 });
+		verify(
+			Math.max(bounded.imageSize.width, bounded.imageSize.height) <= 256,
+			"Decode must respect maximum dimension",
+		);
+		cases.push("bounded image decoding");
+		const invalid = new File(Paths.cache, "pose-invalid-image.txt");
+		invalid.write("not an image");
+		let rejected = false;
+		try {
+			await analyzePoseImage(invalid.uri);
+		} catch {
+			rejected = true;
+		} finally {
+			invalid.delete();
+		}
+		verify(rejected, "Invalid file must reject");
+		cases.push("invalid local image rejected");
+		let missingRejected = false;
+		try {
+			await analyzePoseImage(
+				new File(Paths.cache, "pose-missing-image.jpg").uri,
+			);
+		} catch {
+			missingRejected = true;
+		}
+		verify(missingRejected, "Missing local file must reject");
+		cases.push("missing local image rejected");
+		let modelRejected = false;
+		try {
+			await analyzePoseImage(photo, { modelPath: photo });
+		} catch {
+			modelRejected = true;
+		}
+		verify(modelRejected, "Invalid model must reject after image decoding");
+		cases.push("invalid local model rejected");
+
+		const recovery = await analyzePoseImage(photo);
+		verify(
+			recovery.landmarks.length === 33,
+			"Analysis must recover after invalid input",
+		);
+		cases.push("resources reusable after failure");
+		return writeReport({ status: "passed", platform: Platform.OS, cases });
+	} catch (error) {
+		return writeReport({
+			status: "failed",
+			platform: Platform.OS,
+			cases,
+			error: String(error),
+		});
+	}
+}
+function writeReport(report: {
+	status: string;
+	platform: string;
+	cases: string[];
+	error?: string;
+}) {
+	new File(Paths.document, "pose-native-checks.json").write(
+		JSON.stringify(report),
+	);
+	return JSON.stringify(report, null, 2);
+}

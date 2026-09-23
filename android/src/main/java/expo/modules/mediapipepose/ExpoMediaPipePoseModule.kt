@@ -15,6 +15,9 @@ class ExpoMediaPipePoseModule : Module() {
             }
             PoseCameraCapabilities.discover(context, promise)
         }
+        AsyncFunction("analyzePoseImage") { location: String, options: PoseImageOptions ->
+            PoseImageAnalysis.analyze(requireNotNull(appContext.reactContext), location, options)
+        }
         View(ExpoMediaPipePoseView::class) {
             Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
             Prop("isActive") { view: ExpoMediaPipePoseView, active: Boolean ->

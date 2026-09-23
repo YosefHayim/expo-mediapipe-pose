@@ -163,7 +163,8 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
 
   private func openDetector(_ requested: PoseCameraOptions) throws -> PoseLandmarker {
     let configuration = PoseLandmarkerOptions()
-    configuration.baseOptions.modelAssetPath = try resolveModelPath(requested)
+    configuration.baseOptions.modelAssetPath = try PoseModel.path(
+      variant: requested.modelVariant, localPath: requested.modelPath)
     configuration.baseOptions.delegate = .GPU
     // Sequential video inference on the capture worker keeps timestamps and metadata paired.
     // AVCaptureVideoDataOutput drops frames while this worker is busy.
@@ -173,31 +174,6 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     configuration.minPosePresenceConfidence = Float(requested.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(requested.minTrackingConfidence)
     return try PoseLandmarker(options: configuration)
-  }
-
-  private func resolveModelPath(_ requested: PoseCameraOptions) throws -> String {
-    guard let customPath = requested.modelPath else {
-      guard requested.modelVariant == "full",
-        let resourceURL = Bundle(for: ExpoMediaPipePoseView.self).url(
-          forResource: "ExpoMediaPipePoseModels", withExtension: "bundle"),
-        let resourceBundle = Bundle(url: resourceURL),
-        let bundledPath = resourceBundle.path(forResource: "pose_landmarker_full", ofType: "task")
-      else { throw CameraFailure.invalidModel }
-      return bundledPath
-    }
-    let modelPath: String
-    if customPath.hasPrefix("file://") {
-      guard let fileURL = URL(string: customPath), fileURL.isFileURL else {
-        throw CameraFailure.invalidModel
-      }
-      modelPath = fileURL.path
-    } else {
-      modelPath = customPath
-    }
-    guard modelPath.hasPrefix("/"), FileManager.default.isReadableFile(atPath: modelPath) else {
-      throw CameraFailure.invalidModel
-    }
-    return modelPath
   }
 
   private func configureCamera(_ requested: PoseCameraOptions) throws {
@@ -287,18 +263,6 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
       let inferenceDurationMs = (CACurrentMediaTime() - inferenceStartedAt) * 1000
       frameTiming.recordInference(durationMs: inferenceDurationMs)
       guard frameTiming.shouldDeliver(at: nowMs, fps: processing.callbackFps) else { return }
-      let landmarks = (inference.landmarks.first ?? []).map { joint -> [String: Any] in
-        var coordinates: [String: Any] = ["x": joint.x, "y": joint.y, "z": joint.z]
-        if let visibility = joint.visibility { coordinates["visibility"] = visibility }
-        if let presence = joint.presence { coordinates["presence"] = presence }
-        return coordinates
-      }
-      let worldLandmarks = (inference.worldLandmarks.first ?? []).map { joint -> [String: Any] in
-        var coordinates: [String: Any] = ["x": joint.x, "y": joint.y, "z": joint.z]
-        if let visibility = joint.visibility { coordinates["visibility"] = visibility }
-        if let presence = joint.presence { coordinates["presence"] = presence }
-        return coordinates
-      }
       let thermal: String
       switch ProcessInfo.processInfo.thermalState {
       case .nominal: thermal = "nominal"
@@ -318,10 +282,9 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
         "poseModelDelegate": "GPU", "poseModelVariant": requested.modelVariant,
         "poseModelSource": requested.modelPath == nil ? "bundled" : "local",
       ]
-      emit(
-        onLandmark,
-        ["landmarks": landmarks, "worldLandmarks": worldLandmarks, "additionalData": metadata],
-        token: token)
+      var event = PoseLandmarkPayload.make(inference)
+      event["additionalData"] = metadata
+      emit(onLandmark, event, token: token)
     } catch {
       captureOptions = nil
       emitFailure("inferenceRuntime", token: token)
@@ -369,7 +332,6 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
 }
 
 private enum CameraFailure: Error {
-  case invalidModel
   case unavailableCamera
   case unavailablePixels
 }
