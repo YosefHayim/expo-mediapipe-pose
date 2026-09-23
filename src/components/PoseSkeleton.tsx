@@ -1,6 +1,7 @@
 import * as React from "react";
 import Svg, { Circle, Line } from "react-native-svg";
 import type { PoseFrame } from "../contracts";
+import type { SelectablePose } from "../pose/selection";
 import {
 	createDetectionSkeleton,
 	createSkeleton,
@@ -13,7 +14,7 @@ export type PoseSkeletonProps = SkeletonOptions &
 	(
 		| { frame: PoseFrame }
 		| {
-				detection: { landmarks: PoseFrame["landmarks"]; imageSize: Dimensions };
+				detection: SelectablePose & { imageSize: Dimensions };
 		  }
 	);
 

@@ -169,7 +169,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     // Sequential video inference on the capture worker keeps timestamps and metadata paired.
     // AVCaptureVideoDataOutput drops frames while this worker is busy.
     configuration.runningMode = .video
-    configuration.numPoses = 1
+    configuration.numPoses = requested.maxPoses
     configuration.minPoseDetectionConfidence = Float(requested.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(requested.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(requested.minTrackingConfidence)
@@ -282,7 +282,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
         "poseModelDelegate": "GPU", "poseModelVariant": requested.modelVariant,
         "poseModelSource": requested.modelPath == nil ? "bundled" : "local",
       ]
-      var event = PoseLandmarkPayload.make(inference)
+      var event = try PoseLandmarkPayload.make(inference)
       event["additionalData"] = metadata
       emit(onLandmark, event, token: token)
     } catch {

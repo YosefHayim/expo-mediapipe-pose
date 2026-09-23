@@ -28,7 +28,7 @@ private final class PoseVideoSession {
       variant: options.modelVariant, localPath: options.modelPath)
     configuration.baseOptions.delegate = .CPU
     configuration.runningMode = .video
-    configuration.numPoses = 1
+    configuration.numPoses = options.maxPoses
     configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(trackingConfidence)
@@ -106,7 +106,7 @@ internal final class PoseVideoAnalysis {
           let image = try MPImage(uiImage: UIImage(cgImage: decoded.image))
           let started = ProcessInfo.processInfo.systemUptime
           let result = try detector.detect(videoFrame: image, timestampInMilliseconds: timestampMs)
-          var detection = PoseLandmarkPayload.make(result)
+          var detection = try PoseLandmarkPayload.make(result)
           detection["imageSize"] = ["width": decoded.image.width, "height": decoded.image.height]
           detection["inferenceDurationMs"] = (ProcessInfo.processInfo.systemUptime - started) * 1000
           detection["model"] = [

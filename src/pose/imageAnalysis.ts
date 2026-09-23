@@ -1,8 +1,9 @@
 import { Schema } from "effect";
-import { Landmark, ModelVariant } from "../contracts";
+import { Landmark, MaxPoses, ModelVariant, PoseResults } from "../contracts";
 
 const Confidence = Schema.Number.pipe(Schema.finite(), Schema.between(0, 1));
 export const PoseImageOptions = Schema.Struct({
+	maxPoses: Schema.optionalWith(MaxPoses, { default: () => 1 }),
 	modelVariant: Schema.optionalWith(ModelVariant, {
 		default: () => "full" as const,
 	}),
@@ -20,6 +21,7 @@ export const PoseImageOptions = Schema.Struct({
 });
 export type PoseImageOptions = Schema.Schema.Encoded<typeof PoseImageOptions>;
 export const PoseDetection = Schema.Struct({
+	poses: Schema.optional(PoseResults),
 	landmarks: Schema.mutable(Schema.Array(Landmark)),
 	worldLandmarks: Schema.mutable(Schema.Array(Landmark)),
 	imageSize: Schema.Struct({

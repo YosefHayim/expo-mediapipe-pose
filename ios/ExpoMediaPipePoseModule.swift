@@ -42,6 +42,8 @@ public class ExpoMediaPipePoseModule: Module {
       Prop("performanceMetricsEnabled") { (view: ExpoMediaPipePoseView, enabled: Bool) in
         view.processingOptions.metricsEnabled = enabled
       }
+      Prop("maxPoses") { (view: ExpoMediaPipePoseView, count: Int) in view.options.maxPoses = count
+      }
       Prop("poseModelVariant") { (view: ExpoMediaPipePoseView, variant: String) in
         view.options.modelVariant = variant
       }

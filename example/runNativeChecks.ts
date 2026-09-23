@@ -2,6 +2,7 @@ import { Asset } from "expo-asset";
 import { File, Paths } from "expo-file-system";
 import { analyzePoseImage, getCameraCapabilities } from "expo-mediapipe-pose";
 import { Platform } from "react-native";
+import { runMultiplePoseChecks } from "./runMultiplePoseChecks";
 import { runVideoChecks } from "./runVideoChecks";
 
 function verify(condition: boolean, message: string): asserts condition {
@@ -160,6 +161,10 @@ export async function runNativeChecks() {
 			await localAsset(require("./fixtures/pose-video.mp4")),
 			await localAsset(require("./fixtures/pose-video-rotated.mp4")),
 			result,
+			cases,
+		);
+		await runMultiplePoseChecks(
+			await localAsset(require("./fixtures/man-woman-okay.jpg")),
 			cases,
 		);
 		return writeReport({

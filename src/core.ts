@@ -7,6 +7,7 @@ export * from "./pose/landmarks";
 export * from "./pose/poseRule";
 export * from "./pose/recording";
 export * from "./pose/replay";
+export * from "./pose/selection";
 export * from "./pose/skeleton";
 export * from "./pose/skeletonFeedback";
 export * from "./pose/thresholdRule";

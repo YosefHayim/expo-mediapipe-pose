@@ -181,7 +181,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
             PoseLandmarker.PoseLandmarkerOptions.builder()
                 .setBaseOptions(PoseModel.options(requested.modelVariant, requested.modelPath))
                 .setRunningMode(RunningMode.VIDEO)
-                .setNumPoses(1)
+                .setNumPoses(requested.maxPoses)
                 .setMinPoseDetectionConfidence(requested.minPoseDetectionConfidence.toFloat())
                 .setMinPosePresenceConfidence(requested.minPosePresenceConfidence.toFloat())
                 .setMinTrackingConfidence(requested.minTrackingConfidence.toFloat())

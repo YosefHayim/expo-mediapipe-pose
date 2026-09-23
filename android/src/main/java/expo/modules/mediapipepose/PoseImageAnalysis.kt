@@ -14,6 +14,7 @@ import expo.modules.kotlin.records.Record
 import java.io.File
 
 internal class PoseImageOptions : Record {
+    @Field var maxPoses: Int = 1
     @Field var modelVariant: String = "full"
     @Field var modelPath: String? = null
     @Field var maxImageDimension: Int = 2048
@@ -21,6 +22,7 @@ internal class PoseImageOptions : Record {
     @Field var minPosePresenceConfidence: Double = 0.35
 
     fun validate() {
+        require(maxPoses in 1..6)
         require(maxImageDimension in 256..2048)
         val confidences = listOf(minPoseDetectionConfidence, minPosePresenceConfidence)
         require(confidences.all { it.isFinite() && it in 0.0..1.0 })
@@ -36,7 +38,7 @@ internal object PoseImageAnalysis {
                 PoseLandmarker.PoseLandmarkerOptions.builder()
                     .setBaseOptions(PoseModel.options(options.modelVariant, options.modelPath))
                     .setRunningMode(RunningMode.IMAGE)
-                    .setNumPoses(1)
+                    .setNumPoses(options.maxPoses)
                     .setMinPoseDetectionConfidence(options.minPoseDetectionConfidence.toFloat())
                     .setMinPosePresenceConfidence(options.minPosePresenceConfidence.toFloat())
                     .build()
