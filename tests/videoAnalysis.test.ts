@@ -42,6 +42,8 @@ test("video bridge applies backpressure and closes on completion, break, error a
 	);
 	const calls: Array<string | number> = [];
 	let failRead = false;
+	let invalidSession = false;
+	let closeFailure: Error | undefined;
 	let releaseRead: (() => void) | undefined;
 	let blockRead = false;
 	let opened = false;
@@ -52,11 +54,12 @@ test("video bridge applies backpressure and closes on completion, break, error a
 			async openPoseVideo() {
 				calls.push("open");
 				opened = true;
-				return { id: "session", durationMs: 1000 };
+				return { id: "session", durationMs: invalidSession ? 0 : 1000 };
 			},
 			async closePoseVideo() {
 				calls.push("close");
 				opened = false;
+				if (closeFailure) throw closeFailure;
 			},
 			async readPoseVideoFrame(_id: string, timestampMs: number) {
 				calls.push(timestampMs);
@@ -128,6 +131,47 @@ test("video bridge applies backpressure and closes on completion, break, error a
 			/progress failed/,
 		);
 		assert.equal(opened, false);
+
+		invalidSession = true;
+		calls.length = 0;
+		await assert.rejects(analyzePoseVideo("/video.mp4").next());
+		assert.deepEqual(calls, ["open", "close"]);
+		assert.equal(opened, false);
+		invalidSession = false;
+
+		const cleanupFailure = new Error("close failed");
+		closeFailure = cleanupFailure;
+		await assert.rejects(async () => {
+			for await (const _frame of analyzePoseVideo("/video.mp4")) break;
+		}, cleanupFailure);
+		failRead = true;
+		await assert.rejects(
+			analyzePoseVideo("/video.mp4").next(),
+			(error: unknown) => {
+				assert.ok(error instanceof AggregateError);
+				assert.ok(error.cause instanceof Error);
+				assert.equal(error.cause.message, "decode failed");
+				assert.equal(error.errors[0], error.cause);
+				assert.equal(error.errors[1], cleanupFailure);
+				return true;
+			},
+		);
+		failRead = false;
+		const cleanupAbort = new AbortController();
+		const cleanupStream = analyzePoseVideo("/video.mp4", {
+			signal: cleanupAbort.signal,
+		});
+		await cleanupStream.next();
+		cleanupAbort.abort();
+		await assert.rejects(cleanupStream.next(), (error: unknown) => {
+			assert.ok(error instanceof AggregateError);
+			assert.equal(error.name, "AbortError");
+			assert.ok(error.cause instanceof Error);
+			assert.equal(error.cause.name, "AbortError");
+			assert.equal(error.errors[1], cleanupFailure);
+			return true;
+		});
+		closeFailure = undefined;
 
 		const pausedAbort = new AbortController();
 		const paused = analyzePoseVideo("/video.mp4", {

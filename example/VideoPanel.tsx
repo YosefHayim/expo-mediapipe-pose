@@ -9,6 +9,13 @@ import {
 import * as React from "react";
 import { Button, Text, TextInput, View } from "react-native";
 
+function videoFailureMessage(error: unknown): string {
+	if (error instanceof AggregateError) return String(error);
+	if (error instanceof Error && error.name === "AbortError")
+		return "Cancelled.";
+	return String(error);
+}
+
 export function VideoPanel({ onClose }: { onClose: () => void }) {
 	const [location, setLocation] = React.useState("");
 	const [result, setResult] = React.useState<PoseVideoFrame | null>(null);
@@ -16,7 +23,7 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 		null,
 	);
 	const [status, setStatus] = React.useState(
-		"Choose a local video or load the public fixture.",
+		"Choose a local video up to 60 seconds or load the public fixture.",
 	);
 	const [running, setRunning] = React.useState(false);
 	const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -56,7 +63,7 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 					`Complete: ${recorder.stop().frames.length} landmark frames recorded in memory.`,
 				);
 		} catch (error) {
-			if (controller.current === request) setStatus(String(error));
+			if (controller.current === request) setStatus(videoFailureMessage(error));
 		} finally {
 			if (controller.current === request) {
 				controller.current = null;
@@ -78,7 +85,9 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 	};
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
-			<Text style={{ color: "white" }}>Analyze a local video</Text>
+			<Text style={{ color: "white" }}>
+				Analyze a local video (up to 60 seconds)
+			</Text>
 			<TextInput
 				value={location}
 				onChangeText={setLocation}

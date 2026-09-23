@@ -8,8 +8,11 @@ import {
 	resolvePoseVideoOptions,
 } from "../pose/videoAnalysis";
 
-const VideoSession = Schema.Struct({
+const VideoHandle = Schema.Struct({
 	id: Schema.String.pipe(Schema.nonEmptyString()),
+});
+const VideoSession = Schema.Struct({
+	...VideoHandle.fields,
 	durationMs: Schema.Number.pipe(Schema.finite(), Schema.positive()),
 });
 interface NativeVideoAnalysis {
@@ -21,11 +24,26 @@ interface NativeVideoAnalysis {
 	readPoseVideoFrame(id: string, timestampMs: number): Promise<unknown>;
 	closePoseVideo(id: string): Promise<void>;
 }
-function throwIfAborted(signal: AbortSignal | undefined) {
-	if (!signal?.aborted) return;
+function createAbortError() {
 	const error = new Error("Video analysis was cancelled");
 	error.name = "AbortError";
-	throw error;
+	return error;
+}
+function throwIfAborted(signal: AbortSignal | undefined) {
+	if (signal?.aborted) throw createAbortError();
+}
+function throwVideoFailures(failures: unknown[]) {
+	if (failures.length === 0) return;
+	const primary = failures[0];
+	if (failures.length === 1) throw primary;
+	const message = primary instanceof Error ? primary.message : String(primary);
+	const combined = new AggregateError(
+		failures,
+		`${message} (video cleanup also failed)`,
+		{ cause: primary },
+	);
+	if (primary instanceof Error) combined.name = primary.name;
+	throw combined;
 }
 export async function* analyzePoseVideo(
 	location: string,
@@ -36,12 +54,15 @@ export async function* analyzePoseVideo(
 		resolvePoseVideoOptions(options);
 	throwIfAborted(signal);
 	const native = requireNativeModule<NativeVideoAnalysis>("ExpoMediaPipePose");
-	const session = Schema.decodeUnknownSync(VideoSession)(
-		await native.openPoseVideo(location, image, sampling.minTrackingConfidence),
+	const rawSession = await native.openPoseVideo(
+		location,
+		image,
+		sampling.minTrackingConfidence,
 	);
+	const handle = Schema.decodeUnknownSync(VideoHandle)(rawSession);
 	let closing: Promise<void> | undefined;
 	const close = () => {
-		closing ??= native.closePoseVideo(session.id);
+		closing ??= native.closePoseVideo(handle.id);
 		return closing;
 	};
 	// A consumer may pause indefinitely at yield; cancellation must still release native resources.
@@ -49,7 +70,9 @@ export async function* analyzePoseVideo(
 		void close().catch(() => {});
 	};
 	signal?.addEventListener("abort", onAbort, { once: true });
+	const failures: unknown[] = [];
 	try {
+		const session = Schema.decodeUnknownSync(VideoSession)(rawSession);
 		throwIfAborted(signal);
 		const plan = createVideoSamplePlan(session.durationMs, sampling);
 		for (let index = 0; index < plan.frameCount; index += 1) {
@@ -72,10 +95,14 @@ export async function* analyzePoseVideo(
 			yield frame;
 		}
 	} catch (error) {
-		throwIfAborted(signal);
-		throw error;
+		failures.push(signal?.aborted ? createAbortError() : error);
 	} finally {
 		signal?.removeEventListener("abort", onAbort);
-		await close();
+		try {
+			await close();
+		} catch (error) {
+			failures.push(error);
+		}
+		throwVideoFailures(failures);
 	}
 }

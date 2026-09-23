@@ -176,7 +176,7 @@ export async function runNativeChecks() {
 			nativeFailures,
 			error:
 				error instanceof Error
-					? `${error.message}\n${error.stack}`
+					? [error.message, error.stack].filter(Boolean).join("\n")
 					: String(error),
 		});
 	}
