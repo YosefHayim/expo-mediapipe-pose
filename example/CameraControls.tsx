@@ -22,24 +22,30 @@ export function CameraControls({
 	const [capabilities, setCapabilities] =
 		React.useState<CameraCapabilities | null>(null);
 	const [error, setError] = React.useState(false);
-	React.useEffect(() => {
-		let cancelled = false;
-		getCameraCapabilities()
-			.then((result) => {
-				if (!cancelled) setCapabilities(result);
-			})
-			.catch(() => {
-				if (!cancelled) setError(true);
-			});
-		return () => {
-			cancelled = true;
-		};
+	const request = React.useRef(0);
+	const discover = React.useCallback(async () => {
+		const token = ++request.current;
+		setError(false);
+		setCapabilities(null);
+		try {
+			const result = await getCameraCapabilities();
+			if (request.current === token) setCapabilities(result);
+		} catch {
+			if (request.current === token) setError(true);
+		}
 	}, []);
+	React.useEffect(() => {
+		void discover();
+		return () => {
+			request.current += 1;
+		};
+	}, [discover]);
 	if (error)
 		return (
-			<Text style={{ color: "white" }}>
-				Camera discovery failed. Reopen this screen to retry.
-			</Text>
+			<View>
+				<Text style={{ color: "white" }}>Camera discovery failed.</Text>
+				<Button title="Retry discovery" onPress={discover} />
+			</View>
 		);
 	if (!capabilities)
 		return <Text style={{ color: "white" }}>Discovering cameras…</Text>;
@@ -59,6 +65,7 @@ export function CameraControls({
 				return (
 					<Button
 						key={`${camera.facing}-${camera.lens}`}
+						disabled={selectedCamera === camera}
 						title={`${camera.facing} / ${camera.lens} · ${initialMode.previewFps} fps`}
 						onPress={() =>
 							onSelect({
