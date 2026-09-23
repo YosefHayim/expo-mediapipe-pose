@@ -14,6 +14,8 @@ import expo.modules.kotlin.records.Record
 import java.io.File
 
 internal class PoseImageOptions : Record {
+    @Field var segmentationEnabled: Boolean = false
+    @Field var maskMaxDimension: Int = 256
     @Field var maxPoses: Int = 1
     @Field var modelVariant: String = "full"
     @Field var modelPath: String? = null
@@ -22,6 +24,7 @@ internal class PoseImageOptions : Record {
     @Field var minPosePresenceConfidence: Double = 0.35
 
     fun validate() {
+        require(maskMaxDimension in 64..512)
         require(maxPoses in 1..6)
         require(maxImageDimension in 256..2048)
         val confidences = listOf(minPoseDetectionConfidence, minPosePresenceConfidence)
@@ -30,7 +33,12 @@ internal class PoseImageOptions : Record {
 }
 
 internal object PoseImageAnalysis {
-    fun analyze(context: Context, location: String, options: PoseImageOptions): Map<String, Any> {
+    fun analyze(
+        context: Context,
+        location: String,
+        options: PoseImageOptions,
+        masks: PoseMaskStore,
+    ): Map<String, Any> {
         options.validate()
         val pixels = decode(PoseModel.localFile(location), options.maxImageDimension)
         try {
@@ -39,16 +47,33 @@ internal object PoseImageAnalysis {
                     .setBaseOptions(PoseModel.options(options.modelVariant, options.modelPath))
                     .setRunningMode(RunningMode.IMAGE)
                     .setNumPoses(options.maxPoses)
+                    .setOutputSegmentationMasks(options.segmentationEnabled)
                     .setMinPoseDetectionConfidence(options.minPoseDetectionConfidence.toFloat())
                     .setMinPosePresenceConfidence(options.minPosePresenceConfidence.toFloat())
                     .build()
             PoseLandmarker.createFromOptions(context, configuration).use { detector ->
                 val image = BitmapImageBuilder(pixels).build()
+                var outputMasks = emptyList<com.google.mediapipe.framework.image.MPImage>()
                 try {
                     val started = SystemClock.elapsedRealtimeNanos()
                     val result = detector.detect(image)
+                    outputMasks = result.segmentationMasks().orElse(emptyList())
                     val duration = (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
+                    val segmentation =
+                        if (options.segmentationEnabled)
+                            mapOf(
+                                "segmentation" to
+                                    masks.save(
+                                        context,
+                                        result,
+                                        pixels.width,
+                                        pixels.height,
+                                        options.maskMaxDimension,
+                                    )
+                            )
+                        else emptyMap()
                     return PoseLandmarkPayload.make(result) +
+                        segmentation +
                         mapOf(
                             "imageSize" to
                                 mapOf("width" to pixels.width, "height" to pixels.height),
@@ -62,6 +87,7 @@ internal object PoseImageAnalysis {
                                 ),
                         )
                 } finally {
+                    outputMasks.forEach { it.close() }
                     image.close()
                 }
             }

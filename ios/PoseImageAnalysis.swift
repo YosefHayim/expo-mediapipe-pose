@@ -4,6 +4,8 @@ import MediaPipeTasksVision
 import UIKit
 
 internal struct PoseImageOptions: Record {
+  @Field var segmentationEnabled: Bool = false
+  @Field var maskMaxDimension: Int = 256
   @Field var maxPoses: Int = 1
   @Field var modelVariant: String = "full"
   @Field var modelPath: String? = nil
@@ -12,6 +14,7 @@ internal struct PoseImageOptions: Record {
   @Field var minPosePresenceConfidence: Double = 0.35
 
   func validate() throws {
+    guard (64...512).contains(maskMaxDimension) else { throw PoseMediaError.invalidOptions }
     guard (1...6).contains(maxPoses) else { throw PoseMediaError.invalidOptions }
     guard (256...2048).contains(maxImageDimension) else { throw PoseMediaError.invalidOptions }
     let confidences = [minPoseDetectionConfidence, minPosePresenceConfidence]
@@ -22,7 +25,9 @@ internal struct PoseImageOptions: Record {
 }
 
 internal enum PoseImageAnalysis {
-  static func analyze(_ location: String, options: PoseImageOptions) throws -> [String: Any] {
+  static func analyze(_ location: String, options: PoseImageOptions, masks: PoseMaskStore) throws
+    -> [String: Any]
+  {
     try autoreleasepool {
       try options.validate()
       let url = try PoseModel.localURL(location)
@@ -59,6 +64,7 @@ internal enum PoseImageAnalysis {
       configuration.baseOptions.delegate = .CPU
       configuration.runningMode = .image
       configuration.numPoses = options.maxPoses
+      configuration.shouldOutputSegmentationMasks = options.segmentationEnabled
       configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
       configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
       let detector = try PoseLandmarker(options: configuration)
@@ -67,6 +73,11 @@ internal enum PoseImageAnalysis {
       let result = try detector.detect(image: image)
       let duration = (ProcessInfo.processInfo.systemUptime - started) * 1000
       var payload = try PoseLandmarkPayload.make(result)
+      if options.segmentationEnabled {
+        payload["segmentation"] = try masks.save(
+          result, width: pixels.width, height: pixels.height,
+          maximumDimension: options.maskMaxDimension)
+      }
       payload["imageSize"] = ["width": pixels.width, "height": pixels.height]
       payload["inferenceDurationMs"] = duration
       payload["model"] = [

@@ -1,4 +1,5 @@
 export * from "./components/PoseCameraView";
+export * from "./components/PoseSegmentationOverlay";
 export * from "./components/PoseSkeleton";
 export * from "./core";
 export * from "./hooks/usePoseReplay";
@@ -7,4 +8,5 @@ export * from "./hooks/usePoseRules";
 export * from "./hooks/usePoseTracking";
 export * from "./native/cameraCapabilities";
 export * from "./native/imageAnalysis";
+export { releasePoseSegmentation } from "./native/segmentation";
 export * from "./native/videoAnalysis";

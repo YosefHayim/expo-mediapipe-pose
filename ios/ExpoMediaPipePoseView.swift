@@ -12,6 +12,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   let onInferenceError = EventDispatcher()
 
   private let session = AVCaptureSession()
+  var maskStore: PoseMaskStore?
   private let worker = DispatchQueue(label: "expo.modules.mediapipepose", qos: .userInitiated)
   private lazy var preview = AVCaptureVideoPreviewLayer(session: session)
   // Main-thread identity invalidates queued events as soon as props or lifecycle change.
@@ -170,6 +171,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     // AVCaptureVideoDataOutput drops frames while this worker is busy.
     configuration.runningMode = .video
     configuration.numPoses = requested.maxPoses
+    configuration.shouldOutputSegmentationMasks = requested.segmentationEnabled
     configuration.minPoseDetectionConfidence = Float(requested.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(requested.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(requested.minTrackingConfidence)
@@ -284,6 +286,11 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
       ]
       var event = try PoseLandmarkPayload.make(inference)
       event["additionalData"] = metadata
+      if requested.segmentationEnabled {
+        guard let maskStore else { throw PoseMediaError.maskUnavailable }
+        event["segmentation"] = try maskStore.save(
+          inference, width: width, height: height, maximumDimension: requested.maskMaxDimension)
+      }
       emit(onLandmark, event, token: token)
     } catch {
       captureOptions = nil
@@ -324,8 +331,12 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   }
 
   private func emit(_ dispatcher: EventDispatcher, _ event: [String: Any], token: Int) {
+    let store = maskStore
     DispatchQueue.main.async { [weak self] in
-      guard let self, self.generation == token, self.requestedOptions != nil else { return }
+      guard let self, self.generation == token, self.requestedOptions != nil else {
+        store?.discard(event["segmentation"] as? [String: Any])
+        return
+      }
       dispatcher(event)
     }
   }

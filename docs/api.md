@@ -284,3 +284,41 @@ Set `maxPoses` on `PoseCameraView`, `analyzePoseImage` or `analyzePoseVideo` (de
 Result indices are **not persistent person IDs**. The SDK may reorder results between frames. Reset temporal rules/tracking when your application changes selection; do not carry a hold timer across a known person/selection change. Identity association and selecting the same person over time remain application responsibilities.
 
 `poses` is optional in TypeScript/recorded contracts so existing version-one recordings and manually constructed single-pose frames remain readable. Every result produced by the updated native module includes it. Legacy data exposes only index zero; requesting another index is empty. Recording/replay preserves all available poses within the same total serialized-size budget. The example photo panel loads a public two-person fixture and switches skeleton selection without rerunning inference.
+
+## Opt-in segmentation masks
+
+Set `segmentationEnabled: true` on camera/image/video options to request the SDK's per-pose confidence masks. The default is **false**: no masks are requested, encoded or written by this library. `maskMaxDimension` controls exported mask size (default 256, integer 64–512), preserving aspect ratio without upscaling. It bounds PNG output, not the detector's internal inference buffers. Segmentation adds native inference/encoding work; no FPS or battery improvement is implied.
+
+A result's optional `segmentation` is one of:
+
+| Status | Meaning |
+| --- | --- |
+| `available` | Includes `leaseId`, source `imageSize`, and `masks` with `poseIndex`, `uri`, `width`, `height`. |
+| `empty` | No pose was detected; no mask files are created. |
+| `backpressure` | Two result leases are already outstanding. Landmarks still arrive, but no additional mask files are created. |
+
+Each mask is a local **RGBA8 PNG**: white RGB and alpha = foreground confidence quantized to 0–255. Masks are sampled at output pixel centers and refer to the same upright, already-mirrored image coordinates as the result landmarks. `poseIndex` pairs with that result's `poses` array; it is not an identity. Use the supplied source `imageSize` for projection, since integer thumbnail dimensions may differ slightly in aspect ratio.
+
+`PoseSegmentationOverlay` renders one mask with aspect-fill alignment, using `segmentation`, `width`, `height`, optional `poseIndex` (default 0), `color`, `opacity` (default 0.5), and standard image `onError`. It renders nothing for empty/backpressure/missing selection. It does **not** own or release the files. The photo example shows it over the analyzed image and releases the previous result on replacement/unmount.
+
+```ts
+const detection = await analyzePoseImage(localUri, {
+  segmentationEnabled: true,
+  maskMaxDimension: 256,
+});
+try {
+  await consumeMaskFiles(detection.segmentation);
+} finally {
+  if (detection.segmentation?.status === "available") {
+    await releasePoseSegmentation(detection.segmentation.leaseId);
+  }
+}
+```
+
+Ownership transfers to the consumer when a result is delivered. Call `releasePoseSegmentation(leaseId)` after every use, including errors, or after the UI stops displaying that result. Release is idempotent and deletes only that lease. At most **two result leases**, each with at most six mask files, exist per module. They are app-cache resources, invalid after release or module teardown; do not persist their URIs. Startup removes files left by an interrupted previous process before creating new masks. Cache eviction can also invalidate a URI; use `onError` where needed.
+
+Camera segmentation requires an `onLandmark` consumer. The library releases masks for discarded native generations, inactive/invalid JS events and synchronously failing handlers. Image/video decoding failures and video cancellation release masks that were never delivered. Already-delivered masks remain consumer-owned, even after video cancellation or `break`. Always release them in your consumer's `finally` block. Recording APIs deliberately omit segmentation handles and neither persist nor release consumer-owned mask files.
+
+Use `callbackFps`/`frameLimit` to manage camera load. Backpressure bounds exported resources; it does not disable the SDK's requested segmentation computation. Mask output can be composited through the overlay or read using a file library of your choice; no float arrays or base64 images cross the result bridge.
+
+Native fixtures verify disabled output, PNG headers/dimensions, orientation, two-lease backpressure, isolated/idempotent release, multiple masks, startup cleanup and video cleanup. `scripts/verify-mask-fixtures.py` compares actual exported alpha pixels with Google's reference mask (IoU ≥ 0.90 at alpha ≥ 128); simulator/emulator tests do not establish physical-camera alignment or throughput. SDK ownership follows the official [iOS Mask API](https://developers.google.com/edge/api/mediapipe/objc/vision/Classes/MPPMask.html) and [Android buffer extraction API](https://developers.google.com/edge/api/mediapipe/java/com/google/mediapipe/framework/image/ByteBufferExtractor).

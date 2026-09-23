@@ -17,3 +17,12 @@ Set `EXPO_PUBLIC_POSE_NATIVE_CHECKS=1` before bundling/running the example to ex
 `pose-video.mp4` and `pose-video-rotated.mp4` are two-second, 10 fps H.264 derivatives of the public pose image. The rotated file stores clockwise-rotated pixels and a 90° counterclockwise display matrix. Regenerate with `python3 scripts/generate-video-fixtures.py` (FFmpeg 8.1.2 was used; [display_rotation documentation](https://ffmpeg.org/ffmpeg.html)). They exercise actual native video decoding, orientation, sampling, cancellation and reopening; the static scene does not prove tracking of moving people.
 
 `man-woman-okay.jpg` contains two people and exercises native `maxPoses: 2`, both image/world landmark arrays, first-pose compatibility and explicit selection. Their partly cropped bodies are not used to assert visibility or full-body accuracy.
+
+`pose-segmentation-golden.png` is Google's unmodified reference mask from https://storage.googleapis.com/mediapipe-assets/pose_segmentation_mask_golden.png, SHA-256 `62ee418e18f317327572da5fcc988af703eb31e6f0b9e0bf3d55e6f4797d6953`. The native runner saves test-only copies `mask-upright.png` and `mask-rotated.png` in Documents, then releases all leased originals. Copy those artifacts into `scripts/dev/masks-ios` / `scripts/dev/masks-android` and run:
+
+```sh
+python3 scripts/verify-mask-fixtures.py scripts/dev/masks-ios
+python3 scripts/verify-mask-fixtures.py scripts/dev/masks-android
+```
+
+The pixel check uses Pillow (11.3.0 used here), verifies RGBA alpha bounds/white foreground, and requires at least 0.90 intersection-over-union with the official mask at a 0.5 threshold. Run the native suite from a **cold app launch**: its startup-cleanup check deliberately creates a file representing an interrupted earlier process. Fixture copies in Documents are diagnostic artifacts, not library-owned mask leases.

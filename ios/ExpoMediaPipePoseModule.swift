@@ -7,7 +7,7 @@ public class ExpoMediaPipePoseModule: Module {
     Name("ExpoMediaPipePose")
     AsyncFunction("getCameraCapabilities") { PoseCameraCapabilities.discover() }
     AsyncFunction("analyzePoseImage") { (location: String, options: PoseImageOptions) in
-      try PoseImageAnalysis.analyze(location, options: options)
+      try PoseImageAnalysis.analyze(location, options: options, masks: self.videos.masks)
     }.runOnQueue(mediaWorker)
     AsyncFunction("openPoseVideo") {
       (location: String, options: PoseImageOptions, trackingConfidence: Double) async throws
@@ -20,7 +20,14 @@ public class ExpoMediaPipePoseModule: Module {
     }
     AsyncFunction("closePoseVideo") { (id: String) in self.videos.close(id) }.runOnQueue(
       mediaWorker)
-    OnDestroy { self.mediaWorker.async { self.videos.destroy() } }
+    AsyncFunction("releasePoseSegmentation") { (id: String) in try self.videos.masks.release(id) }
+      .runOnQueue(mediaWorker)
+    OnDestroy {
+      self.mediaWorker.async {
+        self.videos.destroy()
+        self.videos.masks.destroy()
+      }
+    }
     View(ExpoMediaPipePoseView.self) {
       Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
       Prop("isActive") { (view: ExpoMediaPipePoseView, active: Bool) in view.isActive = active }
@@ -42,6 +49,12 @@ public class ExpoMediaPipePoseModule: Module {
       Prop("performanceMetricsEnabled") { (view: ExpoMediaPipePoseView, enabled: Bool) in
         view.processingOptions.metricsEnabled = enabled
       }
+      Prop("segmentationEnabled") { (view: ExpoMediaPipePoseView, enabled: Bool) in
+        view.options.segmentationEnabled = enabled
+      }
+      Prop("maskMaxDimension") { (view: ExpoMediaPipePoseView, dimension: Int) in
+        view.options.maskMaxDimension = dimension
+      }
       Prop("maxPoses") { (view: ExpoMediaPipePoseView, count: Int) in view.options.maxPoses = count
       }
       Prop("poseModelVariant") { (view: ExpoMediaPipePoseView, variant: String) in
@@ -59,7 +72,10 @@ public class ExpoMediaPipePoseModule: Module {
       Prop("minTrackingConfidence") { (view: ExpoMediaPipePoseView, confidence: Double) in
         view.options.minTrackingConfidence = confidence
       }
-      OnViewDidUpdateProps { (view: ExpoMediaPipePoseView) in view.applyChanges() }
+      OnViewDidUpdateProps { (view: ExpoMediaPipePoseView) in
+        view.maskStore = self.videos.masks
+        view.applyChanges()
+      }
     }
   }
 }

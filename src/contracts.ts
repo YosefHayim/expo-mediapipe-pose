@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+import { PoseSegmentation } from "./pose/segmentation";
 
 const Finite = Schema.Number.pipe(Schema.finite());
 const Confidence = Finite.pipe(Schema.between(0, 1));
@@ -49,6 +50,7 @@ export const InferenceError = Schema.Struct({
 		"modelInitialization",
 		"nativeViewInitialization",
 		"invalidNativeEvent",
+		"segmentationCleanup",
 	),
 });
 
@@ -68,6 +70,7 @@ export type PosePerformanceMetrics = Schema.Schema.Type<
 >;
 
 export const PoseFrame = Schema.Struct({
+	segmentation: Schema.optional(PoseSegmentation),
 	poses: Schema.optional(PoseResults),
 	landmarks: Schema.mutable(Schema.Array(Landmark)),
 	worldLandmarks: Schema.mutable(Schema.Array(Landmark)),

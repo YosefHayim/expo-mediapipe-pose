@@ -2,14 +2,22 @@ import { Asset } from "expo-asset";
 import {
 	analyzePoseImage,
 	type PoseDetection,
+	PoseSegmentationOverlay,
 	PoseSkeleton,
+	releasePoseSegmentation,
 } from "expo-mediapipe-pose";
 import * as React from "react";
 import { Button, Image, Text, TextInput, View } from "react-native";
 
+async function releaseMasks(detection: PoseDetection | undefined) {
+	if (detection?.segmentation?.status !== "available") return;
+	await releasePoseSegmentation(detection.segmentation.leaseId);
+}
+
 export function PhotoPanel({ onClose }: { onClose: () => void }) {
 	const [location, setLocation] = React.useState("");
 	const [maxPoses, setMaxPoses] = React.useState(1);
+	const [segmentationEnabled, setSegmentationEnabled] = React.useState(false);
 	const [poseIndex, setPoseIndex] = React.useState(0);
 	const [result, setResult] = React.useState<{
 		location: string;
@@ -27,6 +35,14 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 		},
 		[],
 	);
+	React.useEffect(
+		() => () => {
+			void releaseMasks(result?.detection).catch((error) =>
+				console.error("Mask cleanup failed", error),
+			);
+		},
+		[result],
+	);
 	const analyze = async () => {
 		const token = ++request.current;
 		setBusy(true);
@@ -34,12 +50,18 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 		setResult(null);
 		setPoseIndex(0);
 		try {
-			const detection = await analyzePoseImage(location, { maxPoses });
+			const detection = await analyzePoseImage(location, {
+				maxPoses,
+				segmentationEnabled,
+			});
 			const imageUri = location.startsWith("/")
 				? `file://${location.split("/").map(encodeURIComponent).join("/")}`
 				: location;
-			if (token === request.current)
-				setResult({ location: imageUri, detection });
+			if (token !== request.current) {
+				await releaseMasks(detection);
+				return;
+			}
+			setResult({ location: imageUri, detection });
 		} catch (failure) {
 			if (token === request.current) setError(String(failure));
 		} finally {
@@ -72,6 +94,11 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
 			<Text style={{ color: "white" }}>Analyze a local photo</Text>
+			<Button
+				title={`Segmentation: ${segmentationEnabled ? "on" : "off"}`}
+				onPress={() => setSegmentationEnabled((value) => !value)}
+				disabled={busy}
+			/>
 			<Button
 				title="Load public two-person photo"
 				onPress={loadFixture}
@@ -112,6 +139,8 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 			{error && <Text style={{ color: "#fca5a5" }}>{error}</Text>}
 			{result && (
 				<Text style={{ color: "white" }}>
+					{result.detection.segmentation &&
+						`Masks: ${result.detection.segmentation.status} · `}
 					{result.detection.landmarks.length} landmarks ·{" "}
 					{result.detection.inferenceDurationMs.toFixed(1)} ms inference
 				</Text>
@@ -131,6 +160,13 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 								height: size.height,
 							}}
 						/>
+						{result.detection.segmentation && (
+							<PoseSegmentationOverlay
+								segmentation={result.detection.segmentation}
+								poseIndex={poseIndex}
+								{...size}
+							/>
+						)}
 						<PoseSkeleton
 							poseIndex={poseIndex}
 							detection={result.detection}

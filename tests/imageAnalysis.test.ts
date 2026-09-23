@@ -26,6 +26,8 @@ test("photo analysis validates local inputs and bounded model options", () => {
 	assert.deepEqual(resolvePoseImageOptions(), {
 		modelVariant: "full",
 		maxPoses: 1,
+		segmentationEnabled: false,
+		maskMaxDimension: 256,
 		maxImageDimension: 2048,
 		minPoseDetectionConfidence: 0.35,
 		minPosePresenceConfidence: 0.35,

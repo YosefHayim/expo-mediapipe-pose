@@ -49,6 +49,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
+    internal var maskStore: PoseMaskStore? = null
     private val worker = Executors.newSingleThreadExecutor()
     private val mainExecutor = ContextCompat.getMainExecutor(context)
     private val generation = AtomicInteger()
@@ -182,6 +183,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                 .setBaseOptions(PoseModel.options(requested.modelVariant, requested.modelPath))
                 .setRunningMode(RunningMode.VIDEO)
                 .setNumPoses(requested.maxPoses)
+                .setOutputSegmentationMasks(requested.segmentationEnabled)
                 .setMinPoseDetectionConfidence(requested.minPoseDetectionConfidence.toFloat())
                 .setMinPosePresenceConfidence(requested.minPosePresenceConfidence.toFloat())
                 .setMinTrackingConfidence(requested.minTrackingConfidence.toFloat())
@@ -271,6 +273,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         val frameTiming = PoseFrameTiming()
         cameraAnalysis.setAnalyzer(worker) { cameraImage ->
             var rotatedPixels: Bitmap? = null
+            var outputMasks = emptyList<MPImage>()
             var inputImage: MPImage? = null
             try {
                 if (generation.get() != token) return@setAnalyzer
@@ -309,6 +312,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                 inputImage = image
                 val inferenceStartedAt = SystemClock.elapsedRealtimeNanos()
                 val inference = activeDetector.detectForVideo(image, timestamp)
+                outputMasks = inference.segmentationMasks().orElse(emptyList())
                 val inferenceDurationMs =
                     (SystemClock.elapsedRealtimeNanos() - inferenceStartedAt) / 1_000_000.0
                 frameTiming.recordInference(inferenceDurationMs)
@@ -332,15 +336,30 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                         "poseModelSource" to
                             if (requested.modelPath == null) "bundled" else "local",
                     )
+                val segmentation =
+                    if (requested.segmentationEnabled)
+                        requireNotNull(maskStore)
+                            .save(
+                                context,
+                                inference,
+                                pixels.width,
+                                pixels.height,
+                                requested.maskMaxDimension,
+                            )
+                    else null
                 val frame =
-                    PoseLandmarkPayload.make(inference) + mapOf("additionalData" to metadata)
-                emit(token) { onLandmark(frame) }
+                    PoseLandmarkPayload.make(inference) +
+                        mapOf("additionalData" to metadata) +
+                        (if (segmentation == null) emptyMap()
+                        else mapOf("segmentation" to segmentation))
+                emit(token, segmentation) { onLandmark(frame) }
             } catch (_: Exception) {
                 failed = true
                 emitFailure("inferenceRuntime", token)
             } finally {
                 // MPImage owns its Bitmap and recycles it on close, after telemetry has been
                 // sampled.
+                outputMasks.forEach { it.close() }
                 inputImage?.close()
                 recyclePixels(rotatedPixels)
                 cameraImage.close()
@@ -422,11 +441,14 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         }
     }
 
-    private fun emit(token: Int, callback: () -> Unit) {
+    private fun emit(token: Int, segmentation: Map<String, Any>? = null, callback: () -> Unit) {
+        val store = maskStore
         mainExecutor.execute {
-            if (destroyed) return@execute
-            if (generation.get() != token) return@execute
-            if (requestedOptions == null) return@execute
+            val currentGeneration = generation.get() == token && requestedOptions != null
+            if (destroyed || !currentGeneration) {
+                store?.discard(segmentation)
+                return@execute
+            }
             callback()
         }
     }
