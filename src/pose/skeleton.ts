@@ -8,6 +8,8 @@ import {
 	POSE_CONNECTIONS,
 } from "./landmarks";
 
+import { type SelectablePose, selectPose } from "./selection";
+
 export interface JointStyle {
 	color?: string;
 	radius?: number;
@@ -19,6 +21,7 @@ export interface ConnectionStyle {
 }
 
 export interface SkeletonOptions {
+	poseIndex?: number;
 	color?: string;
 	jointRadius?: number;
 	lineWidth?: number;
@@ -69,10 +72,14 @@ const defaultSkeletonStyle = {
 };
 
 export const createDetectionSkeleton = (
-	detection: { landmarks: readonly Landmark[]; imageSize: Dimensions },
+	detection: SelectablePose & { imageSize: Dimensions },
 	view: Dimensions,
 	options: SkeletonOptions = {},
 ) => {
+	const selected =
+		options.poseIndex === undefined
+			? detection
+			: selectPose(detection, options.poseIndex);
 	const style = { ...defaultSkeletonStyle, ...options };
 	const visibilityInRange =
 		style.minVisibility >= 0 && style.minVisibility <= 1;
@@ -82,11 +89,11 @@ export const createDetectionSkeleton = (
 	let selectedNames: readonly LandmarkName[] = LANDMARK_NAMES;
 	if (options.bodyParts)
 		selectedNames = options.bodyParts.flatMap((part) => [...BODY_PARTS[part]]);
-	const selected = new Set(selectedNames);
+	const selectedNamesSet = new Set(selectedNames);
 
 	const points = LANDMARK_NAMES.flatMap((name, index) => {
-		const joint = detection.landmarks[index];
-		if (!joint || !selected.has(name)) return [];
+		const joint = selected.landmarks[index];
+		if (!joint || !selectedNamesSet.has(name)) return [];
 		const excludedBySelection =
 			options.landmarks && !options.landmarks.includes(name);
 		if (excludedBySelection) return [];
@@ -129,7 +136,7 @@ export const createSkeleton = (
 	options: SkeletonOptions = {},
 ) =>
 	createDetectionSkeleton(
-		{ landmarks: frame.landmarks, imageSize: frame.additionalData },
+		{ ...frame, imageSize: frame.additionalData },
 		view,
 		options,
 	);

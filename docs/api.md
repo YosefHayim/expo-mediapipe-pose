@@ -261,3 +261,26 @@ Only one video session can be open per native module. The next frame is decoded 
 `createPoseDetectionRecorder`, `PoseDetectionRecording`, `parsePoseDetectionRecording`, `serializePoseDetectionRecording` and `createPoseDetectionReplay` provide the same bounded recording/replay controls for file detections. Pass sampled media timestamps to `append`; the first becomes relative time zero. These recordings preserve detection metadata without manufacturing camera fields. The camera recorder/replay API remains unchanged. Both formats store landmarks and metadata only, with the same 10,000-frame, 24-hour and 64 Mi-character limits. Neither writes files automatically.
 
 The native fixture suite includes short encoded upright/rotated videos, timestamps, cancellation and resource reuse. These static-scene fixtures verify decoding/orientation and lifecycle, not motion-tracking accuracy or device throughput. See the official [iOS VIDEO workflow](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/ios) and [Android VIDEO workflow](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/android).
+
+## Multiple poses and explicit selection
+
+Set `maxPoses` on `PoseCameraView`, `analyzePoseImage` or `analyzePoseVideo` (default **1**, integer **1–6**). This bounds detector output; it does not guarantee that many people will be found. Native results include `poses: [{ landmarks, worldLandmarks }]` for every detected pose. Existing top-level `landmarks`/`worldLandmarks` remain aliases of result zero, or empty arrays when no pose is detected. Camera `additionalData.poseCount` continues to report the total detected count.
+
+```tsx
+<PoseCameraView
+  maxPoses={2}
+  skeleton={{ poseIndex: selectedIndex, color: "#22c55e" }}
+  onLandmark={(frame) => {
+    const selected = selectPose(frame, selectedIndex);
+    feedback.update(selected);
+    tracking.update(selected);
+    recorder.append(frame); // Preserve every detected pose.
+  }}
+/>
+```
+
+`selectPose(frameOrDetection, poseIndex)` returns a view with the chosen image/world landmark arrays; it leaves raw results and other metadata unchanged. An absent index returns empty arrays: rules become `unknown`, tracking becomes `lost`, and the skeleton is empty. Negative/noninteger indices or indices above 5 reject. `PoseSkeleton`, `createSkeleton`, and `createDetectionSkeleton` accept `poseIndex` directly. Omitting it renders the supplied top-level landmarks, so an already-selected result remains selected.
+
+Result indices are **not persistent person IDs**. The SDK may reorder results between frames. Reset temporal rules/tracking when your application changes selection; do not carry a hold timer across a known person/selection change. Identity association and selecting the same person over time remain application responsibilities.
+
+`poses` is optional in TypeScript/recorded contracts so existing version-one recordings and manually constructed single-pose frames remain readable. Every result produced by the updated native module includes it. Legacy data exposes only index zero; requesting another index is empty. Recording/replay preserves all available poses within the same total serialized-size budget. The example photo panel loads a public two-person fixture and switches skeleton selection without rerunning inference.

@@ -1,3 +1,4 @@
+import { Asset } from "expo-asset";
 import {
 	analyzePoseImage,
 	type PoseDetection,
@@ -8,6 +9,8 @@ import { Button, Image, Text, TextInput, View } from "react-native";
 
 export function PhotoPanel({ onClose }: { onClose: () => void }) {
 	const [location, setLocation] = React.useState("");
+	const [maxPoses, setMaxPoses] = React.useState(1);
+	const [poseIndex, setPoseIndex] = React.useState(0);
 	const [result, setResult] = React.useState<{
 		location: string;
 		detection: PoseDetection;
@@ -29,8 +32,9 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 		setBusy(true);
 		setError(null);
 		setResult(null);
+		setPoseIndex(0);
 		try {
-			const detection = await analyzePoseImage(location);
+			const detection = await analyzePoseImage(location, { maxPoses });
 			const imageUri = location.startsWith("/")
 				? `file://${location.split("/").map(encodeURIComponent).join("/")}`
 				: location;
@@ -42,9 +46,50 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 			if (token === request.current) setBusy(false);
 		}
 	};
+	const loadFixture = async () => {
+		const token = ++request.current;
+		setBusy(true);
+		setError(null);
+		try {
+			const asset = await Asset.fromModule(
+				require("./fixtures/man-woman-okay.jpg"),
+			).downloadAsync();
+			if (asset.localUri === null)
+				throw new Error("Fixture is unavailable locally");
+			if (token !== request.current) return;
+			setLocation(asset.localUri);
+			setMaxPoses(2);
+		} catch (failure) {
+			if (token === request.current) setError(String(failure));
+		} finally {
+			if (token === request.current) setBusy(false);
+		}
+	};
+	const poseIndices = Array.from(
+		{ length: result?.detection.poses?.length ?? 0 },
+		(_, index) => index,
+	);
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
 			<Text style={{ color: "white" }}>Analyze a local photo</Text>
+			<Button
+				title="Load public two-person photo"
+				onPress={loadFixture}
+				disabled={busy}
+			/>
+			<Button
+				title={`Maximum poses: ${maxPoses}`}
+				onPress={() => setMaxPoses(maxPoses === 1 ? 2 : 1)}
+				disabled={busy}
+			/>
+			{poseIndices.map((index) => (
+				<Button
+					key={index}
+					title={`Show pose ${index + 1}`}
+					onPress={() => setPoseIndex(index)}
+					disabled={poseIndex === index}
+				/>
+			))}
 			<TextInput
 				value={location}
 				onChangeText={setLocation}
@@ -85,7 +130,11 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 								height: size.height,
 							}}
 						/>
-						<PoseSkeleton detection={result.detection} {...size} />
+						<PoseSkeleton
+							poseIndex={poseIndex}
+							detection={result.detection}
+							{...size}
+						/>
 					</>
 				)}
 			</View>

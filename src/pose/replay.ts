@@ -7,6 +7,16 @@ import {
 	type PoseRecording,
 } from "./recording";
 
+function copyPoseResults(frame: Pick<PoseFrame, "poses">) {
+	if (frame.poses === undefined) return {};
+	return {
+		poses: frame.poses.map((pose) => ({
+			landmarks: pose.landmarks.map((joint) => ({ ...joint })),
+			worldLandmarks: pose.worldLandmarks.map((joint) => ({ ...joint })),
+		})),
+	};
+}
+
 export type PoseReplayStatus = "paused" | "playing" | "ended" | "disposed";
 export interface PoseReplayState {
 	status: PoseReplayStatus;
@@ -25,6 +35,7 @@ export function createPoseReplay(
 ) {
 	return createReplay(copyPoseRecording(recording), callbacks, (frame) => ({
 		...frame,
+		...copyPoseResults(frame),
 		landmarks: frame.landmarks.map((joint) => ({ ...joint })),
 		worldLandmarks: frame.worldLandmarks.map((joint) => ({ ...joint })),
 		additionalData: { ...frame.additionalData },
@@ -39,6 +50,7 @@ export function createPoseDetectionReplay(
 		callbacks,
 		(frame) => ({
 			...frame,
+			...copyPoseResults(frame),
 			landmarks: frame.landmarks.map((joint) => ({ ...joint })),
 			worldLandmarks: frame.worldLandmarks.map((joint) => ({ ...joint })),
 			imageSize: { ...frame.imageSize },

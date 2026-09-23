@@ -4,6 +4,7 @@ import MediaPipeTasksVision
 import UIKit
 
 internal struct PoseImageOptions: Record {
+  @Field var maxPoses: Int = 1
   @Field var modelVariant: String = "full"
   @Field var modelPath: String? = nil
   @Field var maxImageDimension: Int = 2048
@@ -11,6 +12,7 @@ internal struct PoseImageOptions: Record {
   @Field var minPosePresenceConfidence: Double = 0.35
 
   func validate() throws {
+    guard (1...6).contains(maxPoses) else { throw PoseMediaError.invalidOptions }
     guard (256...2048).contains(maxImageDimension) else { throw PoseMediaError.invalidOptions }
     let confidences = [minPoseDetectionConfidence, minPosePresenceConfidence]
     guard confidences.allSatisfy({ $0.isFinite && (0...1).contains($0) }) else {
@@ -56,7 +58,7 @@ internal enum PoseImageAnalysis {
         variant: options.modelVariant, localPath: options.modelPath)
       configuration.baseOptions.delegate = .CPU
       configuration.runningMode = .image
-      configuration.numPoses = 1
+      configuration.numPoses = options.maxPoses
       configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
       configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
       let detector = try PoseLandmarker(options: configuration)

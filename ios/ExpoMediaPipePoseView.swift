@@ -169,7 +169,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     // Sequential video inference on the capture worker keeps timestamps and metadata paired.
     // AVCaptureVideoDataOutput drops frames while this worker is busy.
     configuration.runningMode = .video
-    configuration.numPoses = 1
+    configuration.numPoses = requested.maxPoses
     configuration.minPoseDetectionConfidence = Float(requested.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(requested.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(requested.minTrackingConfidence)

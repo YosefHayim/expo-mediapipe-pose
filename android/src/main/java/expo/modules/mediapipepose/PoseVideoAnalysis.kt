@@ -97,7 +97,7 @@ internal class PoseVideoAnalysis {
                     PoseLandmarker.PoseLandmarkerOptions.builder()
                         .setBaseOptions(PoseModel.options(options.modelVariant, options.modelPath))
                         .setRunningMode(RunningMode.VIDEO)
-                        .setNumPoses(1)
+                        .setNumPoses(options.maxPoses)
                         .setMinPoseDetectionConfidence(options.minPoseDetectionConfidence.toFloat())
                         .setMinPosePresenceConfidence(options.minPosePresenceConfidence.toFloat())
                         .setMinTrackingConfidence(trackingConfidence.toFloat())

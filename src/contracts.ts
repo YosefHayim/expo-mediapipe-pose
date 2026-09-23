@@ -21,6 +21,16 @@ export const Landmark = Schema.mutable(
 	}),
 );
 
+export const MaxPoses = Schema.Number.pipe(Schema.int(), Schema.between(1, 6));
+export const PoseLandmarks = Schema.Struct({
+	landmarks: Schema.mutable(Schema.Array(Landmark).pipe(Schema.maxItems(33))),
+	worldLandmarks: Schema.mutable(
+		Schema.Array(Landmark).pipe(Schema.maxItems(33)),
+	),
+});
+export type PoseLandmarks = Schema.Schema.Type<typeof PoseLandmarks>;
+export const PoseResults = Schema.Array(PoseLandmarks).pipe(Schema.maxItems(6));
+
 export const CameraConfiguration = Schema.Struct({
 	effectiveFacing: CameraFacing,
 	effectiveLens: Schema.Literal("wide", "ultraWide"),
@@ -58,6 +68,7 @@ export type PosePerformanceMetrics = Schema.Schema.Type<
 >;
 
 export const PoseFrame = Schema.Struct({
+	poses: Schema.optional(PoseResults),
 	landmarks: Schema.mutable(Schema.Array(Landmark)),
 	worldLandmarks: Schema.mutable(Schema.Array(Landmark)),
 	additionalData: Schema.Struct({

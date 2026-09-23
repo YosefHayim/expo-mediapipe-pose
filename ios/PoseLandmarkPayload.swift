@@ -2,18 +2,28 @@ import MediaPipeTasksVision
 
 internal enum PoseLandmarkPayload {
   static func make(_ result: PoseLandmarkerResult) -> [String: Any] {
-    let landmarks = (result.landmarks.first ?? []).map { joint -> [String: Any] in
-      var coordinates: [String: Any] = ["x": joint.x, "y": joint.y, "z": joint.z]
-      if let visibility = joint.visibility { coordinates["visibility"] = visibility }
-      if let presence = joint.presence { coordinates["presence"] = presence }
-      return coordinates
+    let poses = result.landmarks.enumerated().map {
+      index, image -> (landmarks: [[String: Any]], worldLandmarks: [[String: Any]]) in
+      let landmarks = image.map { joint -> [String: Any] in
+        var coordinates: [String: Any] = ["x": joint.x, "y": joint.y, "z": joint.z]
+        if let visibility = joint.visibility { coordinates["visibility"] = visibility }
+        if let presence = joint.presence { coordinates["presence"] = presence }
+        return coordinates
+      }
+      let worldLandmarks = result.worldLandmarks[index].map { joint -> [String: Any] in
+        var coordinates: [String: Any] = ["x": joint.x, "y": joint.y, "z": joint.z]
+        if let visibility = joint.visibility { coordinates["visibility"] = visibility }
+        if let presence = joint.presence { coordinates["presence"] = presence }
+        return coordinates
+      }
+      return (landmarks, worldLandmarks)
     }
-    let worldLandmarks = (result.worldLandmarks.first ?? []).map { joint -> [String: Any] in
-      var coordinates: [String: Any] = ["x": joint.x, "y": joint.y, "z": joint.z]
-      if let visibility = joint.visibility { coordinates["visibility"] = visibility }
-      if let presence = joint.presence { coordinates["presence"] = presence }
-      return coordinates
+    guard let first = poses.first else {
+      return ["landmarks": [], "worldLandmarks": [], "poses": []]
     }
-    return ["landmarks": landmarks, "worldLandmarks": worldLandmarks]
+    return [
+      "landmarks": first.landmarks, "worldLandmarks": first.worldLandmarks,
+      "poses": poses.map { ["landmarks": $0.landmarks, "worldLandmarks": $0.worldLandmarks] },
+    ]
   }
 }

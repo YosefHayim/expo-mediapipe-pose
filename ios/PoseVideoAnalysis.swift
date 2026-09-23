@@ -28,7 +28,7 @@ private final class PoseVideoSession {
       variant: options.modelVariant, localPath: options.modelPath)
     configuration.baseOptions.delegate = .CPU
     configuration.runningMode = .video
-    configuration.numPoses = 1
+    configuration.numPoses = options.maxPoses
     configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(trackingConfidence)

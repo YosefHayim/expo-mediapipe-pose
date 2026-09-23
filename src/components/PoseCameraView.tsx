@@ -12,6 +12,7 @@ import {
 	type CameraFacing,
 	type CameraLens,
 	InferenceError,
+	MaxPoses,
 	type ModelVariant,
 	PoseFrame,
 	PosePerformanceMetrics,
@@ -34,6 +35,7 @@ interface CameraOptions {
 	minPoseDetectionConfidence?: number;
 	minPosePresenceConfidence?: number;
 	minTrackingConfidence?: number;
+	maxPoses?: number;
 }
 
 export interface PoseCameraViewProps extends ViewProps, CameraOptions {
@@ -75,6 +77,7 @@ export const PoseCameraView = ({
 	minPoseDetectionConfidence = 0.35,
 	minPosePresenceConfidence = 0.35,
 	minTrackingConfidence = 0.35,
+	maxPoses = 1,
 	skeleton = true,
 	onCameraConfigured,
 	onInferenceError,
@@ -85,6 +88,7 @@ export const PoseCameraView = ({
 	children,
 	...viewProps
 }: PoseCameraViewProps) => {
+	Schema.decodeUnknownSync(MaxPoses)(maxPoses);
 	const overlayStaleAfterMs = getOverlayStaleAfterMs({
 		frameLimit,
 		previewFps,
@@ -108,6 +112,7 @@ export const PoseCameraView = ({
 		minPoseDetectionConfidence,
 		minPosePresenceConfidence,
 		minTrackingConfidence,
+		maxPoses,
 	});
 	const previousCaptureIdentity = React.useRef(captureIdentity);
 	React.useLayoutEffect(() => {
@@ -222,6 +227,7 @@ export const PoseCameraView = ({
 				minPoseDetectionConfidence={minPoseDetectionConfidence}
 				minPosePresenceConfidence={minPosePresenceConfidence}
 				minTrackingConfidence={minTrackingConfidence}
+				maxPoses={maxPoses}
 				onLandmark={handleFrame}
 				onCameraConfigured={handleConfiguration}
 				onInferenceError={handleFailure}

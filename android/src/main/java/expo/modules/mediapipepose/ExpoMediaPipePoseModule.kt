@@ -74,6 +74,9 @@ class ExpoMediaPipePoseModule : Module() {
             Prop("performanceMetricsEnabled") { view: ExpoMediaPipePoseView, enabled: Boolean ->
                 view.processingOptions = view.processingOptions.copy(metricsEnabled = enabled)
             }
+            Prop("maxPoses") { view: ExpoMediaPipePoseView, count: Int ->
+                view.options = view.options.copy(maxPoses = count)
+            }
             Prop("poseModelVariant") { view: ExpoMediaPipePoseView, variant: String ->
                 view.options = view.options.copy(modelVariant = variant)
             }
