@@ -11,8 +11,12 @@ internal object PoseModel {
     fun localFile(location: String): File {
         if (location.startsWith("/")) return readableFile(File(location))
         val uri = Uri.parse(location)
-        require(uri.scheme == "file") { "Expected a local file URI or absolute path" }
-        require(uri.authority.isNullOrEmpty() || uri.authority == "localhost")
+        require(uri.scheme.equals("file", ignoreCase = true)) {
+            "Expected a local file URI or absolute path"
+        }
+        require(
+            uri.authority.isNullOrEmpty() || uri.authority.equals("localhost", ignoreCase = true)
+        )
         require(uri.query == null && uri.fragment == null)
         return readableFile(File(requireNotNull(uri.path)))
     }

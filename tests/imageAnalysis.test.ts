@@ -44,8 +44,9 @@ test("photo analysis validates local inputs and bounded model options", () => {
 	);
 });
 test("media detections support geometry and skeletons without camera metadata", () => {
-	const { landmarks, worldLandmarks } = poseFrame();
+	const { landmarks, worldLandmarks, additionalData } = poseFrame();
 	const detection = Schema.decodeUnknownSync(PoseDetection)({
+		additionalData,
 		landmarks,
 		worldLandmarks,
 		imageSize: { width: 720, height: 1280 },

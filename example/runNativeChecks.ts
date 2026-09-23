@@ -33,6 +33,17 @@ export async function runNativeChecks() {
 			"Photo results must not invent camera metadata",
 		);
 		cases.push("real pose image and world landmarks");
+		for (const location of [
+			photo.replace(/^file:/, "FILE:"),
+			photo.replace(/^file:\/\//, "file://LOCALHOST"),
+		]) {
+			const cased = await analyzePoseImage(location);
+			verify(
+				cased.landmarks.length === 33,
+				"Local URI scheme and host are case insensitive",
+			);
+		}
+		cases.push("case-insensitive local URI scheme and host");
 		const orientations = [
 			require("./fixtures/pose-exif-2.jpg"),
 			require("./fixtures/pose-exif-3.jpg"),

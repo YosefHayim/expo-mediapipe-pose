@@ -15,7 +15,7 @@ internal enum PoseModel {
     guard let url = URL(string: location), url.isFileURL, url.path.hasPrefix("/") else {
       throw PoseMediaError.invalidFile
     }
-    guard url.host == nil || url.host == "" || url.host == "localhost" else {
+    guard url.host == nil || url.host == "" || url.host?.lowercased() == "localhost" else {
       throw PoseMediaError.invalidFile
     }
     guard url.query == nil, url.fragment == nil else { throw PoseMediaError.invalidFile }
