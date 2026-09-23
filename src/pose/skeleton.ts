@@ -90,11 +90,9 @@ export const createSkeleton = (
 		const excludedBySelection =
 			options.landmarks && !options.landmarks.includes(name);
 		if (excludedBySelection) return [];
-		if (
-			joint.visibility === undefined ||
-			joint.visibility < style.minVisibility
-		)
-			return [];
+		if (joint.visibility === undefined) return [];
+		if (!Number.isFinite(joint.visibility)) return [];
+		if (joint.visibility < style.minVisibility) return [];
 		const jointStyle = {
 			color: style.color,
 			radius: style.jointRadius,

@@ -107,6 +107,9 @@ export const PoseCameraView = ({
 	}, [captureIdentity, clear]);
 
 	const skeletonEnabled = skeleton !== false;
+	React.useLayoutEffect(() => {
+		if (!skeletonEnabled) clear();
+	}, [skeletonEnabled, clear]);
 	const skeletonFrame = isActive && skeletonEnabled ? frame : null;
 	const skeletonOptions = typeof skeleton === "object" ? skeleton : {};
 

@@ -49,6 +49,7 @@ export default function App() {
 		const subscription = AppState.addEventListener("change", (state) =>
 			setForeground(state === "active"),
 		);
+		setForeground(AppState.currentState === "active");
 		return () => subscription.remove();
 	}, []);
 
@@ -88,6 +89,10 @@ export default function App() {
 		raisedArm.reset();
 		setFailure(error);
 	};
+	const handleConfiguration = () => {
+		raisedArm.reset();
+		setFailure(null);
+	};
 
 	return (
 		<View style={styles.screen}>
@@ -100,7 +105,7 @@ export default function App() {
 				isActive={isActive}
 				frameLimit={15}
 				onLandmark={raisedArm.update}
-				onCameraConfigured={raisedArm.reset}
+				onCameraConfigured={handleConfiguration}
 				onInferenceError={handleFailure}
 				skeleton={{
 					color: feedbackColors[raisedArm.status],
