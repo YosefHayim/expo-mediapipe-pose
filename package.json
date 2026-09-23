@@ -1,41 +1,78 @@
 {
-  "name": "@oly/pose-camera",
-  "version": "0.1.0",
-  "private": true,
-  "description": "On-device pose camera for Expo using Google MediaPipe",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "files": [
-    "src",
-    "ios",
-    "android",
-    "assets",
-    "OlyPoseCamera.podspec",
-    "expo-module.config.json",
-    "LICENSE",
-    "THIRD_PARTY_NOTICES.md"
-  ],
-  "scripts": {
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/YosefHayim/mediapipe-reactnative.git"
-  },
-  "license": "MIT",
-  "peerDependencies": {
-    "effect": "^3.21.4",
-    "expo": "^57.0.0",
-    "react": "^19.2.0",
-    "react-native": "^0.86.0"
-  },
-  "devDependencies": {
-    "@types/node": "^24.13.2",
-    "@types/react": "~19.2.14",
-    "typescript": "^5.9.3",
-    "tsx": "^4.20.0"
-  },
-  "author": "Yosef Hayim Sabag",
-  "packageManager": "pnpm@10.33.2"
+	"name": "expo-mediapipe-pose",
+	"version": "0.2.0",
+	"description": "On-device pose camera for Expo with customizable skeletons, named landmarks, and pose feedback rules.",
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"files": [
+		"src",
+		"ios/*.swift",
+		"android/src",
+		"android/build.gradle",
+		"assets",
+		"ExpoMediaPipePose.podspec",
+		"expo-module.config.json",
+		"LICENSE",
+		"THIRD_PARTY_NOTICES.md",
+		"docs/api.md"
+	],
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "tsx --test tests/*.test.ts",
+		"lint": "biome check .",
+		"format": "biome check --write .",
+		"check": "pnpm lint && pnpm typecheck && pnpm --filter pose-camera-example typecheck && pnpm test",
+		"verify:package": "node scripts/verify-package.mjs"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/YosefHayim/expo-mediapipe-pose.git"
+	},
+	"license": "MIT",
+	"peerDependencies": {
+		"effect": "^3.21.4",
+		"expo": "^57.0.0",
+		"react": "^19.2.0",
+		"react-native": "^0.86.0",
+		"react-native-svg": "15.15.4"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.14",
+		"@types/jsdom": "^27.0.0",
+		"@types/node": "^24.13.2",
+		"@types/react": "~19.2.14",
+		"@types/react-dom": "^19.2.7",
+		"jsdom": "^27.4.0",
+		"react": "19.2.3",
+		"react-dom": "19.2.3",
+		"react-native-svg": "15.15.4",
+		"tsx": "^4.20.0",
+		"typescript": "^5.9.3"
+	},
+	"author": "Yosef Hayim Sabag",
+	"packageManager": "pnpm@10.33.2",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./core": {
+			"types": "./src/core.ts",
+			"default": "./src/core.ts"
+		},
+		"./package.json": "./package.json"
+	},
+	"keywords": [
+		"expo",
+		"react-native",
+		"mediapipe",
+		"pose-detection",
+		"pose-estimation",
+		"camera",
+		"skeleton-tracking"
+	],
+	"homepage": "https://github.com/YosefHayim/expo-mediapipe-pose#readme",
+	"bugs": {
+		"url": "https://github.com/YosefHayim/expo-mediapipe-pose/issues"
+	}
 }

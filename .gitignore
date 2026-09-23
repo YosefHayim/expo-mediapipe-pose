@@ -3,3 +3,8 @@ node_modules/
 build/
 .DS_Store
 local.properties
+.expo/
+example/ios/
+example/android/
+*.tgz
+/scripts/dev/

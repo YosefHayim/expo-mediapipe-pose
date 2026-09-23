@@ -1,64 +1,138 @@
-# Oly Pose Camera
+# expo-mediapipe-pose
 
-`@oly/pose-camera` is Oly's Expo native camera module. It connects AVFoundation on iOS and CameraX on Android directly to Google's MediaPipe Tasks SDK. Camera frames and pose inference remain on the device. React receives joint coordinates and capture telemetry.
+An on-device pose camera for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), powered by Google's [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). Includes a customizable skeleton, named landmarks, and hooks for developer-defined feedback.
 
-This private repository owns the implementation and its fixes. Oly-App consumes a commit-pinned archive from this repository; it contains no local native patches. The preceding ThinkSys implementation remains in Git history, with attribution in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Community-maintained; not an official Google or Expo package. Frames stay on the device. The module does not download models or upload camera data.
 
-## Use in an Expo app
+## Status and requirements
 
-Requires Expo SDK 57, React Native 0.86, React 19.2, and Effect 3.21. Use a development build; Expo Go cannot load custom native modules.
+Early release targeting Expo SDK 57, React Native 0.86, and React 19.2. Requires an iOS/Android development build; Expo Go cannot load this native module. Native builds, TypeScript, packaging and automated behavior tests are checked. Physical-device alignment, long-session performance and accuracy comparisons remain release evaluation work; no performance advantage over other wrappers is claimed.
+
+## Install
+
+Until an npm release is published, install the tagged source with [pnpm](https://pnpm.io/):
+
+```sh
+pnpm add https://github.com/YosefHayim/expo-mediapipe-pose/archive/refs/tags/v0.2.0.tar.gz effect@^3.21.4
+pnpm exec expo install react-native-svg expo-camera
+```
+
+[Effect](https://effect.website/) validates events at the native boundary. [react-native-svg](https://docs.expo.dev/versions/latest/sdk/svg/) draws the optional overlay. The example uses [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) for permissions; another permission provider is also fine.
+
+Configure the permission message in your app config, then rebuild:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      ["expo-camera", {
+        "cameraPermission": "Allow camera access for on-device pose tracking.",
+        "recordAudioAndroid": false
+      }]
+    ]
+  }
+}
+```
+
+```sh
+pnpm exec expo run:ios
+# or: pnpm exec expo run:android
+```
+
+## Show a pose camera
+
+Mount after permission is granted. The camera fills its layout bounds and draws the skeleton by default:
 
 ```tsx
-import { PoseCameraView } from '@oly/pose-camera';
+import { PoseCameraView } from "expo-mediapipe-pose";
 
 <PoseCameraView
-  style={{ width: 390, height: 844 }}
+  style={{ flex: 1 }}
   cameraFacing="front"
   frameLimit={15}
-  onCameraConfigured={handleCameraConfigured}
-  onLandmark={handlePoseFrame}
-  onInferenceError={handleCameraFailure}
+  onLandmark={frame => handlePose(frame.landmarks)}
+  onInferenceError={error => showCameraError(error.code)}
 />
 ```
 
-Obtain camera permission before mounting (Oly uses `expo-camera`), and configure `NSCameraUsageDescription` in the app. Android camera permission is declared by this module. Rebuild the native app after changing its pinned module commit.
+Change `cameraFacing` to switch cameras. Set `isActive={false}` when the screen loses focus to release capture while keeping the component mounted. The runnable [example](example/App.tsx) includes permissions, camera switching, pause/resume, error recovery and feedback.
 
-| Prop | Default | Behavior |
-| --- | --- | --- |
-| `cameraFacing` | `front` | `front` or `back`; preview and inference mirror together on front. |
-| `cameraLens` | `auto` | iOS rear auto prefers ultra-wide, falling back to wide. Android uses its default wide camera and acknowledges that fallback. |
-| `cameraZoomFactor` | `1` | Clamped to the selected device's supported range, never below 1. |
-| `frameLimit` | `30` | Inference cadence cap, 1–60. Oly requests 15. |
-| `poseModelVariant` | `full` | `lite`, `full`, or `heavy`. Only full is bundled. |
-| `poseModelAssetPath` | omitted | Absolute local path or `file://` URI. Required for lite/heavy; never fetched by the module. |
+## Style joints and body parts
 
-`onCameraConfigured` acknowledges the effective lens, facing, zoom, mirroring, and capture dimensions before pose events. `onLandmark` includes normalized image coordinates, world coordinates, optional visibility/presence, and timing/model/thermal metadata. Empty landmark arrays are valid no-person heartbeats. `onInferenceError` carries a stable code without raw exceptions or file paths.
+```tsx
+<PoseCameraView
+  style={{ flex: 1 }}
+  skeleton={{
+    bodyParts: ["leftArm", "rightArm", "torso"],
+    color: "#38bdf8",
+    jointRadius: 5,
+    lineWidth: 3,
+    joints: { leftWrist: { color: "#f59e0b", radius: 8 } },
+    connections: { "leftElbow:leftWrist": { color: "#f59e0b" } },
+  }}
+/>
+```
 
-Changing camera/model props restarts capture. Backgrounding or detaching releases the camera and detector; returning restarts them. Events from previous capture generations are discarded. The app owns retry policy, calibration, skeleton drawing, and scoring.
+Body-part selection changes the overlay, not the detector or raw results. Individual overrides take precedence over global styles. Use `skeleton={false}` to render your own overlay and avoid internal per-frame overlay state updates. Styling does not restart capture.
 
-## Native pipeline
+## React to a condition
 
-| Platform | SDK | Delegate | Capture |
-| --- | --- | --- | --- |
-| iOS | MediaPipeTasksVision 0.10.14 | GPU | AVFoundation, 720p preference, late frames discarded |
-| Android | tasks-vision 0.10.29 | CPU | CameraX 1.4.2, 720p preference, keep latest frame |
+The application defines the condition. `usePoseRule` handles confidence checks, hold duration, stale input and transition callbacks:
 
-One pose, detection/presence/tracking confidence 0.35. Sequential VIDEO-mode inference runs on a dedicated serial worker, using monotonic timestamps and capture-time metadata. Camera backpressure bounds queued frames; inference never blocks the UI thread. The SDK versions, model bytes, confidence gates, and delegates match the previous Oly configuration. This does not establish performance or accuracy parity: compare on physical devices before release.
+```tsx
+const feedbackColors = {
+  pass: "#22c55e",
+  fail: "#ef4444",
+  unknown: "#94a3b8",
+};
 
-The bundled [Google full float16 model, version 1](https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task) has SHA-256 `5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1`. Both platforms package the same file from `assets/`.
+const raisedArm = usePoseRule({
+  landmarks: ["leftWrist", "leftShoulder"],
+  minVisibility: 0.6,
+  holdMs: 250,
+  isActive: screenIsFocused,
+  evaluate: pose => pose.leftWrist.y < pose.leftShoulder.y,
+  onChange: status => handleArmStateChange(status),
+});
 
-## Develop and review fixes
+<PoseCameraView
+  style={{ flex: 1 }}
+  isActive={screenIsFocused}
+  onLandmark={raisedArm.update}
+  onCameraConfigured={raisedArm.reset}
+  onInferenceError={raisedArm.reset}
+  skeleton={{ bodyParts: ["leftArm"], color: feedbackColors[raisedArm.status] }}
+/>
+```
 
-Clone this repository beside Oly-App. Create a branch, edit here, and open a pull request against `oly-native`. During development, use a local `file:` dependency in an isolated Oly checkout. Run:
+Import `usePoseRule` from the package. Uncertain, missing or stale landmarks produce `unknown`; that is distinct from a failed condition. Callbacks fire only on transitions. Show text or icons alongside color, as the example does. The hook does not judge exercise form or provide medical interpretation.
+
+For tests or application logic without a native view, import helpers from `expo-mediapipe-pose/core`:
+
+```ts
+import { getLandmark } from "expo-mediapipe-pose/core";
+
+const leftWrist = getLandmark(frame, "leftWrist");
+```
+
+## Develop
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm typecheck
-pnpm test
+pnpm check
+pnpm verify:package
+pnpm --filter pose-camera-example ios
+# or: pnpm --filter pose-camera-example android
 ```
 
-Build Oly for iOS and Android after native changes. On physical phones verify front/back preview and skeleton alignment, portrait/landscape, supported lens/zoom, empty detections, denied permission, model switches, background/resume, and repeated mount/unmount. Compare cadence, latency, and thermal behavior during a long session.
+`pnpm check` runs [Biome](https://biomejs.dev/), [TypeScript](https://www.typescriptlang.org/) checks for the package/example, and tests. CI builds both native example applications. Use physical phones to assess front/back alignment, all interface orientations, zoom, interruptions, permissions, model changes, repeated mounts and sustained capture. Include device, OS, SDK and model details when reporting bugs through [GitHub Issues](https://github.com/YosefHayim/expo-mediapipe-pose/issues).
 
-After review, replace Oly's dependency with `https://api.github.com/repos/YosefHayim/mediapipe-reactnative/tarball/<full-commit-sha>` and update its lockfile. Its scoped `.npmrc` reads `MEDIAPIPE_GITHUB_TOKEN`; CI/EAS needs repository Contents:read access. Never commit a token. No prepare/build scripts run when this package is installed: Metro consumes TypeScript and Expo autolinks the Swift/Kotlin module.
+## API and scope
 
-References: [Expo Modules](https://docs.expo.dev/modules/overview/), [Google iOS guide](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/ios), [Google Android guide](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/android).
+See [API details](docs/api.md) for props, coordinate semantics, errors and migration notes. This version detects one person. It does not provide recording, persistent person identity, repetition counting or exercise scoring. Only the full pose model is bundled; lite/heavy require local model files.
+
+Native inference uses [Swift](https://www.swift.org/) with AVFoundation on iOS and [Kotlin](https://kotlinlang.org/) with CameraX on Android. Detector ownership stays on a serial worker, with camera backpressure and stale-generation rejection. This is an Expo integration, not a replacement pose model.
+
+## License and attribution
+
+[MIT](LICENSE). This project evolved from [ThinkSys/mediapipe-reactnative](https://github.com/ThinkSys/mediapipe-reactnative); its attribution is preserved in [third-party notices](THIRD_PARTY_NOTICES.md), alongside MediaPipe notices. The native inference SDKs and pose model come from Google. Contributor agent guidance lives in [AGENTS.md](AGENTS.md).

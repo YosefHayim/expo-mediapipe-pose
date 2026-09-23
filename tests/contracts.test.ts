@@ -15,7 +15,7 @@ const frameMetadata = {
 	cameraLens: "wide",
 	cameraMirrored: true,
 	cameraZoomFactor: 1,
-	capturedAtMs: 1_700_000_000_000,
+	receivedAtMs: 1_700_000_000_000,
 	frameNumber: 1,
 	inferenceDurationMs: 12,
 	luminance: 0.5,
@@ -73,7 +73,7 @@ describe("Pose camera wire contracts", () => {
 						...frameMetadata,
 						poseModelVariant,
 						poseModelDelegate,
-						poseModelSource: "downloaded",
+						poseModelSource: "local",
 					},
 				});
 				assert.equal(Either.isRight(decodedFrame), true);

@@ -2,11 +2,11 @@ name: Check pose camera
 on:
   pull_request:
   push:
-    branches: [oly-native]
+    branches: [main]
 permissions:
   contents: read
 jobs:
-  contracts:
+  typescript:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,5 +18,43 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm test
+      - run: pnpm check
+      - run: pnpm verify:package
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter pose-camera-example exec expo prebuild --platform android --no-install
+      - run: ./gradlew :app:assembleDebug --console=plain
+        working-directory: example/android
+  ios:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter pose-camera-example exec expo prebuild --platform ios
+      - run: >-
+          xcodebuild -workspace MediaPipePoseExample.xcworkspace
+          -scheme MediaPipePoseExample -configuration Debug -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet build
+        working-directory: example/ios
