@@ -89,6 +89,8 @@ test("landmark recordings exclude ephemeral mask handles without releasing consu
 });
 test("native mask cleanup validates handles and reclaims malformed or undelivered results", async () => {
 	const calls: string[] = [];
+	let releaseFailure: Error | undefined;
+	let closeFailure: Error | undefined;
 	const nativeKey = Symbol.for("pose.nativeVideoTest");
 	const response = {
 		landmarks: [],
@@ -103,6 +105,7 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 		value: {
 			async releasePoseSegmentation(id: string) {
 				calls.push(id);
+				if (releaseFailure) throw releaseFailure;
 			},
 			async analyzePoseImage() {
 				return { ...response, imageSize: { width: -1, height: 1 } };
@@ -112,6 +115,7 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 			},
 			async closePoseVideo() {
 				calls.push("close");
+				if (closeFailure) throw closeFailure;
 			},
 			async readPoseVideoFrame() {
 				return {
@@ -162,6 +166,32 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 		);
 		await releasePoseSegmentation(leaseId);
 		assert.deepEqual(calls, ["close", leaseId]);
+		calls.length = 0;
+		const progressFailure = new Error("progress failed");
+		releaseFailure = new Error("mask release failed");
+		closeFailure = new Error("video close failed");
+		await assert.rejects(
+			analyzePoseVideo("/video.mp4", {
+				onProgress() {
+					throw progressFailure;
+				},
+			}).next(),
+			(error: unknown) => {
+				assert.ok(error instanceof AggregateError);
+				assert.equal(error.cause, progressFailure);
+				assert.deepEqual(error.errors, [
+					progressFailure,
+					releaseFailure,
+					closeFailure,
+				]);
+				return true;
+			},
+		);
+		assert.deepEqual(
+			calls,
+			[leaseId, "close"],
+			"Video closes even if mask cleanup fails",
+		);
 	} finally {
 		hooks.deregister();
 		Reflect.deleteProperty(globalThis, nativeKey);
