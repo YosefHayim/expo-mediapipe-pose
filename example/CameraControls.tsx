@@ -52,19 +52,26 @@ export function CameraControls({
 	);
 	return (
 		<View>
-			{capabilities.cameras.map((camera) => (
-				<Button
-					key={`${camera.facing}-${camera.lens}`}
-					title={`${camera.facing} / ${camera.lens} · ${camera.modes[0].previewFps} fps`}
-					onPress={() =>
-						onSelect({
-							facing: camera.facing,
-							lens: camera.lens,
-							previewFps: camera.modes[0].previewFps,
-						})
-					}
-				/>
-			))}
+			{capabilities.cameras.map((camera) => {
+				const initialMode = camera.modes.reduce((nearest, mode) =>
+					Math.abs(mode.previewFps - 30) < Math.abs(nearest.previewFps - 30)
+						? mode
+						: nearest,
+				);
+				return (
+					<Button
+						key={`${camera.facing}-${camera.lens}`}
+						title={`${camera.facing} / ${camera.lens} · ${initialMode.previewFps} fps`}
+						onPress={() =>
+							onSelect({
+								facing: camera.facing,
+								lens: camera.lens,
+								previewFps: initialMode.previewFps,
+							})
+						}
+					/>
+				);
+			})}
 			{selectedCamera?.zoomRange && (
 				<Text style={{ color: "white" }}>
 					Available zoom: {selectedCamera.zoomRange.min}–
