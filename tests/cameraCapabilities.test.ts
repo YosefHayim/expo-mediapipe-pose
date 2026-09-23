@@ -11,6 +11,12 @@ test("discovery retains format relationships and only resolves selectable lenses
 		cameras: [
 			{
 				facing: "back",
+				lens: "ultraWide",
+				zoomRange: { min: 1, max: 2 },
+				modes: [{ previewFps: 30, resolution: { width: 640, height: 480 } }],
+			},
+			{
+				facing: "back",
 				lens: "wide",
 				zoomRange: { min: 1, max: 5 },
 				modes: [
@@ -21,13 +27,15 @@ test("discovery retains format relationships and only resolves selectable lenses
 		],
 	});
 	assert.deepEqual(
-		findCameraCapability(capabilities, "back", "auto")?.modes[1],
+		findCameraCapability(capabilities, "back", "auto")?.modes.find(
+			(mode) => mode.previewFps === 60,
+		),
 		{ previewFps: 60, resolution: { width: 1920, height: 1080 } },
 	);
 	assert.equal(findCameraCapability(capabilities, "front"), undefined);
 	assert.equal(
-		findCameraCapability(capabilities, "back", "ultraWide"),
-		undefined,
+		findCameraCapability(capabilities, "back", "ultraWide")?.zoomRange?.max,
+		2,
 	);
 	assert.equal(
 		findCameraCapability(decode({ status: "permissionRequired" }), "back"),

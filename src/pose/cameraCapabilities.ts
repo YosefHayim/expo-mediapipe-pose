@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { CameraFacing } from "../contracts";
+import { CameraFacing, type CameraLens } from "../contracts";
 
 const Zoom = Schema.Number.pipe(Schema.finite(), Schema.between(1, 100));
 const ZoomRange = Schema.Struct({ min: Zoom, max: Zoom }).pipe(
@@ -35,8 +35,8 @@ export type CameraCapabilities = Schema.Schema.Type<typeof CameraCapabilities>;
 
 export function findCameraCapability(
 	capabilities: CameraCapabilities,
-	facing: "front" | "back",
-	lens: "auto" | "wide" | "ultraWide" = "auto",
+	facing: CameraFacing,
+	lens: CameraLens = "auto",
 ): CameraCapability | undefined {
 	if (capabilities.status !== "available") return undefined;
 	const effectiveLens = lens === "auto" ? "wide" : lens;

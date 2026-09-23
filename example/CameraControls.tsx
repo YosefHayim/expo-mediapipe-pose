@@ -49,8 +49,18 @@ export function CameraControls({
 		);
 	if (!capabilities)
 		return <Text style={{ color: "white" }}>Discovering cameras…</Text>;
-	if (capabilities.status !== "available")
-		return <Text style={{ color: "white" }}>{capabilities.status}</Text>;
+	if (capabilities.status !== "available") {
+		const message =
+			capabilities.status === "permissionRequired"
+				? "Allow camera access in settings, then retry discovery."
+				: "No selectable camera is currently available.";
+		return (
+			<View>
+				<Text style={{ color: "white" }}>{message}</Text>
+				<Button title="Retry discovery" onPress={discover} />
+			</View>
+		);
+	}
 	const selectedCamera = selection
 		? findCameraCapability(capabilities, selection.facing, selection.lens)
 		: undefined;

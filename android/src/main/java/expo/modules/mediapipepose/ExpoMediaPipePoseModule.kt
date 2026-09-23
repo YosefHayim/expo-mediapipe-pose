@@ -8,7 +8,11 @@ class ExpoMediaPipePoseModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("ExpoMediaPipePose")
         AsyncFunction("getCameraCapabilities") { promise: Promise ->
-            val context = requireNotNull(appContext.reactContext)
+            val context = appContext.reactContext
+            if (context == null) {
+                promise.reject("cameraCapabilities", "React context is unavailable", null)
+                return@AsyncFunction
+            }
             PoseCameraCapabilities.discover(context, promise)
         }
         View(ExpoMediaPipePoseView::class) {
