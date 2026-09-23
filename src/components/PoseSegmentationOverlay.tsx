@@ -28,7 +28,9 @@ export const PoseSegmentationOverlay = React.memo(
 			throw new RangeError("opacity must be between 0 and 1");
 		if (segmentation.status !== "available") return null;
 		if (width <= 0 || height <= 0) return null;
-		const mask = segmentation.masks[poseIndex];
+		const mask = segmentation.masks.find(
+			(entry) => entry.poseIndex === poseIndex,
+		);
 		if (mask === undefined) return null;
 		const origin = projectLandmark(
 			{ x: 0, y: 0, z: 0 },
