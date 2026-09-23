@@ -65,12 +65,12 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 			);
 			const confirming =
 				inspection.status === "found" && stability.current.status !== "pass";
-			commit(confirming ? trackingState("acquiring") : inspection);
 			clearTimeout(timeout.current);
 			timeout.current = setTimeout(() => {
 				stability.current = initialPoseRuleState();
 				commit(trackingState("stale"));
 			}, staleAfterMs);
+			commit(confirming ? trackingState("acquiring") : inspection);
 		},
 		[commit, reset],
 	);
