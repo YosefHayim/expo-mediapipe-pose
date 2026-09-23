@@ -27,7 +27,8 @@
 		"check": "pnpm build && pnpm lint && pnpm typecheck && pnpm --filter pose-camera-example typecheck && pnpm test",
 		"verify:package": "node scripts/verify-package.mjs",
 		"build": "tsc -p tsconfig.build.json",
-		"prepack": "pnpm build"
+		"prepack": "pnpm build",
+		"prepare": "pnpm build"
 	},
 	"repository": {
 		"type": "git",
