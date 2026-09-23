@@ -439,12 +439,14 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return "unknown"
         val power = context.getSystemService(PowerManager::class.java) ?: return "unknown"
         return when (power.currentThermalStatus) {
+            PowerManager.THERMAL_STATUS_NONE -> "nominal"
+            PowerManager.THERMAL_STATUS_LIGHT,
             PowerManager.THERMAL_STATUS_MODERATE -> "fair"
             PowerManager.THERMAL_STATUS_SEVERE -> "serious"
             PowerManager.THERMAL_STATUS_CRITICAL,
             PowerManager.THERMAL_STATUS_EMERGENCY,
             PowerManager.THERMAL_STATUS_SHUTDOWN -> "critical"
-            else -> "nominal"
+            else -> "unknown"
         }
     }
 

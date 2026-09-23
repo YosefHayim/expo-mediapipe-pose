@@ -109,7 +109,7 @@ export const createSkeleton = (
 		const start = byName.get(from);
 		const end = byName.get(to);
 		if (!start || !end) return [];
-		const name: ConnectionName = `${from}:${to}`;
+		const name = `${from}:${to}` as ConnectionName;
 		const connectionStyle = {
 			color: style.color,
 			width: style.lineWidth,

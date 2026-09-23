@@ -9,6 +9,11 @@ import { poseFrame } from "./fixtures";
 
 it("emits transitions once, uses current callbacks, expires stale feedback and resets on pause", async (test) => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
+	const globalNames = ["window", "document", "IS_REACT_ACT_ENVIRONMENT"];
+	const originalGlobals = globalNames.map((name) => ({
+		name,
+		descriptor: Object.getOwnPropertyDescriptor(globalThis, name),
+	}));
 	Object.defineProperty(globalThis, "window", {
 		value: dom.window,
 		configurable: true,
@@ -93,5 +98,12 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 		await act(() => root.unmount());
 		test.mock.timers.reset();
 		dom.window.close();
+		for (const { name, descriptor } of originalGlobals) {
+			if (descriptor) {
+				Object.defineProperty(globalThis, name, descriptor);
+				continue;
+			}
+			Reflect.deleteProperty(globalThis, name);
+		}
 	}
 });

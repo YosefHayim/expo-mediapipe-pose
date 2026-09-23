@@ -77,8 +77,16 @@ export const POSE_CONNECTIONS = [
 	["rightAnkle", "rightFootIndex"],
 ] as const satisfies readonly (readonly [LandmarkName, LandmarkName])[];
 
-export type ConnectionName =
-	`${(typeof POSE_CONNECTIONS)[number][0]}:${(typeof POSE_CONNECTIONS)[number][1]}`;
+type ConnectionNameOf<Pair> = Pair extends readonly [
+	infer From extends LandmarkName,
+	infer To extends LandmarkName,
+]
+	? `${From}:${To}`
+	: never;
+
+export type ConnectionName = ConnectionNameOf<
+	(typeof POSE_CONNECTIONS)[number]
+>;
 
 export const BODY_PARTS = {
 	face: LANDMARK_NAMES.slice(0, 11),
