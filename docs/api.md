@@ -188,3 +188,25 @@ On iOS each rate is paired with the sensor-format dimensions selected by the sam
 Zoom bounds are the current device snapshot clamped to the library's 1–100 range; an unknown Android zoom state is `null`. Bounds can change with configuration. The configured event remains authoritative for applied zoom. Other apps, permissions, session combinations and device state can still prevent capture after discovery.
 
 The example waits for an explicit camera/lens choice before starting capture and makes every advertised frame rate selectable. Each camera button explicitly offers its advertised rate nearest 30 fps. The underlying sources are [AVCaptureDevice formats](https://developer.apple.com/documentation/avfoundation/avcapturedevice/formats) and [CameraX advertised frame-rate ranges](https://developer.android.com/reference/androidx/camera/core/CameraInfo#getSupportedFrameRateRanges()).
+
+## Landmark recording and replay
+
+`createPoseRecorder({ maxFrames: 1800 })` creates an idle recorder. Call `start()` explicitly, feed camera results into `append(frame)`, then call `stop()` for a copied `PoseRecording`. `append` returns whether it accepted the frame. At capacity the status becomes `full` and additional appends return `false`; `start()` begins a new empty recording. Other states are `idle`, `recording`, and `stopped`. `frameCount` reports accepted frames. Capacity must be 1–10,000 frames. The recorder stores landmarks and their existing result metadata, never camera pixels, and performs no file or network I/O.
+
+The version-1 JSON format contains `{ version: 1, frames: [{ timestampMs, frame }] }`. Relative timestamps begin at the first accepted frame, using `performance.now()` by default. An optional second `append` argument supplies a monotonic millisecond time; timestamps must strictly increase and sessions cannot exceed 24 hours. Wall-clock `receivedAtMs` is preserved as original metadata and does not drive scheduling. `serializePoseRecording` and `parsePoseRecording` validate versions, fields, finite values, chronology, landmark count, frame capacity and a 64 Mi-character JSON ceiling. Unknown fields are rejected. Imported and returned frames cannot mutate recorder/replay storage.
+
+```tsx
+const recorder = createPoseRecorder({ maxFrames: 300 });
+recorder.start();
+// Inside onLandmark:
+recorder.append(frame);
+// When the user finishes:
+const session = recorder.stop();
+const json = serializePoseRecording(session);
+```
+
+`usePoseReplay(session, { onFrame, onReset?, onStateChange? })` owns replay for a stable session object. It exposes `play()`, `pause()`, `seek(milliseconds)`, `setSpeed(0.1…4)`, `reset()`, and `status`, `positionMs`, `durationMs`, `speed`. A session starts paused at 1×. Ended playback needs `reset()` or `seek()` before `play()`. Seeking selects the first frame at or after the requested time, invokes `onReset` so callers clear their rules/tracking, and preserves playing/paused state. `reset` pauses and seeks to zero. A replacement session resets playback; unmount cancels scheduled delivery. Keep the recording reference stable between renders.
+
+`onFrame(frame, timestampMs)` receives the original relative time. Pass the frame to `usePoseRule`/`usePoseRules`/`usePoseTracking` and render `PoseSkeleton`. These hooks measure hold/staleness in real elapsed time: slow playback can expire tracking and faster playback shortens observed holds. For speed-independent offline evaluation, use `evaluatePoseRule` with `advancePoseRule(state, outcome, timestampMs, holdMs)` instead. Seeking backwards must reset that state too. Replay preserves chronological delivery, including when the JS thread is late; it does not claim real-time playback under load. Position notifications occur on controls and delivered frames, not on every display refresh.
+
+The pure `createPoseReplay(session, callbacks)` controller exposes the same controls, a `state` getter and `dispose()`. Dispose it when its owner ends. The example records at most 300 results and demonstrates playback, pause, speed, seek, reset, tracking and skeleton rendering without keeping the camera running.
