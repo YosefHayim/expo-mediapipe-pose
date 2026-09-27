@@ -219,3 +219,35 @@ test("empty native recordings are an explicit empty replay", async ({
 		page.getByRole("button", { name: "Play replay" }),
 	).toBeDisabled();
 });
+
+test("threshold edits keep invalid drafts and export only valid bounded values", async ({
+	page,
+	context,
+}) => {
+	await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+	await page.goto("./");
+	await page
+		.locator(".presets")
+		.getByRole("button", { name: "Arm feedback", exact: false })
+		.click();
+	await page.locator("summary").filter({ hasText: "Feedback rules" }).click();
+	const enter = page.getByLabel("Enter Threshold", { exact: true });
+	const exit = page.getByLabel("Exit Threshold", { exact: true });
+	await enter.fill("105");
+	await expect(enter).toHaveValue("105");
+	await expect(page.getByRole("alert")).toContainText("last valid values");
+	await exit.fill("115");
+	await expect(page.getByRole("alert")).toHaveCount(0);
+	await exit.fill("20000");
+	await expect(page.getByRole("alert")).toContainText("10,000");
+	await page.getByLabel("Pass direction").selectOption("above");
+	await expect(page.getByRole("alert")).toHaveCount(0);
+	await expect(enter).toHaveValue("115");
+	await expect(exit).toHaveValue("105");
+	await page.getByRole("button", { name: "Copy share link" }).click();
+	const link = await page.evaluate(() => navigator.clipboard.readText());
+	await page.goto(link);
+	await expect(page.getByText(/shared configuration is invalid/)).toHaveCount(
+		0,
+	);
+});

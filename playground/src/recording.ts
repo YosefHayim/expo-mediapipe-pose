@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import {
 	Landmark,
+	type PoseLandmarks,
 	PoseResults,
 	parsePoseDetectionRecording,
 	parsePoseRecording,
@@ -62,14 +63,7 @@ export function parseRecording(json: string): Recording {
 			frame: {
 				landmarks: frame.landmarks,
 				worldLandmarks: frame.worldLandmarks,
-				poses: [
-					...(frame.poses ?? [
-						{
-							landmarks: frame.landmarks,
-							worldLandmarks: frame.worldLandmarks,
-						},
-					]),
-				],
+				poses: nativePoseResults(frame),
 				imageSize: {
 					width: frame.additionalData.width,
 					height: frame.additionalData.height,
@@ -84,14 +78,7 @@ export function parseRecording(json: string): Recording {
 			frame: {
 				landmarks: frame.landmarks,
 				worldLandmarks: frame.worldLandmarks,
-				poses: [
-					...(frame.poses ?? [
-						{
-							landmarks: frame.landmarks,
-							worldLandmarks: frame.worldLandmarks,
-						},
-					]),
-				],
+				poses: nativePoseResults(frame),
 				imageSize: frame.imageSize,
 				inferenceDurationMs: frame.inferenceDurationMs,
 			},
@@ -121,3 +108,18 @@ export function download(name: string, contents: string) {
 	link.click();
 	setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+function nativePoseResults(
+	frame: Pick<BrowserFrame, "landmarks" | "worldLandmarks"> & {
+		poses?: readonly PoseLandmarks[];
+	},
+): PoseLandmarks[] {
+	if (frame.poses !== undefined) return [...frame.poses];
+	if (frame.landmarks.length === 0) return [];
+	return [{ landmarks: frame.landmarks, worldLandmarks: frame.worldLandmarks }];
+}
+export const RECORDING_ENVELOPE_BYTES = JSON.stringify({
+	format: "pose-playground",
+	version: 1,
+	frames: [],
+}).length;

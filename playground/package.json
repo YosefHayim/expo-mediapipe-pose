@@ -6,10 +6,10 @@
 	"scripts": {
 		"assets": "node scripts/assets.mjs",
 		"dev": "pnpm assets && vite --host 127.0.0.1",
-		"build": "pnpm assets && tsc --noEmit && vite build",
+		"build": "pnpm --dir .. build && pnpm assets && tsc --noEmit && vite build",
 		"preview": "vite preview --host 127.0.0.1",
-		"typecheck": "tsc --noEmit",
-		"test": "tsx --test tests/*.test.ts",
+		"typecheck": "pnpm --dir .. build && tsc --noEmit",
+		"test": "pnpm --dir .. build && tsx --test tests/*.test.ts",
 		"test:e2e": "playwright test"
 	},
 	"dependencies": {

@@ -5,7 +5,7 @@ import {
 	type LandmarkName,
 	POSE_CONNECTIONS,
 } from "expo-mediapipe-pose/core";
-import { type ReactNode, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import { type Config, defaultRule, type Rule } from "./config";
 
 export function Range({
@@ -564,21 +564,51 @@ function RuleEditor({
 	onRemove: () => void;
 }) {
 	const [thresholdError, setThresholdError] = useState("");
+	const [draft, setDraft] = useState({
+		enterThreshold: String(rule.enterThreshold),
+		exitThreshold: String(rule.exitThreshold),
+	});
+	useEffect(() => {
+		setDraft({
+			enterThreshold: String(rule.enterThreshold),
+			exitThreshold: String(rule.exitThreshold),
+		});
+		setThresholdError("");
+	}, [rule.enterThreshold, rule.exitThreshold]);
 	const update = (patch: Partial<Rule>) => onChange({ ...rule, ...patch });
 	const threshold = (
 		key: "enterThreshold" | "exitThreshold",
-		value: number,
+		value: string,
 	) => {
-		const next = { ...rule, [key]: value };
-		const valid =
-			rule.direction === "above"
-				? next.enterThreshold > next.exitThreshold
-				: next.enterThreshold < next.exitThreshold;
-		setThresholdError(
-			valid ? "" : "Entry and exit must leave a non-empty hysteresis band.",
+		const next = { ...draft, [key]: value };
+		setDraft(next);
+		const enterThreshold = Number(next.enterThreshold);
+		const exitThreshold = Number(next.exitThreshold);
+		const hasBoth =
+			next.enterThreshold.trim() !== "" && next.exitThreshold.trim() !== "";
+		const bounded = [enterThreshold, exitThreshold].every(
+			(number) => Number.isFinite(number) && Math.abs(number) <= 10000,
 		);
-		if (valid) onChange(next);
+		if (!hasBoth || !bounded) {
+			setThresholdError(
+				"Enter thresholds between −10,000 and 10,000. The last valid values remain active.",
+			);
+			return;
+		}
+		const ordered =
+			rule.direction === "above"
+				? enterThreshold > exitThreshold
+				: enterThreshold < exitThreshold;
+		if (!ordered) {
+			setThresholdError(
+				"Entry and exit must leave a non-empty hysteresis band. The last valid values remain active.",
+			);
+			return;
+		}
+		setThresholdError("");
+		onChange({ ...rule, enterThreshold, exitThreshold });
 	};
+
 	return (
 		<fieldset className="rule-editor">
 			<legend>Rule {index + 1}</legend>
@@ -640,8 +670,10 @@ function RuleEditor({
 						<input
 							type="number"
 							step="any"
-							value={rule[key]}
-							onChange={(e) => threshold(key, Number(e.target.value))}
+							min={-10000}
+							max={10000}
+							value={draft[key]}
+							onChange={(e) => threshold(key, e.target.value)}
 						/>
 					</label>
 				))}

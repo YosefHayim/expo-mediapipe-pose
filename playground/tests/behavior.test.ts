@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { join } from "node:path";
 import test from "node:test";
 import {
@@ -190,4 +191,30 @@ test("custom full models and segmentation styles are reflected in exported code"
 	assert.match(code, /PoseSegmentationOverlay segmentation=/);
 	assert.match(code, /color="#22c55e" opacity=\{0.5\}/);
 	assert.match(code, /useLayoutEffect/);
+});
+
+test("legacy native no-person detections remain zero poses during replay", async () => {
+	const { poseFrame }: typeof import("../../tests/fixtures") = createRequire(
+		import.meta.url,
+	)("../../tests/fixtures.ts");
+	const nativeFrame = poseFrame();
+	const camera = {
+		...nativeFrame,
+		landmarks: [],
+		worldLandmarks: [],
+		additionalData: { ...nativeFrame.additionalData, poseCount: 0 },
+	};
+	const image = {
+		landmarks: [],
+		worldLandmarks: [],
+		imageSize: { width: 800, height: 400 },
+		inferenceDurationMs: 10,
+		model: { variant: "full", source: "bundled", delegate: "CPU" },
+	};
+	for (const frame of [camera, image]) {
+		const recording = parseRecording(
+			JSON.stringify({ version: 1, frames: [{ timestampMs: 0, frame }] }),
+		);
+		assert.equal(recording.frames[0]?.frame.poses.length, 0);
+	}
 });

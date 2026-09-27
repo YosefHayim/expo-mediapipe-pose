@@ -5,7 +5,7 @@ import {
 	type PoseRuleState,
 	selectPose,
 } from "expo-mediapipe-pose/core";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Controls, Range, Select } from "./Controls";
 import { generateCode, skeletonOptions } from "./codegen";
 import {
@@ -20,6 +20,7 @@ import {
 	frameAt,
 	MAX_RECORDING_FRAMES,
 	parseRecording,
+	RECORDING_ENVELOPE_BYTES,
 	type Recording,
 } from "./recording";
 import { measureRule, updateRules } from "./rules";
@@ -67,7 +68,7 @@ export default function App() {
 		[],
 	);
 	const recordStart = useRef(0);
-	const recordSize = useRef(0);
+	const recordSize = useRef(RECORDING_ENVELOPE_BYTES);
 	const [recordCount, setRecordCount] = useState(0);
 	const [replay, setReplay] = useState<Recording | null>(null);
 	const [position, setPosition] = useState(0);
@@ -89,7 +90,7 @@ export default function App() {
 		}
 		setConfigState(next);
 	};
-	function finishRecording() {
+	const finishRecording = useCallback(() => {
 		setRecording(false);
 		if (recordRef.current.length)
 			setRecorded({
@@ -97,7 +98,7 @@ export default function App() {
 				version: 1,
 				frames: [...recordRef.current],
 			});
-	}
+	}, []);
 	function acceptFrame(next: BrowserFrame, nextMasks: BrowserMask[]) {
 		receivedAt.current = performance.now();
 		setFrame(next);
@@ -106,7 +107,8 @@ export default function App() {
 		const now = performance.now();
 		if (recordRef.current.length === 0) recordStart.current = now;
 		const entry = { timestampMs: now - recordStart.current, frame: next };
-		const size = JSON.stringify(entry).length;
+		const separatorBytes = recordRef.current.length === 0 ? 0 : 1;
+		const size = JSON.stringify(entry).length + separatorBytes;
 		if (recordSize.current + size > 15 * 1024 * 1024) {
 			finishRecording();
 			setMessage("Recording stopped at the 15 MiB limit.");
@@ -132,6 +134,21 @@ export default function App() {
 		onFrame: acceptFrame,
 	});
 	const detectionKey = JSON.stringify(config.detection);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: A recording belongs to one uninterrupted input generation.
+	useEffect(() => {
+		finishRecording();
+	}, [
+		finishRecording,
+		engine.error,
+		hidden,
+		paused,
+		mode,
+		sourceUrl,
+		device,
+		detectionKey,
+		model,
+		config.timing.previewFps,
+	]);
 	useEffect(() => {
 		const visibility = () => setHidden(document.hidden);
 		document.addEventListener("visibilitychange", visibility);
@@ -879,7 +896,7 @@ export default function App() {
 													return;
 												}
 												recordRef.current = [];
-												recordSize.current = 0;
+												recordSize.current = RECORDING_ENVELOPE_BYTES;
 												setRecordCount(0);
 												setRecording(true);
 											}}

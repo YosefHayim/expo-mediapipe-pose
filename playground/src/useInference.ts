@@ -53,6 +53,7 @@ export function useInference(options: Options) {
 			return;
 		}
 		let disposed = false;
+		let failed = false;
 		let stream: MediaStream | undefined;
 		const previewVideo = video.current;
 		let timer = 0;
@@ -70,7 +71,9 @@ export function useInference(options: Options) {
 		const send = (message: WorkerRequest, transfer: Transferable[] = []) =>
 			worker.postMessage(message, transfer);
 		const fail = (message: string) => {
-			if (disposed) return;
+			if (disposed || failed) return;
+			failed = true;
+			cancelAnimationFrame(timer);
 			ready = false;
 			setError(message);
 			setStatus("Needs attention");
@@ -82,7 +85,7 @@ export function useInference(options: Options) {
 			setTimeout(() => worker.terminate(), 100);
 		};
 		const tick = async () => {
-			if (disposed) return;
+			if (disposed || failed) return;
 			timer = requestAnimationFrame(() => void tick());
 			const now = performance.now();
 			const { timing } = latest.current.config;
@@ -98,8 +101,10 @@ export function useInference(options: Options) {
 					source.currentTime === lastVideoTime
 				)
 					return;
-			} else if (!source.complete || source.naturalWidth === 0 || stillSent)
-				return;
+			} else {
+				if (!source.complete || source.naturalWidth === 0 || stillSent) return;
+				if (source.currentSrc !== new URL(url, location.href).href) return;
+			}
 			busy = true;
 			try {
 				const width =
@@ -115,7 +120,7 @@ export function useInference(options: Options) {
 					resizeWidth: Math.max(1, Math.round(width * scale)),
 					resizeHeight: Math.max(1, Math.round(height * scale)),
 				});
-				if (disposed) {
+				if (disposed || failed) {
 					bitmap.close();
 					return;
 				}
@@ -139,7 +144,7 @@ export function useInference(options: Options) {
 			}
 		};
 		worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-			if (disposed) return;
+			if (disposed || failed) return;
 			const message = event.data;
 			if (message.type === "error") {
 				busy = false;
@@ -199,7 +204,7 @@ export function useInference(options: Options) {
 						video: camera,
 						audio: false,
 					});
-					if (disposed) {
+					if (disposed || failed) {
 						stream.getTracks().forEach((track) => {
 							track.stop();
 						});
@@ -209,7 +214,7 @@ export function useInference(options: Options) {
 					if (!element) throw new Error("Camera preview unavailable.");
 					element.srcObject = stream;
 					await element.play();
-					if (disposed) return;
+					if (disposed || failed) return;
 					const settings = stream.getVideoTracks()[0]?.getSettings();
 					setActualCapture(
 						`${settings?.width ?? "?"} × ${settings?.height ?? "?"} · ${settings?.frameRate?.toFixed(1) ?? "?"} fps capture`,
@@ -220,7 +225,7 @@ export function useInference(options: Options) {
 						),
 					);
 				}
-				if (disposed) return;
+				if (disposed || failed) return;
 				send({
 					type: "init",
 					base: new URL(import.meta.env.BASE_URL, location.origin).href,
