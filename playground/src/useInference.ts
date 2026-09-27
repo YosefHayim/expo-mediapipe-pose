@@ -77,6 +77,8 @@ export function useInference(options: Options) {
 				track.stop();
 			});
 			video.current?.pause();
+			send({ type: "close" });
+			setTimeout(() => worker.terminate(), 100);
 		};
 		const tick = async () => {
 			if (disposed) return;
