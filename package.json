@@ -24,7 +24,7 @@
 		"test": "tsx --test tests/*.test.ts",
 		"lint": "biome check .",
 		"format": "biome check --write .",
-		"check": "pnpm build && pnpm lint && pnpm typecheck && pnpm --filter pose-camera-example typecheck && pnpm test",
+		"check": "pnpm build && pnpm lint && pnpm typecheck && pnpm --filter pose-camera-example typecheck && pnpm test && pnpm --filter pose-playground typecheck && pnpm --filter pose-playground test",
 		"verify:package": "node scripts/verify-package.mjs",
 		"build": "tsc -p tsconfig.build.json",
 		"prepack": "pnpm build",

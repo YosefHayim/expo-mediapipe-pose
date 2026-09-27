@@ -4,6 +4,12 @@ On-device pose detection for [Expo](https://docs.expo.dev/) and [React Native](h
 
 Community-maintained; not an official Google or Expo package. Frames stay on the device. The module does not download models or upload camera data.
 
+## Try it in your browser
+
+[Open the interactive playground](https://YosefHayim.github.io/expo-mediapipe-pose/) to try samples, webcam and local media, adjust skeletons and feedback rules, explore segmentation, and copy Expo integration code. Camera and files stay in your browser.
+
+The playground uses MediaPipe’s browser SDK with this library’s pure helpers. It does not add browser inference support to the npm package or verify native camera capabilities and phone performance. See [playground development and limits](playground/README.md).
+
 ## Who this helps
 
 For Expo and React Native developers building camera interactions, movement visualizations, local photo/video analysis, or feedback driven by named body landmarks. The library handles native inference, coordinates, configurable overlays and event delivery; your app supplies the conditions and user experience.

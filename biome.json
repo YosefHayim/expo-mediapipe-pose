@@ -8,7 +8,12 @@
 			"example/*.tsx",
 			"example/*.json",
 			"scripts/*.mjs",
-			"*.json"
+			"*.json",
+			"playground/src/**",
+			"playground/tests/**",
+			"playground/*.ts",
+			"playground/*.json",
+			"playground/scripts/*.mjs"
 		]
 	},
 	"formatter": {
