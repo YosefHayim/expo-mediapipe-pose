@@ -206,13 +206,12 @@ test("empty native recordings are an explicit empty replay", async ({
 }) => {
 	await page.goto("./");
 	await page.getByRole("button", { name: "Replay", exact: true }).click();
-	await page
-		.getByLabel("Import landmark recording")
-		.setInputFiles({
-			name: "empty.json",
-			mimeType: "application/json",
-			buffer: Buffer.from(JSON.stringify({ version: 1, frames: [] })),
-		});
+	const importRecording = page.getByLabel("Import landmark recording");
+	await importRecording.setInputFiles({
+		name: "empty.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(JSON.stringify({ version: 1, frames: [] })),
+	});
 	await expect(
 		page.getByText(/This recording contains no frames/),
 	).toBeVisible();
