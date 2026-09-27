@@ -6,7 +6,11 @@ export function skeletonOptions(config: Config): SkeletonOptions {
 	return options;
 }
 function ruleCode(rule: Rule) {
-	const names = JSON.stringify([rule.start, rule.vertex, rule.end]);
+	const requiredLandmarks =
+		rule.kind === "angle"
+			? [rule.start, rule.vertex, rule.end]
+			: [rule.start, rule.end];
+	const names = JSON.stringify(requiredLandmarks);
 	const a = JSON.stringify(rule.start);
 	const b = JSON.stringify(rule.vertex);
 	const c = JSON.stringify(rule.end);

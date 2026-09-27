@@ -54,6 +54,7 @@ export function useInference(options: Options) {
 		}
 		let disposed = false;
 		let stream: MediaStream | undefined;
+		const previewVideo = video.current;
 		let timer = 0;
 		let ready = false;
 		let busy = false;
@@ -76,7 +77,7 @@ export function useInference(options: Options) {
 			stream?.getTracks().forEach((track) => {
 				track.stop();
 			});
-			video.current?.pause();
+			previewVideo?.pause();
 			send({ type: "close" });
 			setTimeout(() => worker.terminate(), 100);
 		};
@@ -204,7 +205,7 @@ export function useInference(options: Options) {
 						});
 						return;
 					}
-					const element = video.current;
+					const element = previewVideo;
 					if (!element) throw new Error("Camera preview unavailable.");
 					element.srcObject = stream;
 					await element.play();
@@ -239,9 +240,13 @@ export function useInference(options: Options) {
 			stream?.getTracks().forEach((track) => {
 				track.stop();
 			});
-			if (video.current) {
-				video.current.pause();
-				video.current.srcObject = null;
+			if (previewVideo) {
+				previewVideo.pause();
+				previewVideo.srcObject = null;
+				if (!previewVideo.isConnected) {
+					previewVideo.removeAttribute("src");
+					previewVideo.load();
+				}
 			}
 			// Finish any in-flight inference, close on the worker, then reclaim WASM memory.
 			send({ type: "close" });

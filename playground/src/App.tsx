@@ -275,6 +275,10 @@ export default function App() {
 				if (file.size > 16 * 1024 * 1024)
 					throw new Error("Recording exceeds 16 MiB.");
 				const parsed = parseRecording(await file.text());
+				if (parsed.frames.length === 0)
+					setMessage(
+						"This recording contains no frames. Import another recording to replay landmarks.",
+					);
 				setReplay(parsed);
 				setPlaying(false);
 				setPosition(0);
@@ -535,6 +539,7 @@ export default function App() {
 									{(mode === "sample" || mode === "photo") && sourceUrl && (
 										<img
 											ref={image}
+											key={sourceUrl}
 											src={sourceUrl}
 											alt={
 												mode === "sample"
@@ -551,6 +556,7 @@ export default function App() {
 									{(mode === "camera" || mode === "video") && (
 										<video
 											ref={video}
+											key={sourceUrl || mode}
 											src={mode === "video" && upload ? upload : undefined}
 											muted
 											playsInline
@@ -695,6 +701,7 @@ export default function App() {
 								<div className="transport">
 									<button
 										type="button"
+										disabled={replay.frames.length === 0}
 										onClick={() => {
 											if (position >= duration) setPosition(0);
 											setPlaying((value) => !value);
@@ -813,8 +820,10 @@ export default function App() {
 										})
 									)}
 									<small>
-										Static images hold their measurement while displayed. World
-										distances are model estimates, not calibrated measurements.
+										Static images hold their measurement while displayed. Pixel
+										thresholds depend on inference dimensions; retune them on
+										your device. World distances are model estimates, not
+										calibrated measurements.
 									</small>
 								</div>
 							)}

@@ -585,11 +585,16 @@ function RuleEditor({
 			<Select
 				label={`Rule ${index + 1} measurement`}
 				value={rule.kind}
-				onChange={(kind) => update({ kind: kind as Rule["kind"] })}
+				onChange={(kind) =>
+					update({
+						kind: kind as Rule["kind"],
+						space: kind === "height" ? "image" : rule.space,
+					})
+				}
 			>
 				<option value="angle">Joint angle</option>
 				<option value="distance">Distance</option>
-				<option value="height">Vertical difference (start − end)</option>
+				<option value="height">Vertical difference (image pixels)</option>
 			</Select>
 			{rule.kind !== "height" && (
 				<Select

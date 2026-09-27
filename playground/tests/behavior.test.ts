@@ -39,6 +39,14 @@ test("configurations preserve defaults and reject unsupported or executable cont
 	const config = defaults();
 	assert.deepEqual(parseConfig(JSON.stringify(config)), config);
 	assert.equal(config.detection.minTrackingConfidence, 0.35);
+	assert.throws(() =>
+		parseConfig(
+			JSON.stringify({
+				...config,
+				rules: [{ ...defaultRule, kind: "height", space: "world" }],
+			}),
+		),
+	);
 	assert.throws(() => parseConfig(JSON.stringify({ ...config, version: 2 })));
 	assert.throws(() =>
 		parseConfig(
@@ -117,9 +125,12 @@ test("browser recording validation, replay seeking and pixel exclusion", () => {
 			JSON.stringify({ ...recording, frames: [...recording.frames].reverse() }),
 		),
 	);
-	assert.throws(() =>
-		parseRecording(JSON.stringify({ ...recording, frames: [] })),
+	const empty = parseRecording(JSON.stringify({ ...recording, frames: [] }));
+	assert.equal(frameAt(empty, 0), null);
+	const nativeEmpty = parseRecording(
+		JSON.stringify({ version: 1, frames: [] }),
 	);
+	assert.equal(frameAt(nativeEmpty, 0), null);
 });
 test("every generated integration compiles against the actual native API", () => {
 	const directory = mkdtempSync(join(process.cwd(), ".generated-code-"));

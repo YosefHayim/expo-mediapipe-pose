@@ -34,6 +34,7 @@ export const RuleSchema = Schema.Struct({
 	failColor: color,
 	unknownColor: color,
 }).pipe(
+	Schema.filter((r) => r.kind !== "height" || r.space === "image"),
 	Schema.filter((r) =>
 		r.direction === "above"
 			? r.enterThreshold > r.exitThreshold

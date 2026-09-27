@@ -31,11 +31,12 @@ const recordingSchema = Schema.Struct({
 			),
 			frame: frameSchema,
 		}),
-	).pipe(Schema.minItems(1), Schema.maxItems(1800)),
+	).pipe(Schema.maxItems(1800)),
 }).pipe(
 	Schema.filter(
 		(recording) =>
-			recording.frames[0]?.timestampMs === 0 &&
+			(recording.frames.length === 0 ||
+				recording.frames[0]?.timestampMs === 0) &&
 			recording.frames.every(
 				(entry, i) =>
 					i === 0 ||

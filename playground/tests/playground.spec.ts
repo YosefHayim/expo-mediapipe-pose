@@ -22,7 +22,18 @@ test("real model detects a sample, styles update without reloading, and empty re
 		"fill",
 		"#ff0088",
 	);
+	let releaseImage = () => {};
+	const imageGate = new Promise<void>((resolve) => {
+		releaseImage = resolve;
+	});
+	await page.route("**/burger.jpg", async (route) => {
+		await imageGate;
+		await route.continue();
+	});
 	await page.getByLabel("Sample scene").selectOption("burger.jpg");
+	await expect(page.getByText("Ready", { exact: true })).toBeVisible();
+	await expect(page.locator(".skeleton circle")).toHaveCount(0);
+	releaseImage();
 	await expect(
 		page.getByText("No person detected", { exact: true }),
 	).toBeVisible({ timeout: 60000 });
@@ -118,7 +129,18 @@ test("uploads, video sampling, recording and replay work", async ({ page }) => {
 		page.getByText(/\d+ frames captured · recording/),
 	).not.toHaveText("0 frames captured · recording");
 	await page.getByRole("button", { name: "Stop recording" }).click();
+	await page.locator("video").evaluate((element: HTMLVideoElement) => {
+		(window as unknown as { previousVideo: HTMLVideoElement }).previousVideo =
+			element;
+	});
 	await page.getByRole("button", { name: "Replay", exact: true }).click();
+	expect(
+		await page.evaluate(
+			() =>
+				(window as unknown as { previousVideo: HTMLVideoElement }).previousVideo
+					.paused,
+		),
+	).toBe(true);
 	await page.getByRole("button", { name: "Use last recording" }).click();
 	await expect(
 		page.getByRole("img", { name: /Skeleton overlay: [1-9]/ }),
@@ -177,4 +199,24 @@ test("mobile layout and invalid shared configuration remain usable", async ({
 		page.getByRole("link", { name: "Skip to playground" }),
 	).toBeFocused();
 	await page.screenshot({ path: "test-results/mobile.png", fullPage: true });
+});
+
+test("empty native recordings are an explicit empty replay", async ({
+	page,
+}) => {
+	await page.goto("./");
+	await page.getByRole("button", { name: "Replay", exact: true }).click();
+	await page
+		.getByLabel("Import landmark recording")
+		.setInputFiles({
+			name: "empty.json",
+			mimeType: "application/json",
+			buffer: Buffer.from(JSON.stringify({ version: 1, frames: [] })),
+		});
+	await expect(
+		page.getByText(/This recording contains no frames/),
+	).toBeVisible();
+	await expect(
+		page.getByRole("button", { name: "Play replay" }),
+	).toBeDisabled();
 });
