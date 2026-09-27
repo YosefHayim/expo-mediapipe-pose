@@ -1,0 +1,31 @@
+{
+	"name": "pose-playground",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"assets": "node scripts/assets.mjs",
+		"dev": "pnpm assets && vite --host 127.0.0.1",
+		"build": "pnpm --dir .. build && pnpm assets && tsc --noEmit && vite build",
+		"preview": "vite preview --host 127.0.0.1",
+		"typecheck": "pnpm --dir .. build && tsc --noEmit",
+		"test": "pnpm --dir .. build && tsx --test tests/*.test.ts",
+		"test:e2e": "playwright test"
+	},
+	"dependencies": {
+		"@mediapipe/tasks-vision": "1.0.1",
+		"effect": "^3.21.4",
+		"expo-mediapipe-pose": "workspace:*",
+		"react": "19.2.3",
+		"react-dom": "19.2.3"
+	},
+	"devDependencies": {
+		"@playwright/test": "1.63.0",
+		"@types/node": "^24.13.2",
+		"@types/react": "~19.2.14",
+		"@types/react-dom": "^19.2.7",
+		"tsx": "^4.20.0",
+		"typescript": "^5.9.3",
+		"vite": "8.3.1"
+	}
+}

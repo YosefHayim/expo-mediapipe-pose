@@ -1,0 +1,55 @@
+name: Pose playground Pages
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+        if: github.event_name != 'pull_request'
+      - run: pnpm verify:package
+        if: github.event_name != 'pull_request'
+      - run: pnpm --filter pose-playground build
+      - run: pnpm --filter pose-playground exec playwright install --with-deps chromium
+      - run: pnpm --filter pose-playground test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playground-browser-failures
+          path: playground/test-results
+          retention-days: 7
+          if-no-files-found: ignore
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: playground/dist
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
