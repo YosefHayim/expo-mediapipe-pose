@@ -13,7 +13,6 @@ Coordinates, missing/unknown states, pose-index identity limits, cancellation an
 ## Documentation
 
 - [README](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/README.md): Current feature overview, installation choices, FAQ, scope and a copyable integration prompt.
-- [Current API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/docs/api.md): Public exports, native integration boundaries, props, coordinates, geometry, feedback, discovery, recording/replay, image/video analysis, multiple poses, masks and errors.
 - [Tagged v0.2.0 API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/v0.2.0/docs/api.md): Earlier camera API for the tagged-source installation; do not assume it includes main's newer features.
 - [Version 0.3.0 API](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/v0.3.0/docs/api.md): Versioned reference for the npm package.
 - [Changelog](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/CHANGELOG.md): Release history and compatibility notes.

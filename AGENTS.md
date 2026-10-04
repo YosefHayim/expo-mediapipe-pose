@@ -1,6 +1,6 @@
 # expo-mediapipe-pose
 
-An Expo native pose-detection library using Google's MediaPipe Tasks SDK. Read [README.md](README.md) for installation/scope and [docs/api.md](docs/api.md) before changing public behavior. This file is the canonical agent instruction source.
+An Expo native pose-detection library using Google's MediaPipe Tasks SDK. Read [README.md](README.md) for installation/scope before changing public behavior. This file is the canonical agent instruction source.
 
 ## Ownership
 

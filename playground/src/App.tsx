@@ -371,13 +371,6 @@ export default function App() {
 					</span>
 				</a>
 				<nav aria-label="Resources">
-					<a
-						href={`${repository}/blob/main/docs/api.md`}
-						target="_blank"
-						rel="noreferrer"
-					>
-						API reference ↗
-					</a>
 					<a href={repository} target="_blank" rel="noreferrer">
 						GitHub ↗
 					</a>
@@ -1054,11 +1047,6 @@ export default function App() {
 							Requires an iOS/Android development build; Expo Go cannot load
 							this module. Local models need a phone-local path.
 						</p>
-						<a
-							href={`${repository}/blob/main/docs/guides/expo-pose-detection.md`}
-						>
-							Installation & permission guide ↗
-						</a>
 						<p className="caption">
 							Photo/video snippets expose a consumer callback for your renderer
 							and safely release masks. Camera rules and styles appear in the

@@ -1,10 +1,19 @@
+# dependencies
 node_modules/
-.gradle/
+
+# build (tsc, Gradle, Expo prebuild, pnpm pack, native test binaries)
 build/
-.DS_Store
+.gradle/
 local.properties
 .expo/
 example/ios/
 example/android/
 *.tgz
 /scripts/dev/
+
+# editor and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

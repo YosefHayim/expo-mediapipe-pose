@@ -16,16 +16,14 @@ For Expo and React Native developers building camera interactions, movement visu
 
 ## Features
 
-| Need | API guide |
-| --- | --- |
-| Control preview, inference and callback rates; inspect measured metrics | [Frame rates and performance](docs/api.md#frame-rates-and-performance) |
-| Measure named angles/distances and react to pose presence | [Geometry](docs/api.md#angles-and-distances), [tracking feedback](docs/api.md#tracking-feedback) |
-| Evaluate independent rules with hysteresis and joint-specific feedback | [Multiple rules](docs/api.md#multiple-rules-and-independent-feedback) |
-| Discover selectable cameras and frame rates | [Camera discovery](docs/api.md#camera-discovery) |
-| Record/replay bounded landmark sessions | [Recording and replay](docs/api.md#landmark-recording-and-replay) |
-| Analyze local photos and sample local videos with cancellation | [Photo analysis](docs/api.md#local-photo-analysis), [video analysis](docs/api.md#local-video-analysis) |
-| Select among multiple detected poses | [Multiple poses](docs/api.md#multiple-poses-and-explicit-selection) |
-| Composite opt-in masks with explicit cleanup and backpressure | [Segmentation](docs/api.md#opt-in-segmentation-masks) |
+- Control preview, inference and callback rates; inspect measured metrics
+- Measure named angles/distances and react to pose presence
+- Evaluate independent rules with hysteresis and joint-specific feedback
+- Discover selectable cameras and frame rates
+- Record/replay bounded landmark sessions
+- Analyze local photos and sample local videos with cancellation
+- Select among multiple detected poses
+- Composite opt-in masks with explicit cleanup and backpressure
 
 Version 0.3.0 includes these features. Styling and rules are configurable without replacing Google's model. See the [changelog](CHANGELOG.md) for release history.
 
@@ -35,10 +33,6 @@ Version 0.3.0 targets Expo SDK 57, React Native 0.86, and React 19.2. Requires a
 
 ## Documentation
 
-- [Pose detection in Expo / React Native](docs/guides/expo-pose-detection.md): installation, permissions, lifecycle and a camera screen.
-- [Custom skeleton styling](docs/guides/custom-skeleton-styling.md): body regions, landmark colors, joint sizes and connection styles.
-- [Angle-triggered feedback](docs/guides/angle-triggered-feedback.md): stable thresholds, red/green/unknown states and transition callbacks.
-- [API reference](docs/api.md): components, hooks, file analysis, coordinates, errors and resource ownership.
 - [FAQ](#faq): platform support, native use, privacy, models, performance and limitations.
 - [Integration prompt](#integrate-with-a-coding-assistant): copyable instructions for your app's coding assistant.
 - [llms.txt](llms.txt): a concise public documentation index for tools that accept it.
@@ -169,8 +163,6 @@ pnpm --filter pose-camera-example ios
 
 ## API and scope
 
-See [API details](docs/api.md) for props, coordinate semantics, ownership, errors and migration notes. [Public API and native integration](docs/api.md#public-api-and-native-integration) explains the supported entry points.
-
 Recordings contain landmarks/metadata, not camera video. Result indices are not persistent person identities. Repetition counting, exercise scoring and medical interpretation remain application responsibilities. Only the full pose model is bundled; lite/heavy require local model files.
 
 Native inference uses [Swift](https://www.swift.org/) with AVFoundation on iOS and [Kotlin](https://kotlinlang.org/) with CameraX on Android. Detector ownership stays on a serial worker, with camera backpressure and stale-generation rejection. This is an Expo integration, not a replacement pose model.
@@ -187,7 +179,7 @@ It is a community-maintained Expo integration built on Google's official MediaPi
 <details>
 <summary>Is this a drop-in replacement for ThinkSys/mediapipe-reactnative?</summary>
 
-No. The Expo integration uses a different public API: replace `RNMediapipe` with `PoseCameraView`, use controlled camera props and configure `SkeletonOptions`. Follow the [migration guide](docs/api.md#migration), rebuild the native app and verify your coordinate/overlay handling. Attribution is preserved; no unmeasured speed or accuracy advantage over ThinkSys is claimed.
+No. The Expo integration uses a different public API: replace `RNMediapipe` with `PoseCameraView`, use controlled camera props and configure `SkeletonOptions`. Rebuild the native app and verify your coordinate/overlay handling. Attribution is preserved; no unmeasured speed or accuracy advantage over ThinkSys is claimed.
 
 </details>
 
@@ -201,7 +193,7 @@ Camera and file inference require an iOS/Android development build. Expo Go cann
 <details>
 <summary>Can I use it directly from a Swift-only or Kotlin-only app?</summary>
 
-The supported consumer API is TypeScript for Expo/React Native. The Swift and Kotlin sources implement the Expo bridge; this repository does not publish a standalone Swift Package or independent Android library API. For a fully native app, start with Google's official [iOS](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/ios) or [Android](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/android) guide. Native source ownership and extension points are mapped in the [API reference](docs/api.md#public-api-and-native-integration).
+The supported consumer API is TypeScript for Expo/React Native. The Swift and Kotlin sources implement the Expo bridge; this repository does not publish a standalone Swift Package or independent Android library API. For a fully native app, start with Google's official [iOS](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/ios) or [Android](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/android) guide.
 
 </details>
 
@@ -215,35 +207,35 @@ Install `expo-mediapipe-pose@^0.3.0` from npm for the features listed here. The 
 <details>
 <summary>Can I recolor individual joints or trigger actions when a condition changes?</summary>
 
-Yes. `SkeletonOptions` supports global, joint and connection styling and body-part selection. Define a condition with `usePoseRule`, or multiple conditions with `usePoseRules`, then map their states to colors, text, haptics or app actions. `unknown` means missing, uncertain or stale input. These are developer-defined conditions, not built-in exercise-form judgments. See [styling](docs/api.md#skeletonoptions-and-poseskeleton) and [rules](docs/api.md#multiple-rules-and-independent-feedback).
+Yes. `SkeletonOptions` supports global, joint and connection styling and body-part selection. Define a condition with `usePoseRule`, or multiple conditions with `usePoseRules`, then map their states to colors, text, haptics or app actions. `unknown` means missing, uncertain or stale input. These are developer-defined conditions, not built-in exercise-form judgments.
 
 </details>
 
 <details>
 <summary>Can I control FPS, battery use and background behavior?</summary>
 
-`previewFps`, `frameLimit` and `callbackFps` control capture targets, inference limits and JavaScript delivery independently. Metrics report observed work; no requested FPS is guaranteed. Lower callback FPS does not reduce detector work. Use `isActive` with screen focus and app foreground state. There is no automatic thermal/model-switching policy or measured battery-saving guarantee. See [performance](docs/api.md#frame-rates-and-performance).
+`previewFps`, `frameLimit` and `callbackFps` control capture targets, inference limits and JavaScript delivery independently. Metrics report observed work; no requested FPS is guaranteed. Lower callback FPS does not reduce detector work. Use `isActive` with screen focus and app foreground state. There is no automatic thermal/model-switching policy or measured battery-saving guarantee.
 
 </details>
 
 <details>
 <summary>Do images leave the device? Is video recording included?</summary>
 
-The library runs inference locally and does not upload frames or download models. Applications control their own analytics, networking and storage. Landmark recording/replay stores pose data and metadata, not camera video or segmentation files; local-video analysis reads an existing video. See [recording](docs/api.md#landmark-recording-and-replay).
+The library runs inference locally and does not upload frames or download models. Applications control their own analytics, networking and storage. Landmark recording/replay stores pose data and metadata, not camera video or segmentation files; local-video analysis reads an existing video.
 
 </details>
 
 <details>
 <summary>Does a pose index identify the same person across frames?</summary>
 
-No. `maxPoses` supports up to six detections, and `poseIndex` selects within one result. Indices are not persistent identities. Missing selections remain empty; reset temporal rules/tracking when your selection changes. See [multiple poses](docs/api.md#multiple-poses-and-explicit-selection).
+No. `maxPoses` supports up to six detections, and `poseIndex` selects within one result. Indices are not persistent identities. Missing selections remain empty; reset temporal rules/tracking when your selection changes.
 
 </details>
 
 <details>
 <summary>Why do segmentation results report backpressure?</summary>
 
-Segmentation is opt-in. At most two result leases can be outstanding per module; each owns bounded PNG mask files. Call `releasePoseSegmentation` when your consumer finishes, including on errors or when an overlay is replaced/unmounted. The overlay does not release files for you. Already-delivered video masks remain your responsibility after cancellation. See [mask ownership](docs/api.md#opt-in-segmentation-masks).
+Segmentation is opt-in. At most two result leases can be outstanding per module; each owns bounded PNG mask files. Call `releasePoseSegmentation` when your consumer finishes, including on errors or when an overlay is replaced/unmounted. The overlay does not release files for you. Already-delivered video masks remain your responsibility after cancellation.
 
 </details>
 
