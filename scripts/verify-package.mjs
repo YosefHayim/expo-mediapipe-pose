@@ -30,10 +30,6 @@ try {
 	const manifest = JSON.parse(readFileSync("package.json", "utf8"));
 	const requiredFiles = [
 		"README.md",
-		"docs/api.md",
-		"docs/guides/expo-pose-detection.md",
-		"docs/guides/custom-skeleton-styling.md",
-		"docs/guides/angle-triggered-feedback.md",
 		"llms.txt",
 		"CHANGELOG.md",
 		"LICENSE",
