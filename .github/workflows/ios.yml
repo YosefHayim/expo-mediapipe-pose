@@ -1,0 +1,22 @@
+name: Ios
+'on':
+  workflow_call: null
+permissions:
+  contents: read
+jobs:
+  ios:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - run: pnpm --filter pose-camera-example exec expo prebuild --platform ios --no-install
+      - run: mkdir -p scripts/dev && xcrun swiftc ios/PoseFrameTiming.swift tests/native/FrameTimingTests.swift
+          -o scripts/dev/frame-timing-tests && scripts/dev/frame-timing-tests
+      - run: pod install
+        working-directory: example/ios
+      - run: xcodebuild -workspace MediaPipePoseExample.xcworkspace -scheme MediaPipePoseExample -configuration
+          Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
+          build
+        working-directory: example/ios
+    timeout-minutes: 30
