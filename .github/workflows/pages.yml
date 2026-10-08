@@ -1,33 +1,24 @@
 name: Pose playground Pages
-on:
-  pull_request:
+'on':
+  pull_request: null
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches:
+      - main
+  workflow_dispatch: null
 permissions:
   contents: read
 concurrency:
-  group: pages-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-        if: github.event_name != 'pull_request'
-      - run: pnpm verify:package
-        if: github.event_name != 'pull_request'
+      - name: Setup workspace
+        uses: ./.github/actions/setup
       - run: pnpm --filter pose-playground build
-      - run: pnpm --filter pose-playground exec playwright install --with-deps chromium
+      - run: pnpm --filter pose-playground exec playwright install --with-deps --only-shell chromium
       - run: pnpm --filter pose-playground test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -40,6 +31,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           path: playground/dist
+    timeout-minutes: 15
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
@@ -53,3 +45,4 @@ jobs:
     steps:
       - uses: actions/deploy-pages@v4
         id: deployment
+    timeout-minutes: 15
