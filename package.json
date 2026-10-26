@@ -24,10 +24,11 @@
 		"lint": "biome check .",
 		"format": "biome check --write .",
 		"check": "pnpm build && pnpm lint && pnpm typecheck && pnpm --filter pose-camera-example typecheck && pnpm test && pnpm --filter pose-playground typecheck && pnpm --filter pose-playground test",
+		"test:swift": "mkdir -p scripts/dev && xcrun swiftc ios/PoseFrameTiming.swift tests/native/FrameTimingTests.swift -o scripts/dev/frame-timing-tests && scripts/dev/frame-timing-tests",
 		"verify:package": "node scripts/verify-package.mjs",
 		"build": "tsc -p tsconfig.build.json",
 		"prepack": "pnpm build",
-		"prepare": "pnpm build"
+		"prepare": "husky && pnpm build"
 	},
 	"repository": {
 		"type": "git",
@@ -47,6 +48,7 @@
 		"@types/node": "^24.13.2",
 		"@types/react": "~19.2.14",
 		"@types/react-dom": "^19.2.7",
+		"husky": "^9.1.7",
 		"jsdom": "^27.4.0",
 		"react": "19.2.3",
 		"react-dom": "19.2.3",
