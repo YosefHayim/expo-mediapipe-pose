@@ -1,0 +1,19 @@
+name: Check pose camera
+'on':
+  pull_request: null
+  push:
+    branches:
+      - main
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  typescript:
+    uses: ./.github/workflows/typescript.yml
+  android:
+    uses: ./.github/workflows/android.yml
+  ios:
+    uses: ./.github/workflows/ios.yml

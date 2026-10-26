@@ -39,7 +39,7 @@ pnpm verify:package
 git diff --check
 ```
 
-Use `pnpm format` for TypeScript formatting/imports. Format Swift with `xcrun swift-format format --in-place ios/*.swift`. After native changes, generate the example with `pnpm --filter pose-camera-example exec expo prebuild`, then build iOS and Android using the commands in `.github/workflows/check.yml` or the example's `ios` / `android` scripts. Generated native projects and `scripts/dev/` artifacts stay untracked.
+Use `pnpm format` for TypeScript formatting/imports. Format Swift with `xcrun swift-format format --in-place ios/*.swift`. After native changes, generate the example with `pnpm --filter pose-camera-example exec expo prebuild`, then build iOS and Android using the commands in `.github/workflows/ios.yml` and `.github/workflows/android.yml` or the example's `ios` / `android` scripts. Generated native projects and `scripts/dev/` artifacts stay untracked.
 
 Test observable behavior: coordinate transforms, empty/uncertain detections, rule timing/transitions, replay clocks, updated callbacks, cancellation and resource teardown. File/mask changes also require the native fixture runner; inspect mask pixels with `scripts/verify-mask-fixtures.py`. Do not substitute source-text assertions for native compilation or camera tests. Build success does not prove physical-camera alignment or performance. Report unavailable device checks explicitly.
 
@@ -48,3 +48,11 @@ Test observable behavior: coordinate transforms, empty/uncertain detections, rul
 The npm package uses compiled `build/` JavaScript and declarations; `pnpm build` generates them; checkout installation (`prepare`) and packing (`prepack`) run the build. Keep both public entry points working in the packed archive. `pnpm verify:package` checks declarations, native/model files and Node ESM/CommonJS imports of the pure core.
 
 Preserve unrelated work and all license/third-party notices. Do not change SDK/model bytes as an incidental refactor. Keep package/native identity, autolinking, exports and packed files consistent on rename. Do not claim npm publication, production readiness, physical-device validation or performance improvements without evidence. Do not put secrets, camera captures or personal recordings into fixtures. Publishing or deleting external resources requires user authorization.
+
+## Local CI
+
+Run `act workflow_dispatch -W .github/workflows/ci.yml` before opening a PR.
+The root `.actrc` selects the local Docker runner and keeps the pnpm store outside the workspace.
+Run the iOS workflow on macOS with Xcode; Linux Docker covers only the Linux jobs.
+
+Local act uses Linux amd64 because the Android SDK tools require it. iOS checks still run natively on macOS.

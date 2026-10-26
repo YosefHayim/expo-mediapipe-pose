@@ -1,0 +1,26 @@
+name: Typescript
+'on':
+  workflow_call: null
+permissions:
+  contents: read
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - run: pnpm check
+      - name: Verify the packed package
+        run: |
+          if [ "${ACT:-false}" = "true" ] && [ -f /proc/.reset ]; then
+            cat > "$RUNNER_TEMP/pose-rosetta-cache.mjs" <<'NODE'
+          import { createRequire } from 'node:module';
+          const require = createRequire(import.meta.url);
+          delete require.cache['/proc/.reset'];
+          NODE
+            export NODE_OPTIONS="--import=$RUNNER_TEMP/pose-rosetta-cache.mjs"
+            trap 'rm -f "$RUNNER_TEMP/pose-rosetta-cache.mjs"' EXIT
+          fi
+          pnpm verify:package
+    timeout-minutes: 15

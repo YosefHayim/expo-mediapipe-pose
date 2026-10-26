@@ -1,0 +1,29 @@
+name: Android
+'on':
+  workflow_call: null
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v4
+      - name: Cache Gradle dependencies and build outputs
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'android/build.gradle', 'example/app.json') }}
+          restore-keys: gradle-${{ runner.os }}-${{ runner.arch }}-
+      - run: pnpm --filter pose-camera-example exec expo prebuild --platform android --no-install
+      - run: ./gradlew :expo-mediapipe-pose:testDebugUnitTest :app:assembleDebug --console=plain --no-daemon --no-watch-fs --build-cache
+        working-directory: example/android
+    timeout-minutes: 30
