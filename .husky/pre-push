@@ -1,2 +1,5 @@
-pnpm lint && pnpm typecheck && pnpm --filter pose-camera-example typecheck && pnpm --filter pose-playground typecheck
+pnpm lint
+pnpm typecheck
+pnpm --filter pose-camera-example typecheck
+pnpm --filter pose-playground typecheck
 [ "$(uname)" != Darwin ] || pnpm test:swift
