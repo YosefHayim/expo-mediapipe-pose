@@ -19,7 +19,7 @@
 		"CHANGELOG.md"
 	],
 	"scripts": {
-		"typecheck": "tsc --noEmit",
+		"typecheck": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/tsc/pose.tsbuildinfo",
 		"test": "tsx --test tests/*.test.ts",
 		"lint": "biome check .",
 		"format": "biome check --write .",
