@@ -1,0 +1,12 @@
+{
+	"$schema": "https://turborepo.dev/schema.json",
+	"tasks": {
+		"//#build": { "outputs": ["build/**"] },
+		"//#lint": {},
+		"//#typecheck": { "dependsOn": ["//#build"] },
+		"//#test": { "dependsOn": ["//#build"] },
+		"pose-camera-example#typecheck": { "dependsOn": ["//#build"] },
+		"pose-playground#typecheck": { "dependsOn": ["//#build"] },
+		"pose-playground#test": { "dependsOn": ["//#build"] }
+	}
+}

@@ -23,7 +23,7 @@
 		"test": "tsx --test tests/*.test.ts",
 		"lint": "biome check .",
 		"format": "biome check --write .",
-		"check": "pnpm build && pnpm lint && pnpm typecheck && pnpm --filter pose-camera-example typecheck && pnpm test && pnpm --filter pose-playground typecheck && pnpm --filter pose-playground test",
+		"check": "turbo run lint typecheck test build --output-logs=errors-only",
 		"test:swift": "mkdir -p scripts/dev && xcrun swiftc ios/PoseFrameTiming.swift tests/native/FrameTimingTests.swift -o scripts/dev/frame-timing-tests && scripts/dev/frame-timing-tests",
 		"verify:package": "node scripts/verify-package.mjs",
 		"build": "tsc -p tsconfig.build.json",
@@ -54,6 +54,7 @@
 		"react-dom": "19.2.3",
 		"react-native-svg": "15.15.4",
 		"tsx": "^4.20.0",
+		"turbo": "2.11.8",
 		"typescript": "^5.9.3"
 	},
 	"author": "Yosef Hayim Sabag",
