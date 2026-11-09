@@ -36,7 +36,7 @@ Version 0.3.0 targets Expo SDK 57, React Native 0.86, and React 19.2. Requires a
 - [FAQ](#faq): platform support, native use, privacy, models, performance and limitations.
 - [Integration prompt](#integrate-with-a-coding-assistant): copyable instructions for your app's coding assistant.
 - [llms.txt](llms.txt): a concise public documentation index for tools that accept it.
-- [Runnable example](example/App.tsx): camera, photo/video analysis and feedback flows.
+- [Runnable example](example/app.tsx): camera, photo/video analysis and feedback flows.
 
 ## Install
 
@@ -87,7 +87,7 @@ import { PoseCameraView } from "expo-mediapipe-pose";
 />
 ```
 
-Change `cameraFacing` to switch cameras. Set `isActive={false}` when the screen loses focus to release capture while keeping the component mounted. The runnable [example](example/App.tsx) includes permissions, camera switching, pause/resume, error recovery and feedback.
+Change `cameraFacing` to switch cameras. Set `isActive={false}` when the screen loses focus to release capture while keeping the component mounted. The runnable [example](example/app.tsx) includes permissions, camera switching, pause/resume, error recovery and feedback.
 
 ## Style joints and body parts
 

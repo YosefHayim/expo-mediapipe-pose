@@ -21,17 +21,16 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { CameraControls, type CameraSelection } from "./CameraControls";
-import { PhotoPanel } from "./PhotoPanel";
 import {
 	feedbackLabels,
 	jointFeedbackStyles,
 	trackingLabels,
-} from "./poseFeedback";
-
-import { raisedArmRule } from "./poseRules";
-import { ReplayPanel } from "./ReplayPanel";
-import { VideoPanel } from "./VideoPanel";
+} from "@/rules/pose-feedback";
+import { raisedArmRule } from "@/rules/pose-rules";
+import { CameraControls, type CameraSelection } from "./camera-controls";
+import { PhotoPanel } from "./photo-panel";
+import { ReplayPanel } from "./replay-panel";
+import { VideoPanel } from "./video-panel";
 
 const wristFeedback = jointFeedbackStyles("leftWrist");
 const elbowFeedback = jointFeedbackStyles("leftElbow");

@@ -4,8 +4,8 @@
 		"includes": [
 			"src/**",
 			"vitest.config.ts",
-			"example/*.ts",
-			"example/*.tsx",
+			"example/**/*.ts",
+			"example/**/*.tsx",
 			"example/*.json",
 			"scripts/*.mjs",
 			"*.json",
