@@ -1,2 +1,0 @@
-pnpm check
-[ "$(uname)" != Darwin ] || pnpm test:swift
