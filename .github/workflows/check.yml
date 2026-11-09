@@ -1,6 +1,5 @@
 name: Check pose camera
 'on':
-  pull_request: null
   push:
     branches:
       - main
@@ -11,7 +10,7 @@ permissions:
   contents: read
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 jobs:
   test:
     name: Test
