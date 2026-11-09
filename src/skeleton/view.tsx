@@ -21,11 +21,14 @@ export type PoseSkeletonProps = SkeletonOptions &
 /** Optional overlay for an aspect-fill preview. Coordinates are not mirrored a second time. */
 export const PoseSkeleton = React.memo((props: PoseSkeletonProps) => {
 	const { width, height } = props;
-	if (width <= 0 || height <= 0) return null;
-	const skeleton =
-		"frame" in props
-			? createSkeleton(props.frame, props, props)
-			: createDetectionSkeleton(props.detection, props, props);
+
+	const isSizeEmpty = width <= 0 || height <= 0;
+	if (isSizeEmpty) return null;
+
+	const hasFrameProp = "frame" in props;
+	const skeleton = hasFrameProp
+		? createSkeleton(props.frame, props, props)
+		: createDetectionSkeleton(props.detection, props, props);
 	const { points, lines } = skeleton;
 	return (
 		<Svg width={width} height={height} pointerEvents="none" accessible={false}>

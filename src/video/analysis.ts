@@ -58,28 +58,42 @@ export function createVideoSamplePlan(
 	durationMs: number,
 	samplingOptions: z.input<typeof PoseVideoSampling> = {},
 ) {
-	if (!Number.isFinite(durationMs) || durationMs <= 0)
+	const isDurationInvalid = !Number.isFinite(durationMs) || durationMs <= 0;
+	if (isDurationInvalid)
 		throw new RangeError("Video duration must be finite and positive");
+
 	const sampling = PoseVideoSampling.parse(samplingOptions);
+
 	const endMs = sampling.endMs ?? durationMs;
-	if (endMs > durationMs || endMs > 86_400_000)
+
+	const isEndOutOfRange = endMs > durationMs || endMs > 86_400_000;
+	if (isEndOutOfRange)
 		throw new RangeError(
 			"Video range exceeds its duration or the 24-hour limit",
 		);
-	if (sampling.startMs >= endMs)
+
+	const isSamplingStartAfterEnd = sampling.startMs >= endMs;
+	if (isSamplingStartAfterEnd)
 		throw new RangeError("Video start must precede its end");
+
 	const frameCount = Math.ceil(
 		((endMs - sampling.startMs) * sampling.samplingFps) / 1000,
 	);
-	if (frameCount > sampling.maxFrames)
+
+	const isFrameCountOverLimit = frameCount > sampling.maxFrames;
+	if (isFrameCountOverLimit)
 		throw new RangeError(
 			"Sampling exceeds maxFrames; shorten the range or reduce samplingFps",
 		);
+
 	return {
 		frameCount,
 		timestampAt(index: number) {
-			if (!Number.isInteger(index) || index < 0 || index >= frameCount)
+			const isFrameIndexOutOfRange =
+				!Number.isInteger(index) || index < 0 || index >= frameCount;
+			if (isFrameIndexOutOfRange)
 				throw new RangeError("Sample index is outside the video range");
+
 			return (
 				sampling.startMs + Math.floor((index * 1000) / sampling.samplingFps)
 			);

@@ -42,19 +42,29 @@ export const validatePoseRuleOptions = (
 	const invalidResetKey =
 		typeof options.resetKey === "number" && !Number.isFinite(options.resetKey);
 	if (invalidResetKey) throw new RangeError("Numeric resetKey must be finite");
-	if (options.landmarks.length === 0)
+
+	const isLandmarksEmpty = options.landmarks.length === 0;
+	if (isLandmarksEmpty)
 		throw new RangeError("A pose rule requires at least one landmark");
+
 	const visibility = options.minVisibility ?? 0.6;
+
 	const visibilityInRange = visibility >= 0 && visibility <= 1;
-	if (!Number.isFinite(visibility) || !visibilityInRange) {
+
+	const hasInvalidVisibility =
+		!Number.isFinite(visibility) || !visibilityInRange;
+	if (hasInvalidVisibility) {
 		throw new RangeError("minVisibility must be between 0 and 1");
 	}
+
 	for (const duration of [options.holdMs ?? 0, options.staleAfterMs ?? 500]) {
-		if (!Number.isFinite(duration) || duration < 0)
+		const isDurationInvalid = !Number.isFinite(duration) || duration < 0;
+		if (isDurationInvalid)
 			throw new RangeError("Rule durations must be finite and non-negative");
 	}
-	if (options.staleAfterMs === 0)
-		throw new RangeError("staleAfterMs must be positive");
+
+	const isStaleAfterZero = options.staleAfterMs === 0;
+	if (isStaleAfterZero) throw new RangeError("staleAfterMs must be positive");
 };
 
 /** Confidence is a prerequisite for evaluating a condition, not its pass/fail result. */
@@ -63,26 +73,39 @@ export const evaluatePoseRule = <Name extends LandmarkName>(
 	options: PoseRuleOptions<Name>,
 	previousOutcome: PoseRuleStatus = "unknown",
 ): PoseRuleStatus => {
-	if (options.isActive === false) return "unknown";
+	const isRuleInactive = options.isActive === false;
+	if (isRuleInactive) return "unknown";
+
 	const pose = getNamedLandmarks(frame);
 	const minimumConfidence = options.minVisibility ?? 0.6;
+
 	const hasUncertainLandmark = options.landmarks.some((name) => {
 		const joint = pose[name];
-		if (!joint) return true;
+
+		const isJointMissing = joint == null;
+		if (isJointMissing) return true;
+
 		const coordinatesAreFinite = [joint.x, joint.y, joint.z].every(
 			Number.isFinite,
 		);
-		if (!coordinatesAreFinite) return true;
+
+		const hasNonFiniteCoordinates = !coordinatesAreFinite;
+		if (hasNonFiniteCoordinates) return true;
+
 		return !hasLandmarkConfidence(joint, minimumConfidence);
 	});
 	if (hasUncertainLandmark) return "unknown";
+
 	// Every requested key has been checked above; other landmarks remain optional internally.
 	const outcome = options.evaluate(
 		pose as Record<Name, Landmark>,
 		frame,
 		previousOutcome,
 	);
-	if (outcome === "unknown") return "unknown";
+
+	const isOutcomeUnknown = outcome === "unknown";
+	if (isOutcomeUnknown) return "unknown";
+
 	return outcome ? "pass" : "fail";
 };
 
@@ -94,28 +117,34 @@ export const advancePoseRule = (
 	holdMs = 0,
 ): PoseRuleState => {
 	const timeIsValid = Number.isFinite(now) && now >= 0;
+
 	const holdIsValid = Number.isFinite(holdMs) && holdMs >= 0;
-	if (!timeIsValid || !holdIsValid) {
+
+	const hasInvalidTimeOrHold = !timeIsValid || !holdIsValid;
+	if (hasInvalidTimeOrHold) {
 		throw new RangeError(
 			"Rule time and hold duration must be finite and non-negative",
 		);
 	}
-	if (outcome === "unknown")
+
+	const isOutcomeUnknown = outcome === "unknown";
+	if (isOutcomeUnknown)
 		return {
 			status: "unknown",
 			candidate: "unknown",
 			since: now,
 			updatedAt: now,
 		};
-	const since =
-		outcome !== previous.candidate || now < previous.updatedAt
-			? now
-			: previous.since;
+
+	const hasCandidateChangedOrClockReversed =
+		outcome !== previous.candidate || now < previous.updatedAt;
+	const since = hasCandidateChangedOrClockReversed ? now : previous.since;
+	const isHoldComplete = now - since >= holdMs;
 	return {
 		candidate: outcome,
 		since,
 		updatedAt: now,
-		status: now - since >= holdMs ? outcome : previous.status,
+		status: isHoldComplete ? outcome : previous.status,
 	};
 };
 

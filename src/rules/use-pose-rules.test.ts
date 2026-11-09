@@ -197,7 +197,8 @@ describe("usePoseRules", () => {
 				resetter: {
 					...quick,
 					onChange: (status) => {
-						if (status === "pass") current().reset();
+						const isStatusPass = status === "pass";
+						if (isStatusPass) current().reset();
 					},
 				},
 				following: {
@@ -235,6 +236,7 @@ describe("usePoseRules", () => {
 					Object.defineProperty(globalThis, name, descriptor);
 					continue;
 				}
+
 				Reflect.deleteProperty(globalThis, name);
 			}
 		}

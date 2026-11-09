@@ -10,9 +10,12 @@ import * as React from "react";
 import { Button, Text, TextInput, View } from "react-native";
 
 function videoFailureMessage(error: unknown): string {
-	if (error instanceof AggregateError) return String(error);
-	if (error instanceof Error && error.name === "AbortError")
-		return "Cancelled.";
+	const isAggregateError = error instanceof AggregateError;
+	if (isAggregateError) return String(error);
+
+	const isAbortError = error instanceof Error && error.name === "AbortError";
+	if (isAbortError) return "Cancelled.";
+
 	return String(error);
 }
 
@@ -52,20 +55,28 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 				maxFrames: 300,
 				signal: request.signal,
 				onProgress: (value) => {
-					if (controller.current === request) setProgress(value);
+					const isRequestStillCurrent = controller.current === request;
+					if (isRequestStillCurrent) setProgress(value);
 				},
 			})) {
 				recorder.append(frame.detection, frame.timestampMs);
-				if (controller.current === request) setResult(frame);
+
+				const isRequestStillCurrentAfterFrame = controller.current === request;
+				if (isRequestStillCurrentAfterFrame) setResult(frame);
 			}
-			if (controller.current === request)
+
+			const isRequestStillCurrentAfterLoop = controller.current === request;
+			if (isRequestStillCurrentAfterLoop)
 				setStatus(
 					`Complete: ${recorder.stop().frames.length} landmark frames recorded in memory.`,
 				);
 		} catch (error) {
-			if (controller.current === request) setStatus(videoFailureMessage(error));
+			const isRequestStillCurrentAfterFailure = controller.current === request;
+			if (isRequestStillCurrentAfterFailure)
+				setStatus(videoFailureMessage(error));
 		} finally {
-			if (controller.current === request) {
+			const isRequestStillCurrentAtEnd = controller.current === request;
+			if (isRequestStillCurrentAtEnd) {
 				controller.current = null;
 				setRunning(false);
 			}
@@ -76,8 +87,11 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 			const asset = await Asset.fromModule(
 				require("./fixtures/pose-video.mp4"),
 			).downloadAsync();
-			if (asset.localUri === null)
+
+			const isAssetLocalUriMissing = asset.localUri === null;
+			if (isAssetLocalUriMissing)
 				throw new Error("Fixture is not available locally");
+
 			setLocation(asset.localUri);
 		} catch (error) {
 			setStatus(String(error));

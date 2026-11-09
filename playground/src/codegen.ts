@@ -6,31 +6,34 @@ export function skeletonOptions(config: Config): SkeletonOptions {
 	return options;
 }
 function ruleCode(rule: Rule) {
-	const requiredLandmarks =
-		rule.kind === "angle"
-			? [rule.start, rule.vertex, rule.end]
-			: [rule.start, rule.end];
+	const isRuleKindAngle = rule.kind === "angle";
+	const requiredLandmarks = isRuleKindAngle
+		? [rule.start, rule.vertex, rule.end]
+		: [rule.start, rule.end];
 	const names = JSON.stringify(requiredLandmarks);
 	const a = JSON.stringify(rule.start);
 	const b = JSON.stringify(rule.vertex);
 	const c = JSON.stringify(rule.end);
 	let measure: string;
-	if (rule.kind === "height") {
+
+	const isRuleKindHeight = rule.kind === "height";
+	if (isRuleKindHeight) {
 		measure = `const input = { landmarks: frame.landmarks, imageSize: frame.additionalData };
         const confidence = getImageDistance(input, ${a}, ${c}, { minVisibility: ${rule.minVisibility} });
         if (confidence.status !== "available") return null;
         const start = getLandmark(frame, ${a}); const end = getLandmark(frame, ${c});
         return start && end ? (start.y - end.y) * frame.additionalData.height : null;`;
 	} else {
-		const helper = `get${rule.space === "image" ? "Image" : "World"}${rule.kind === "angle" ? "JointAngle" : "Distance"}`;
-		const input =
-			rule.space === "image"
-				? "{ landmarks: frame.landmarks, imageSize: frame.additionalData }"
-				: "frame";
-		const args = rule.kind === "angle" ? `${a}, ${b}, ${c}` : `${a}, ${c}`;
+		const isRuleSpaceImage = rule.space === "image";
+		const helper = `get${isRuleSpaceImage ? "Image" : "World"}${isRuleKindAngle ? "JointAngle" : "Distance"}`;
+		const input = isRuleSpaceImage
+			? "{ landmarks: frame.landmarks, imageSize: frame.additionalData }"
+			: "frame";
+		const args = isRuleKindAngle ? `${a}, ${b}, ${c}` : `${a}, ${c}`;
 		measure = `const result = ${helper}(${input}, ${args}, { minVisibility: ${rule.minVisibility} });
         return result.status === "available" ? result.value : null;`;
 	}
+
 	return `createThresholdRule({
       landmarks: ${names}, direction: "${rule.direction}",
       enterThreshold: ${rule.enterThreshold}, exitThreshold: ${rule.exitThreshold},
@@ -45,7 +48,10 @@ export function generateCode(
 ): string {
 	const d = config.detection;
 	const needsModelPath = hasLocalModel || d.modelVariant !== "full";
-	if (mode === "photo" || mode === "video" || mode === "sample") {
+
+	const isPhotoVideoOrSampleMode =
+		mode === "photo" || mode === "video" || mode === "sample";
+	if (isPhotoVideoOrSampleMode) {
 		const options = {
 			minPoseDetectionConfidence: d.minPoseDetectionConfidence,
 			minPosePresenceConfidence: d.minPosePresenceConfidence,
@@ -57,7 +63,9 @@ export function generateCode(
 			segmentationEnabled: d.segmentationEnabled,
 			maskMaxDimension: d.maskMaxDimension,
 		};
-		if (mode === "video")
+
+		const isModeVideo = mode === "video";
+		if (isModeVideo)
 			return `import { analyzePoseVideo, releasePoseSegmentation, type PoseDetection } from "expo-mediapipe-pose";
 
 // Pass an AbortSignal to cancel; delivered masks still belong to this consumer.
@@ -71,6 +79,7 @@ export async function analyzeVideo(localUri: string, consume: (result: PoseDetec
   }
 }
 `;
+
 		return `import { analyzePoseImage, releasePoseSegmentation, type PoseDetection, type SkeletonOptions } from "expo-mediapipe-pose";
 
 export const skeleton: SkeletonOptions = ${JSON.stringify(skeletonOptions(config), null, 2)};
@@ -86,6 +95,7 @@ export async function analyzePhoto(localUri: string, consume: (result: PoseDetec
 }
 `;
 	}
+
 	const rules = config.rules
 		.map((rule, i) => `rule${i}: ${ruleCode(rule)}`)
 		.join(",\n    ");
@@ -98,6 +108,8 @@ export async function analyzePhoto(localUri: string, consume: (result: PoseDetec
     } }`,
 		)
 		.join(",\n    ");
+	const isSkeletonWithoutSegmentation =
+		config.skeleton.enabled && !d.segmentationEnabled;
 	return `import * as React from "react";
 import { AppState, Button, Linking, Text, View } from "react-native";
 import { useCameraPermissions } from "expo-camera";
@@ -137,7 +149,7 @@ export function PoseScreen({ focused = true }: { focused?: boolean }) {
     poseModelVariant="${d.modelVariant}"${needsModelPath ? '\n    poseModelAssetPath="/absolute/path/to/your-model.task"' : ""}
     minPoseDetectionConfidence={${d.minPoseDetectionConfidence}} minPosePresenceConfidence={${d.minPosePresenceConfidence}} minTrackingConfidence={${d.minTrackingConfidence}}
     maxPoses={${d.maxPoses}} segmentationEnabled={${d.segmentationEnabled}} maskMaxDimension={${d.maskMaxDimension}}
-    skeleton={${config.skeleton.enabled && !d.segmentationEnabled ? "skeleton" : "false"}}
+    skeleton={${isSkeletonWithoutSegmentation ? "skeleton" : "false"}}
     ${d.segmentationEnabled ? "onLayout={event => setSize(event.nativeEvent.layout)}" : ""}
     onCameraConfigured={() => { feedback.reset(); ${d.segmentationEnabled ? "setOverlayFrame(null);" : ""} }}
     onInferenceError={event => { feedback.reset(); setError(event.code); }}

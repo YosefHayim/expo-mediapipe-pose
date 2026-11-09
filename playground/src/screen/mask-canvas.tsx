@@ -10,12 +10,19 @@ interface MaskCanvasProps {
 export const MaskCanvas = ({ mask, color, opacity }: MaskCanvasProps) => {
 	const ref = useRef<HTMLCanvasElement>(null);
 	useEffect(() => {
-		if (!mask || !ref.current) return;
 		const canvas = ref.current;
+
+		const isMaskOrCanvasMissing = mask == null || canvas == null;
+		if (isMaskOrCanvasMissing) return;
+
 		canvas.width = mask.width;
 		canvas.height = mask.height;
+
 		const context = canvas.getContext("2d");
-		if (!context) return;
+
+		const isDrawingMissing = context == null;
+		if (isDrawingMissing) return;
+
 		const pixels = context.createImageData(mask.width, mask.height);
 		const rgb = [1, 3, 5].map((offset) =>
 			Number.parseInt(color.slice(offset, offset + 2), 16),
@@ -28,7 +35,8 @@ export const MaskCanvas = ({ mask, color, opacity }: MaskCanvasProps) => {
 		});
 		context.putImageData(pixels, 0, 0);
 	}, [mask, color]);
-	return mask ? (
+	const isMaskPresent = mask !== undefined;
+	return isMaskPresent ? (
 		<canvas
 			ref={ref}
 			className="mask"

@@ -363,7 +363,10 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 							onChange={(next) =>
 								setConfig({
 									...c,
-									rules: c.rules.map((r, i) => (i === index ? next : r)),
+									rules: c.rules.map((r, i) => {
+										const isSameIndex = i === index;
+										return isSameIndex ? next : r;
+									}),
 								})
 							}
 							onRemove={() =>

@@ -193,7 +193,10 @@ describe("evaluatePoseRule", () => {
 					{ landmarks: current.landmarks, imageSize: current.additionalData },
 					...elbow,
 				);
-				if (angle.status === "unavailable") return "unknown";
+
+				const isAngleStatusUnavailable = angle.status === "unavailable";
+				if (isAngleStatusUnavailable) return "unknown";
+
 				return angle.value < 90;
 			},
 		};

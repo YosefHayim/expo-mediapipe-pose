@@ -42,28 +42,37 @@ export const RuleEditor = ({
 		const exitThreshold = Number(next.exitThreshold);
 		const hasBoth =
 			next.enterThreshold.trim() !== "" && next.exitThreshold.trim() !== "";
+
 		const bounded = [enterThreshold, exitThreshold].every(
 			(number) => Number.isFinite(number) && Math.abs(number) <= 10000,
 		);
-		if (!hasBoth || !bounded) {
+
+		const isRangeIncomplete = !hasBoth || !bounded;
+		if (isRangeIncomplete) {
 			setThresholdError(
 				"Enter thresholds between −10,000 and 10,000. The last valid values remain active.",
 			);
 			return;
 		}
-		const ordered =
-			rule.direction === "above"
-				? enterThreshold > exitThreshold
-				: enterThreshold < exitThreshold;
-		if (!ordered) {
+
+		const isRuleDirectionAbove = rule.direction === "above";
+		const ordered = isRuleDirectionAbove
+			? enterThreshold > exitThreshold
+			: enterThreshold < exitThreshold;
+
+		const isUnordered = !ordered;
+		if (isUnordered) {
 			setThresholdError(
 				"Entry and exit must leave a non-empty hysteresis band. The last valid values remain active.",
 			);
 			return;
 		}
+
 		setThresholdError("");
 		onChange({ ...rule, enterThreshold, exitThreshold });
 	};
+
+	const isRuleKindNotHeight = rule.kind !== "height";
 
 	return (
 		<fieldset className="rule-editor">
@@ -71,18 +80,19 @@ export const RuleEditor = ({
 			<Select
 				label={`Rule ${index + 1} measurement`}
 				value={rule.kind}
-				onChange={(kind) =>
-					update({
+				onChange={(kind) => {
+					const isKindHeight = kind === "height";
+					return update({
 						kind: kind as Rule["kind"],
-						space: kind === "height" ? "image" : rule.space,
-					})
-				}
+						space: isKindHeight ? "image" : rule.space,
+					});
+				}}
 			>
 				<option value="angle">Joint angle</option>
 				<option value="distance">Distance</option>
 				<option value="height">Vertical difference (image pixels)</option>
 			</Select>
-			{rule.kind !== "height" && (
+			{isRuleKindNotHeight && (
 				<Select
 					label="Coordinate space"
 					value={rule.space}

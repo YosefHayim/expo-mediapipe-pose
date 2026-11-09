@@ -65,7 +65,8 @@ export default function App() {
 	const isActive = cameraInForeground && !paused;
 	const displayedMetrics = isActive ? metrics : null;
 	React.useEffect(() => {
-		if (!isActive) setMetrics(null);
+		const isInactive = !isActive;
+		if (isInactive) setMetrics(null);
 	}, [isActive]);
 	const feedback = usePoseRules({
 		raisedArm: {
@@ -86,7 +87,10 @@ export default function App() {
 					"leftElbow",
 					"leftWrist",
 				);
-				if (angle.status === "unavailable") return null;
+
+				const isAngleStatusUnavailable = angle.status === "unavailable";
+				if (isAngleStatusUnavailable) return null;
+
 				return angle.value;
 			},
 		}),
@@ -112,14 +116,18 @@ export default function App() {
 			tracking.update(frame);
 			feedback.update(frame);
 			try {
-				if (!recorder.append(frame)) return;
+				const isFrameNotRecorded = !recorder.append(frame);
+				if (isFrameNotRecorded) return;
 			} catch (error) {
 				setRecordingError(String(error));
 				setRecordingActive(false);
 				setRecording(recorder.stop());
 				return;
 			}
-			if (recorder.status !== "full") return;
+
+			const isRecorderStatusNotFull = recorder.status !== "full";
+			if (isRecorderStatusNotFull) return;
+
 			setRecordingActive(false);
 			setRecording(recorder.stop());
 		},
@@ -134,25 +142,32 @@ export default function App() {
 		return () => subscription.remove();
 	}, []);
 
-	if (mediaMode === "video")
+	const isMediaModeVideo = mediaMode === "video";
+	if (isMediaModeVideo)
 		return (
 			<View style={styles.screen}>
 				<VideoPanel onClose={() => setMediaMode("camera")} />
 			</View>
 		);
-	if (mediaMode === "photo")
+
+	const isMediaModePhoto = mediaMode === "photo";
+	if (isMediaModePhoto)
 		return (
 			<View style={styles.screen}>
 				<PhotoPanel onClose={() => setMediaMode("camera")} />
 			</View>
 		);
-	if (!permission)
+
+	const isPermissionMissing = permission == null;
+	if (isPermissionMissing)
 		return (
 			<View style={styles.screen}>
 				<Text style={styles.text}>Checking camera permission…</Text>
 			</View>
 		);
-	if (!permission.granted) {
+
+	const isPermissionDenied = !permission.granted;
+	if (isPermissionDenied) {
 		const permissionAction = permission.canAskAgain
 			? requestPermission
 			: Linking.openSettings;
@@ -190,6 +205,7 @@ export default function App() {
 				/>
 			</View>
 		);
+
 	const cameraReadyToRecord = cameraSelection !== null && isActive;
 	const canToggleRecording = recordingActive || cameraReadyToRecord;
 	const toggleRecording = () => {
@@ -198,6 +214,7 @@ export default function App() {
 			setRecording(recorder.stop());
 			return;
 		}
+
 		setRecordingError(null);
 		recorder.start();
 		setRecordingActive(true);
@@ -230,6 +247,8 @@ export default function App() {
 		tracking.reset();
 		setFailure(null);
 	};
+
+	const pauseButtonLabel = paused ? "Resume" : "Pause";
 
 	return (
 		<View style={styles.screen}>
@@ -281,7 +300,12 @@ export default function App() {
 			)}
 			<Button
 				title={`Inference limit: ${frameLimit} fps`}
-				onPress={() => setFrameLimit((previous) => (previous === 15 ? 30 : 15))}
+				onPress={() =>
+					setFrameLimit((previous) => {
+						const isPreviousSkipFifteen = previous === 15;
+						return isPreviousSkipFifteen ? 30 : 15;
+					})
+				}
 			/>
 			<Button
 				title={
@@ -301,7 +325,7 @@ export default function App() {
 			<CameraControls selection={cameraSelection} onSelect={selectCamera} />
 			<View style={styles.actions}>
 				<Button
-					title={paused ? "Resume" : "Pause"}
+					title={pauseButtonLabel}
 					onPress={() => setPaused((value) => !value)}
 				/>
 			</View>

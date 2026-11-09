@@ -7,12 +7,15 @@ let runningMode: "IMAGE" | "VIDEO" = "IMAGE";
 let maskMaxDimension = 256;
 const send = (message: WorkerResponse) => postMessage(message);
 async function handle(message: WorkerRequest) {
-	if (message.type === "close") {
+	const isMessageTypeClose = message.type === "close";
+	if (isMessageTypeClose) {
 		detector?.close();
 		detector = undefined;
 		return;
 	}
-	if (message.type === "init") {
+
+	const isMessageTypeInit = message.type === "init";
+	if (isMessageTypeInit) {
 		detector?.close();
 		detector = undefined;
 		generation = message.generation;
@@ -40,18 +43,28 @@ async function handle(message: WorkerRequest) {
 		send({ type: "ready", generation });
 		return;
 	}
+
 	const { image } = message;
 	try {
-		if (!detector || message.generation !== generation) return;
-		const mode = message.video ? "VIDEO" : "IMAGE";
-		if (mode !== runningMode) {
-			await detector.setOptions({ runningMode: mode });
+		const loadedDetector = detector;
+
+		const isDetectorUnusable =
+			loadedDetector == null || message.generation !== generation;
+		if (isDetectorUnusable) return;
+
+		const isVideoMessage = message.video === true;
+		const mode = isVideoMessage ? "VIDEO" : "IMAGE";
+
+		const isRunningModeChanged = mode !== runningMode;
+		if (isRunningModeChanged) {
+			await loadedDetector.setOptions({ runningMode: mode });
 			runningMode = mode;
 		}
+
 		const start = performance.now();
 		const result = message.video
-			? detector.detectForVideo(image, message.timestamp)
-			: detector.detect(image);
+			? loadedDetector.detectForVideo(image, message.timestamp)
+			: loadedDetector.detect(image);
 		try {
 			const duration = performance.now() - start;
 			const poses = result.landmarks.map((landmarks, index) => ({
@@ -109,11 +122,12 @@ let queue = Promise.resolve();
 self.onmessage = (event: MessageEvent<WorkerRequest>) => {
 	queue = queue
 		.then(() => handle(event.data))
-		.catch((error) =>
-			send({
+		.catch((error) => {
+			const isErrorInstanceError = error instanceof Error;
+			return send({
 				type: "error",
 				generation,
-				message: error instanceof Error ? error.message : String(error),
-			}),
-		);
+				message: isErrorInstanceError ? error.message : String(error),
+			});
+		});
 };

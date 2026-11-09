@@ -49,6 +49,13 @@ type PreviewCardProps = Pick<
 	| "videoProgress"
 >;
 
+const pickTabLabel = (tab: string) => {
+	const isCameraTab = tab === "camera";
+	if (isCameraTab) return "Webcam";
+
+	return tab[0]?.toUpperCase() + tab.slice(1);
+};
+
 export const PreviewCard = ({
 	changeMode,
 	config,
@@ -90,33 +97,70 @@ export const PreviewCard = ({
 	video,
 	videoProgress,
 }: PreviewCardProps) => {
+	const isSampleMode = mode === "sample";
+	const isCameraMode = mode === "camera";
+	const isPhotoMode = mode === "photo";
+	const isVideoMode = mode === "video";
+	const isReplayMode = mode === "replay";
+	const isNotReplayMode = mode !== "replay";
+	const isPhotoOrVideoMode = isPhotoMode || isVideoMode;
+	const isStillMode = isSampleMode || isPhotoMode;
+	const isMovingMode = isCameraMode || isVideoMode;
+	const isMirroredCamera = isCameraMode && mirrored;
+	const mediaStageMirrorClass = isMirroredCamera ? "mirrored" : "";
+	const fileChoiceLabel = isPhotoMode ? "an image" : "a video";
+	const fileAccept = isPhotoMode ? "image/*" : "video/*";
+	const imageAltText = isSampleMode
+		? "Public MediaPipe evaluation sample"
+		: "Your selected local image";
+	const videoSourceUrl = isVideoMode ? upload || undefined : undefined;
+	const isFrameKnown = frame != null;
+	const frameAspectStyle = isFrameKnown
+		? { aspectRatio: `${frame.imageSize.width} / ${frame.imageSize.height}` }
+		: undefined;
+	const isEmptyPreviewShown =
+		(!sourceHasMedia && isNotReplayMode) || (isReplayMode && !replay);
+	const emptyPreviewTitle = isReplayMode
+		? "Bring your landmarks back to life"
+		: "Your next test starts here";
+	const emptyPreviewBody = isReplayMode
+		? "Import a playground or native landmark recording. No camera pixels are stored."
+		: "Choose a local file above. It never leaves this browser.";
+	const previewBadgeLabel = isReplayMode ? "LANDMARK REPLAY" : "BROWSER · CPU";
+	const pauseButtonLabel = paused ? "Resume" : "Pause";
+	const replayButtonLabel = playing ? "Pause replay" : "Play replay";
+	const isDurationKnown = Number.isFinite(videoProgress.duration);
+	const durationLabel = isDurationKnown
+		? videoProgress.duration.toFixed(1)
+		: "—";
 	return (
 		<section className="preview-card">
 			<nav className="source-tabs" aria-label="Input source">
 				{(["sample", "camera", "photo", "video", "replay"] as const).map(
-					(item) => (
-						<button
-							type="button"
-							key={item}
-							aria-pressed={mode === item}
-							onClick={() => changeMode(item)}
-						>
-							{item === "camera"
-								? "Webcam"
-								: item[0]?.toUpperCase() + item.slice(1)}
-						</button>
-					),
+					(item) => {
+						const isTabSelected = mode === item;
+						return (
+							<button
+								type="button"
+								key={item}
+								aria-pressed={isTabSelected}
+								onClick={() => changeMode(item)}
+							>
+								{pickTabLabel(item)}
+							</button>
+						);
+					},
 				)}
 			</nav>
 			<div className="source-toolbar">
-				{mode === "sample" && (
+				{isSampleMode && (
 					<Select label="Sample scene" value={sample} onChange={setSample}>
 						<option value="pose.jpg">Full-body pose</option>
 						<option value="man-woman-okay.jpg">Two people</option>
 						<option value="burger.jpg">No person · empty result</option>
 					</Select>
 				)}
-				{mode === "camera" && (
+				{isCameraMode && (
 					<>
 						<Select label="Browser camera" value={device} onChange={setDevice}>
 							<option value="">Default camera</option>
@@ -136,13 +180,13 @@ export const PreviewCard = ({
 						</label>
 					</>
 				)}
-				{(mode === "photo" || mode === "video") && (
+				{isPhotoOrVideoMode && (
 					<label className="file-label">
-						Choose {mode === "photo" ? "an image" : "a video"}
+						Choose {fileChoiceLabel}
 						<input
 							key={mode}
 							type="file"
-							accept={mode === "photo" ? "image/*" : "video/*"}
+							accept={fileAccept}
 							onChange={(e) => {
 								const file = e.target.files?.[0];
 								if (file) void loadFile(file, "media");
@@ -150,7 +194,7 @@ export const PreviewCard = ({
 						/>
 					</label>
 				)}
-				{mode === "video" && (
+				{isVideoMode && (
 					<button
 						type="button"
 						onClick={() => {
@@ -161,7 +205,7 @@ export const PreviewCard = ({
 						Try sample video
 					</button>
 				)}
-				{mode === "replay" && (
+				{isReplayMode && (
 					<>
 						<label className="file-label">
 							Import landmark recording
@@ -191,25 +235,15 @@ export const PreviewCard = ({
 			</div>
 			<div className="viewport">
 				<div
-					className={`media-stage ${mode === "camera" && mirrored ? "mirrored" : ""}`}
-					style={
-						frame
-							? {
-									aspectRatio: `${frame.imageSize.width} / ${frame.imageSize.height}`,
-								}
-							: undefined
-					}
+					className={`media-stage ${mediaStageMirrorClass}`}
+					style={frameAspectStyle}
 				>
-					{(mode === "sample" || mode === "photo") && sourceUrl && (
+					{isStillMode && sourceUrl && (
 						<img
 							ref={image}
 							key={sourceUrl}
 							src={sourceUrl}
-							alt={
-								mode === "sample"
-									? "Public MediaPipe evaluation sample"
-									: "Your selected local image"
-							}
+							alt={imageAltText}
 							onError={() =>
 								setMessage(
 									"This image could not be decoded. Try a JPEG or PNG.",
@@ -217,14 +251,14 @@ export const PreviewCard = ({
 							}
 						/>
 					)}
-					{(mode === "camera" || mode === "video") && (
+					{isMovingMode && (
 						<video
 							ref={video}
 							key={sourceUrl || mode}
-							src={mode === "video" && upload ? upload : undefined}
+							src={videoSourceUrl}
 							muted
 							playsInline
-							controls={mode === "video"}
+							controls={isVideoMode}
 							onTimeUpdate={(e) =>
 								setVideoProgress({
 									position: e.currentTarget.currentTime,
@@ -287,25 +321,16 @@ export const PreviewCard = ({
 						</>
 					)}
 				</div>
-				{((!sourceHasMedia && mode !== "replay") ||
-					(mode === "replay" && !replay)) && (
+				{isEmptyPreviewShown && (
 					<div className="empty-preview">
 						<span>◎</span>
-						<h2>
-							{mode === "replay"
-								? "Bring your landmarks back to life"
-								: "Your next test starts here"}
-						</h2>
-						<p>
-							{mode === "replay"
-								? "Import a playground or native landmark recording. No camera pixels are stored."
-								: "Choose a local file above. It never leaves this browser."}
-						</p>
+						<h2>{emptyPreviewTitle}</h2>
+						<p>{emptyPreviewBody}</p>
 					</div>
 				)}
 				<div className="preview-badge">
 					<span className="tiny-dot" />
-					{mode === "replay" ? "LANDMARK REPLAY" : "BROWSER · CPU"}
+					{previewBadgeLabel}
 				</div>
 			</div>
 			<div className="preview-status">
@@ -313,7 +338,7 @@ export const PreviewCard = ({
 					<span className="tiny-dot" />
 					{engine.status}
 				</span>
-				{mode !== "replay" && (
+				{isNotReplayMode && (
 					<button
 						type="button"
 						onClick={() => {
@@ -321,7 +346,7 @@ export const PreviewCard = ({
 							setPaused((value) => !value);
 						}}
 					>
-						{paused ? "Resume" : "Pause"}
+						{pauseButtonLabel}
 					</button>
 				)}
 			</div>
@@ -337,14 +362,10 @@ export const PreviewCard = ({
 					</button>
 				</div>
 			)}
-			{mode === "video" && (
+			{isVideoMode && (
 				<div className="transport">
 					<span>
-						{videoProgress.position.toFixed(1)} /{" "}
-						{Number.isFinite(videoProgress.duration)
-							? videoProgress.duration.toFixed(1)
-							: "—"}{" "}
-						s
+						{videoProgress.position.toFixed(1)} / {durationLabel} s
 					</span>
 					<small>
 						Press play to sample at the inference limit. Sampling follows
@@ -361,17 +382,19 @@ export const PreviewCard = ({
 					</button>
 				</div>
 			)}
-			{mode === "replay" && replay && (
+			{isReplayMode && replay && (
 				<div className="transport">
 					<button
 						type="button"
 						disabled={replay.frames.length === 0}
 						onClick={() => {
-							if (position >= duration) setPosition(0);
+							const isPositionPastDuration = position >= duration;
+							if (isPositionPastDuration) setPosition(0);
+
 							setPlaying((value) => !value);
 						}}
 					>
-						{playing ? "Pause replay" : "Play replay"}
+						{replayButtonLabel}
 					</button>
 					<Range
 						label="Replay position (ms)"

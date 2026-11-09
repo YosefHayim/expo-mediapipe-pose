@@ -115,6 +115,7 @@ describe("usePoseOverlayFrame", () => {
 					Object.defineProperty(globalThis, name, descriptor);
 					continue;
 				}
+
 				Reflect.deleteProperty(globalThis, name);
 			}
 		}

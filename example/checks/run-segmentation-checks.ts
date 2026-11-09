@@ -8,7 +8,8 @@ import {
 } from "expo-mediapipe-pose";
 
 function verify(condition: boolean, message: string): asserts condition {
-	if (!condition) throw new Error(message);
+	const isCheckFailed = !condition;
+	if (isCheckFailed) throw new Error(message);
 }
 function available(detection: PoseDetection) {
 	const segmentation = detection.segmentation;
@@ -40,8 +41,10 @@ function inspectMask(
 		"PNG dimensions must match metadata",
 	);
 	verify(png[24] === 8 && png[25] === 6, "Mask PNG must use RGBA8");
+
 	const artifact = new File(Paths.document, name);
 	if (artifact.exists) artifact.delete();
+
 	source.copy(artifact);
 	return source;
 }
@@ -53,9 +56,10 @@ function maskFiles() {
 				entry.name.startsWith("expo-mediapipe-pose-masks-") &&
 				entry instanceof Directory,
 		);
-	return folders.flatMap((folder) =>
-		folder instanceof Directory ? folder.list() : [],
-	).length;
+	return folders.flatMap((folder) => {
+		const isFolderInstanceDirectory = folder instanceof Directory;
+		return isFolderInstanceDirectory ? folder.list() : [];
+	}).length;
 }
 export async function runSegmentationChecks(
 	photo: string,
@@ -166,10 +170,15 @@ export async function runSegmentationChecks(
 			[...leases].map(releasePoseSegmentation),
 		);
 		for (const result of cleanup) {
-			if (result.status === "rejected") failures.push(result.reason);
+			const isStatusRejected = result.status === "rejected";
+			if (isStatusRejected) failures.push(result.reason);
 		}
 	}
-	if (failures.length === 1) throw failures[0];
-	if (failures.length > 1)
+
+	const hasOneFailure = failures.length === 1;
+	if (hasOneFailure) throw failures[0];
+
+	const hasMultipleFailures = failures.length > 1;
+	if (hasMultipleFailures)
 		throw new AggregateError(failures, "Mask fixture and cleanup failures");
 }

@@ -10,16 +10,26 @@ export async function releasePoseSegmentation(leaseId: string): Promise<void> {
 export async function discardResultSegmentation(
 	candidateAnalysis: unknown,
 ): Promise<void> {
-	if (typeof candidateAnalysis !== "object" || candidateAnalysis === null)
-		return;
-	if (!("segmentation" in candidateAnalysis)) return;
+	const isCandidateAnalysisNotObject =
+		typeof candidateAnalysis !== "object" || candidateAnalysis === null;
+	if (isCandidateAnalysisNotObject) return;
+
+	const isAnalysisWithoutSegmentation = !("segmentation" in candidateAnalysis);
+	if (isAnalysisWithoutSegmentation) return;
+
 	const segmentation = candidateAnalysis.segmentation;
-	if (typeof segmentation !== "object" || segmentation === null) return;
-	if (!("leaseId" in segmentation)) return;
+
+	const isSegmentationNotObject =
+		typeof segmentation !== "object" || segmentation === null;
+	if (isSegmentationNotObject) return;
+
+	const isSegmentationWithoutLease = !("leaseId" in segmentation);
+	if (isSegmentationWithoutLease) return;
+
 	const leaseIdReply = SegmentationLeaseId.safeParse(segmentation.leaseId);
 
-	const isLeaseIdInvalid = !leaseIdReply.success;
-	if (isLeaseIdInvalid) return;
+	const isLeaseIdRejected = !leaseIdReply.success;
+	if (isLeaseIdRejected) return;
 
 	await releasePoseSegmentation(leaseIdReply.data);
 }

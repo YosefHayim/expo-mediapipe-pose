@@ -60,15 +60,19 @@ describe("analyzePoseVideo", () => {
 				async closePoseVideo() {
 					calls.push("close");
 					opened = false;
+
 					if (closeFailure) throw closeFailure;
 				},
 				async readPoseVideoFrame(_id: string, timestampMs: number) {
 					calls.push(timestampMs);
+
 					if (blockRead)
 						await new Promise<void>((resolve) => {
 							releaseRead = resolve;
 						});
+
 					if (failRead) throw new Error("decode failed");
+
 					return {
 						timestampMs,
 						decodedTimestampMs: null,

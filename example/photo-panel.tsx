@@ -10,7 +10,10 @@ import * as React from "react";
 import { Button, Image, Text, TextInput, View } from "react-native";
 
 async function releaseMasks(detection: PoseDetection | undefined) {
-	if (detection?.segmentation?.status !== "available") return;
+	const isDetectionSegmentationUnavailable =
+		detection?.segmentation?.status !== "available";
+	if (isDetectionSegmentationUnavailable) return;
+
 	await releasePoseSegmentation(detection.segmentation.leaseId);
 }
 
@@ -54,18 +57,24 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 				maxPoses,
 				segmentationEnabled,
 			});
-			const imageUri = location.startsWith("/")
+			const isAbsoluteLocation = location.startsWith("/");
+			const imageUri = isAbsoluteLocation
 				? `file://${location.split("/").map(encodeURIComponent).join("/")}`
 				: location;
-			if (token !== request.current) {
+
+			const isTokenNotEqualsRequestCurrent = token !== request.current;
+			if (isTokenNotEqualsRequestCurrent) {
 				await releaseMasks(detection);
 				return;
 			}
+
 			setResult({ location: imageUri, detection });
 		} catch (failure) {
-			if (token === request.current) setError(String(failure));
+			const isTokenEqualsRequestCurrent = token === request.current;
+			if (isTokenEqualsRequestCurrent) setError(String(failure));
 		} finally {
-			if (token === request.current) setBusy(false);
+			const isTokenCurrent = token === request.current;
+			if (isTokenCurrent) setBusy(false);
 		}
 	};
 	const loadFixture = async () => {
@@ -76,26 +85,36 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 			const asset = await Asset.fromModule(
 				require("./fixtures/man-woman-okay.jpg"),
 			).downloadAsync();
-			if (asset.localUri === null)
+
+			const isAssetLocalUriMissing = asset.localUri === null;
+			if (isAssetLocalUriMissing)
 				throw new Error("Fixture is unavailable locally");
-			if (token !== request.current) return;
+
+			const isTokenNotEqualsRequestCurrent = token !== request.current;
+			if (isTokenNotEqualsRequestCurrent) return;
+
 			setLocation(asset.localUri);
 			setMaxPoses(2);
 		} catch (failure) {
-			if (token === request.current) setError(String(failure));
+			const isTokenEqualsRequestCurrent = token === request.current;
+			if (isTokenEqualsRequestCurrent) setError(String(failure));
 		} finally {
-			if (token === request.current) setBusy(false);
+			const isTokenCurrent = token === request.current;
+			if (isTokenCurrent) setBusy(false);
 		}
 	};
 	const poseIndices = Array.from(
 		{ length: result?.detection.poses?.length ?? 0 },
 		(_, index) => index,
 	);
+	const segmentationStateLabel = segmentationEnabled ? "on" : "off";
+	const analyzeButtonLabel = busy ? "Analyzing…" : "Analyze";
+
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
 			<Text style={{ color: "white" }}>Analyze a local photo</Text>
 			<Button
-				title={`Segmentation: ${segmentationEnabled ? "on" : "off"}`}
+				title={`Segmentation: ${segmentationStateLabel}`}
 				onPress={() => setSegmentationEnabled((value) => !value)}
 				disabled={busy}
 			/>
@@ -106,7 +125,10 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 			/>
 			<Button
 				title={`Maximum poses: ${maxPoses}`}
-				onPress={() => setMaxPoses(maxPoses === 1 ? 2 : 1)}
+				onPress={() => {
+					const isSinglePose = maxPoses === 1;
+					return setMaxPoses(isSinglePose ? 2 : 1);
+				}}
 				disabled={busy}
 			/>
 			{poseIndices.map((index) => (
@@ -132,7 +154,7 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 				}}
 			/>
 			<Button
-				title={busy ? "Analyzing…" : "Analyze"}
+				title={analyzeButtonLabel}
 				onPress={analyze}
 				disabled={!canAnalyze}
 			/>

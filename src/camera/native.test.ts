@@ -12,6 +12,7 @@ describe("getCameraCapabilities", () => {
 			configurable: true,
 			value: () => {
 				if (failure) return Promise.reject(failure);
+
 				return Promise.resolve(response);
 			},
 		});

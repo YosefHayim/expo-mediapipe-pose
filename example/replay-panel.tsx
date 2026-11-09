@@ -73,7 +73,10 @@ export function ReplayPanel({
 			/>
 			<Button
 				title={`Speed: ${replay.speed}×`}
-				onPress={() => replay.setSpeed(replay.speed === 1 ? 2 : 1)}
+				onPress={() => {
+					const isNormalSpeed = replay.speed === 1;
+					return replay.setSpeed(isNormalSpeed ? 2 : 1);
+				}}
 			/>
 			<Button title="Return to camera" onPress={onClose} />
 		</View>

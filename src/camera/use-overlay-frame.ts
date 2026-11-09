@@ -14,12 +14,18 @@ export const usePoseOverlayFrame = (staleAfterMs: number) => {
 	}, []);
 	const scheduleExpiry = React.useCallback(() => {
 		clearTimeout(timer.current);
-		if (receivedAt.current === null) return;
+
+		const isReceivedAtCurrentMissing = receivedAt.current === null;
+		if (isReceivedAtCurrentMissing) return;
+
 		const remainingMs = receivedAt.current + staleAfterMs - performance.now();
-		if (remainingMs <= 0) {
+
+		const isTimeUp = remainingMs <= 0;
+		if (isTimeUp) {
 			clear();
 			return;
 		}
+
 		timer.current = setTimeout(clear, remainingMs);
 	}, [staleAfterMs, clear]);
 	const update = React.useCallback(

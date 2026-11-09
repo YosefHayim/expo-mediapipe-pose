@@ -1,7 +1,9 @@
 export const requireNativeModule = (moduleName: string) => {
-	if (moduleName !== "ExpoMediaPipePose") {
+	const isOtherModule = moduleName !== "ExpoMediaPipePose";
+	if (isOtherModule) {
 		throw new Error("Unexpected native module");
 	}
+
 	return {
 		getCameraCapabilities: () =>
 			Reflect.get(globalThis, Symbol.for("pose.nativeCapabilitiesTest"))(),

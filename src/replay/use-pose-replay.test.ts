@@ -31,10 +31,12 @@ const ReplayHarness = ({ session, label, reports }: ReplayHarnessProps) => {
 				rule.update(frame);
 			},
 			onReset: () => {
-				if (label !== "reset failure") {
+				const isNotResetFailureLabel = label !== "reset failure";
+				if (isNotResetFailureLabel) {
 					rule.reset();
 					return;
 				}
+
 				reports.playCurrent();
 				throw new Error("reset failed");
 			},

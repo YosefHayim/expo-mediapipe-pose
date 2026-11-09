@@ -173,7 +173,8 @@ describe("usePoseTracking", () => {
 						...options,
 						holdMs: 0,
 						onChange: (state) => {
-							if (state.status === "found") currentTracking().reset();
+							const isStatusFound = state.status === "found";
+							if (isStatusFound) currentTracking().reset();
 						},
 					}),
 				),
@@ -206,6 +207,7 @@ describe("usePoseTracking", () => {
 					Object.defineProperty(globalThis, name, descriptor);
 					continue;
 				}
+
 				Reflect.deleteProperty(globalThis, name);
 			}
 		}

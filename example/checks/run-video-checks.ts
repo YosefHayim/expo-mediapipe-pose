@@ -2,7 +2,8 @@ import { File, Paths } from "expo-file-system";
 import { analyzePoseVideo, type PoseDetection } from "expo-mediapipe-pose";
 
 function verify(condition: boolean, message: string): asserts condition {
-	if (!condition) throw new Error(message);
+	const isCheckFailed = !condition;
+	if (isCheckFailed) throw new Error(message);
 }
 export async function runVideoChecks(
 	video: string,

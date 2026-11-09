@@ -116,6 +116,7 @@ describe("releasePoseSegmentation", () => {
 			value: {
 				async releasePoseSegmentation(id: string) {
 					calls.push(id);
+
 					if (releaseFailure) throw releaseFailure;
 				},
 				async analyzePoseImage() {
@@ -126,6 +127,7 @@ describe("releasePoseSegmentation", () => {
 				},
 				async closePoseVideo() {
 					calls.push("close");
+
 					if (closeFailure) throw closeFailure;
 				},
 				async readPoseVideoFrame() {

@@ -23,7 +23,11 @@ function initialConfiguration(): { config: Config; error: string | null } {
 	try {
 		const hash = new URLSearchParams(location.hash.slice(1));
 		const value = hash.get("config");
-		return { config: value ? parseConfig(value) : defaults(), error: null };
+		const isSharedSetupInHash = value !== null && value !== "";
+		return {
+			config: isSharedSetupInHash ? parseConfig(value) : defaults(),
+			error: null,
+		};
 	} catch {
 		return {
 			config: defaults(),
@@ -73,17 +77,23 @@ export const usePlayground = () => {
 	});
 	const [resultTab, setResultTab] = useState("feedback");
 	const [codeMode, setCodeMode] = useState<SourceMode>("camera");
-	const sourceUrl = mode === "sample" ? `${base}${sample}` : upload;
+	const isModeSample = mode === "sample";
+	const sourceUrl = isModeSample ? `${base}${sample}` : upload;
 	const setConfig = (next: Config) => {
-		if (next.detection.modelVariant !== config.detection.modelVariant) {
+		const isModelVariantChanged =
+			next.detection.modelVariant !== config.detection.modelVariant;
+		if (isModelVariantChanged) {
 			setModel(null);
 			setModelName("");
 		}
+
 		setConfigState(next);
 	};
 	const finishRecording = useCallback(() => {
 		setRecording(false);
-		if (recordRef.current.length)
+
+		const hasRecordedFrames = recordRef.current.length > 0;
+		if (hasRecordedFrames)
 			setRecorded({
 				format: "pose-playground",
 				version: 1,
@@ -94,21 +104,33 @@ export const usePlayground = () => {
 		receivedAt.current = performance.now();
 		setFrame(next);
 		setMasks(nextMasks);
-		if (!recording) return;
+
+		const isRecordingMissing = recording == null;
+		if (isRecordingMissing) return;
+
 		const now = performance.now();
-		if (recordRef.current.length === 0) recordStart.current = now;
+
+		const isRecordEmpty = recordRef.current.length === 0;
+		if (isRecordEmpty) recordStart.current = now;
+
 		const entry = { timestampMs: now - recordStart.current, frame: next };
-		const separatorBytes = recordRef.current.length === 0 ? 0 : 1;
+		const separatorBytes = isRecordEmpty ? 0 : 1;
+
 		const size = JSON.stringify(entry).length + separatorBytes;
-		if (recordSize.current + size > 15 * 1024 * 1024) {
+
+		const isRecordingTooLarge = recordSize.current + size > 15 * 1024 * 1024;
+		if (isRecordingTooLarge) {
 			finishRecording();
 			setMessage("Recording stopped at the 15 MiB limit.");
 			return;
 		}
+
 		recordSize.current += size;
 		recordRef.current.push(entry);
 		setRecordCount(recordRef.current.length);
-		if (recordRef.current.length >= MAX_RECORDING_FRAMES) {
+
+		const isRecordingFull = recordRef.current.length >= MAX_RECORDING_FRAMES;
+		if (isRecordingFull) {
 			finishRecording();
 			setMessage("Recording complete: 1,800-frame limit reached.");
 		}
@@ -147,7 +169,8 @@ export const usePlayground = () => {
 	}, []);
 	useEffect(
 		() => () => {
-			if (upload.startsWith("blob:")) URL.revokeObjectURL(upload);
+			const isBlobUpload = upload.startsWith("blob:");
+			if (isBlobUpload) URL.revokeObjectURL(upload);
 		},
 		[upload],
 	);
@@ -179,7 +202,9 @@ export const usePlayground = () => {
 		playing,
 	]);
 	useEffect(() => {
-		if (!frame) return;
+		const isFrameMissing = frame == null;
+		if (isFrameMissing) return;
+
 		const now = performance.now();
 		ruleRef.current = updateRules(
 			frame,
@@ -193,8 +218,11 @@ export const usePlayground = () => {
 	useEffect(() => {
 		const timer = setInterval(() => {
 			const now = performance.now();
+
 			const stillImage = mode === "sample" || mode === "photo";
-			if (frame && stillImage && !paused && !hidden) {
+
+			const canUpdateRulesFromFrame = frame && stillImage && !paused && !hidden;
+			if (canUpdateRulesFromFrame) {
 				ruleRef.current = updateRules(
 					frame,
 					config.skeleton.poseIndex,
@@ -203,11 +231,12 @@ export const usePlayground = () => {
 					now,
 				);
 			} else {
-				ruleRef.current = ruleRef.current.map((state, index) =>
-					now - state.updatedAt > (config.rules[index]?.staleAfterMs ?? 500)
-						? initialPoseRuleState()
-						: state,
-				);
+				ruleRef.current = ruleRef.current.map((state, index) => {
+					const isRuleStale =
+						now - state.updatedAt > (config.rules[index]?.staleAfterMs ?? 500);
+					return isRuleStale ? initialPoseRuleState() : state;
+				});
+
 				const staleOverlay =
 					now - receivedAt.current >
 					Math.max(
@@ -215,11 +244,14 @@ export const usePlayground = () => {
 						2000 /
 							Math.min(config.timing.frameLimit, config.timing.callbackFps),
 					);
-				if (staleOverlay && mode !== "replay") {
+
+				const isOverlayStaleOutsideReplay = staleOverlay && mode !== "replay";
+				if (isOverlayStaleOutsideReplay) {
 					setFrame(null);
 					setMasks([]);
 				}
 			}
+
 			setRuleStates([...ruleRef.current]);
 		}, 100);
 		return () => clearInterval(timer);
@@ -233,7 +265,9 @@ export const usePlayground = () => {
 		config.timing,
 	]);
 	useEffect(() => {
-		if (!playing || !replay || hidden) return;
+		const isReplayStopped = !playing || !replay || hidden;
+		if (isReplayStopped) return;
+
 		const started = performance.now();
 		const initialPosition = positionRef.current;
 		const duration = replay.frames.at(-1)?.timestampMs ?? 0;
@@ -246,10 +280,13 @@ export const usePlayground = () => {
 			setPosition(nextPosition);
 			setFrame(frameAt(replay, nextPosition));
 			receivedAt.current = performance.now();
-			if (nextPosition >= duration) {
+
+			const isNextPositionPastDuration = nextPosition >= duration;
+			if (isNextPositionPastDuration) {
 				setPlaying(false);
 				return;
 			}
+
 			timer = requestAnimationFrame(tick);
 		};
 		timer = requestAnimationFrame(tick);
@@ -262,7 +299,9 @@ export const usePlayground = () => {
 		setPaused(false);
 		setPlaying(false);
 		setMessage(null);
-		if (next === "replay" && replay) {
+
+		const isNextReplayAndReplayPresent = next === "replay" && replay;
+		if (isNextReplayAndReplayPresent) {
 			setPosition(0);
 			setTimeout(() => setFrame(frameAt(replay, 0)), 0);
 		}
@@ -272,21 +311,31 @@ export const usePlayground = () => {
 		kind: "media" | "recording" | "config" | "model",
 	) {
 		try {
-			if (kind === "config") {
-				if (file.size > 40000)
+			const isKindConfig = kind === "config";
+			if (isKindConfig) {
+				const isConfigOverLimit = file.size > 40000;
+				if (isConfigOverLimit)
 					throw new Error("Configuration exceeds 40,000 bytes.");
+
 				setConfig(parseConfig(await file.text()));
 				setMessage("Configuration imported.");
 				return;
 			}
-			if (kind === "recording") {
-				if (file.size > 16 * 1024 * 1024)
+
+			const isKindRecording = kind === "recording";
+			if (isKindRecording) {
+				const isRecordingFileTooLarge = file.size > 16 * 1024 * 1024;
+				if (isRecordingFileTooLarge)
 					throw new Error("Recording exceeds 16 MiB.");
+
 				const parsed = parseRecording(await file.text());
-				if (parsed.frames.length === 0)
+
+				const isParsedFramesEmpty = parsed.frames.length === 0;
+				if (isParsedFramesEmpty)
 					setMessage(
 						"This recording contains no frames. Import another recording to replay landmarks.",
 					);
+
 				setReplay(parsed);
 				setPlaying(false);
 				setPosition(0);
@@ -294,20 +343,27 @@ export const usePlayground = () => {
 				setMasks([]);
 				return;
 			}
-			if (kind === "model") {
-				if (file.size > 100 * 1024 * 1024)
-					throw new Error("Model exceeds 100 MiB.");
+
+			const isKindModel = kind === "model";
+			if (isKindModel) {
+				const isModelFileTooLarge = file.size > 100 * 1024 * 1024;
+				if (isModelFileTooLarge) throw new Error("Model exceeds 100 MiB.");
+
 				setModel(await file.arrayBuffer());
 				setModelName(file.name);
 				return;
 			}
-			if (file.size > 200 * 1024 * 1024)
+
+			const isMediaFileTooLarge = file.size > 200 * 1024 * 1024;
+			if (isMediaFileTooLarge)
 				throw new Error("Media exceeds the 200 MiB browser limit.");
+
 			finishRecording();
 			setUpload(URL.createObjectURL(file));
 			setPaused(false);
 		} catch (error) {
-			setMessage(error instanceof Error ? error.message : String(error));
+			const isErrorInstanceError = error instanceof Error;
+			setMessage(isErrorInstanceError ? error.message : String(error));
 		}
 	}
 	async function copy(text: string, success: string) {
@@ -322,13 +378,17 @@ export const usePlayground = () => {
 	}
 	function choosePreset(name: string) {
 		setConfig(preset(name));
-		setSample(name === "multiple" ? "man-woman-okay.jpg" : "pose.jpg");
+		const isNameMultiple = name === "multiple";
+		setSample(isNameMultiple ? "man-woman-okay.jpg" : "pose.jpg");
 		setMode("sample");
 		setPaused(false);
 		setPlaying(false);
 		finishRecording();
 	}
-	const selected = frame ? selectPose(frame, config.skeleton.poseIndex) : null;
+	const isFramePresent = frame !== null;
+	const selected = isFramePresent
+		? selectPose(frame, config.skeleton.poseIndex)
+		: null;
 	const options = skeletonOptions(config);
 	const joints = { ...options.joints };
 	config.rules.forEach((rule, index) => {
@@ -340,7 +400,7 @@ export const usePlayground = () => {
 		}[status];
 		joints[rule.vertex] = { ...joints[rule.vertex], color };
 	});
-	const skeleton = frame
+	const skeleton = isFramePresent
 		? createDetectionSkeleton(frame, frame.imageSize, { ...options, joints })
 		: { points: [], lines: [] };
 	const code = generateCode(config, codeMode, model !== null);

@@ -19,33 +19,47 @@ export function measureRule(
 	rule: Rule,
 ): { value: number | null; unit: string } {
 	const options = { minVisibility: rule.minVisibility };
-	if (rule.kind === "height") {
+
+	const isRuleKindHeight = rule.kind === "height";
+	if (isRuleKindHeight) {
 		const confidence = getImageDistance(frame, rule.start, rule.end, options);
-		if (confidence.status !== "available")
-			return { value: null, unit: "px Δy" };
+
+		const isConfidenceUnavailable = confidence.status !== "available";
+		if (isConfidenceUnavailable) return { value: null, unit: "px Δy" };
+
 		const start = frame.landmarks[LANDMARK_NAMES.indexOf(rule.start)];
 		const end = frame.landmarks[LANDMARK_NAMES.indexOf(rule.end)];
+		const hasBothLandmarks = start != null && end != null;
 		return {
-			value: start && end ? (start.y - end.y) * frame.imageSize.height : null,
+			value: hasBothLandmarks
+				? (start.y - end.y) * frame.imageSize.height
+				: null,
 			unit: "px Δy",
 		};
 	}
+
 	let measurement: PoseMeasurement;
-	if (rule.kind === "angle") {
-		measurement =
-			rule.space === "image"
-				? getImageJointAngle(frame, rule.start, rule.vertex, rule.end, options)
-				: getWorldJointAngle(frame, rule.start, rule.vertex, rule.end, options);
+
+	const isRuleKindAngle = rule.kind === "angle";
+	const isRuleSpaceImage = rule.space === "image";
+
+	if (isRuleKindAngle) {
+		measurement = isRuleSpaceImage
+			? getImageJointAngle(frame, rule.start, rule.vertex, rule.end, options)
+			: getWorldJointAngle(frame, rule.start, rule.vertex, rule.end, options);
 	} else {
-		measurement =
-			rule.space === "image"
-				? getImageDistance(frame, rule.start, rule.end, options)
-				: getWorldDistance(frame, rule.start, rule.end, options);
+		measurement = isRuleSpaceImage
+			? getImageDistance(frame, rule.start, rule.end, options)
+			: getWorldDistance(frame, rule.start, rule.end, options);
 	}
-	return {
-		value: measurement.status === "available" ? measurement.value : null,
-		unit: measurement.status === "available" ? measurement.unit : "unavailable",
-	};
+
+	const jointMeasurement = measurement;
+
+	const isJointMeasurementUnavailable = jointMeasurement.status !== "available";
+	if (isJointMeasurementUnavailable)
+		return { value: null, unit: "unavailable" };
+
+	return { value: jointMeasurement.value, unit: jointMeasurement.unit };
 }
 export function updateRules(
 	frame: BrowserFrame,
@@ -64,8 +78,13 @@ export function updateRules(
 			rule,
 		);
 		let outcome: "pass" | "fail" | "unknown" = "unknown";
-		if (result === true) outcome = "pass";
-		if (result === false) outcome = "fail";
+
+		const isResultPass = result === true;
+		if (isResultPass) outcome = "pass";
+
+		const isResultFail = result === false;
+		if (isResultFail) outcome = "fail";
+
 		return advancePoseRule(state, outcome, now, rule.holdMs);
 	});
 }

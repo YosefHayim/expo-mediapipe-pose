@@ -30,24 +30,37 @@ function createAbortError() {
 	return error;
 }
 function throwIfAborted(signal: AbortSignal | undefined) {
-	if (signal?.aborted) throw createAbortError();
+	const isSignalAborted = signal?.aborted === true;
+	if (isSignalAborted) throw createAbortError();
 }
 function throwVideoFailures(failures: unknown[]) {
-	if (failures.length === 0) return;
+	const isFailuresEmpty = failures.length === 0;
+	if (isFailuresEmpty) return;
+
 	const primary = failures[0];
-	if (failures.length === 1) throw primary;
-	const message = primary instanceof Error ? primary.message : String(primary);
+
+	const hasOneFailure = failures.length === 1;
+	if (hasOneFailure) throw primary;
+
+	const isPrimaryError = primary instanceof Error;
+	const message = isPrimaryError ? primary.message : String(primary);
 	const combined = new AggregateError(
 		failures,
 		`${message} (video cleanup also failed)`,
 		{ cause: primary },
 	);
-	if (primary instanceof Error) combined.name = primary.name;
+
+	if (isPrimaryError) combined.name = primary.name;
+
 	throw combined;
 }
 function videoDetection(frame: unknown): unknown {
-	if (typeof frame !== "object" || frame === null) return undefined;
-	if (!("detection" in frame)) return undefined;
+	const isFrameNotObject = typeof frame !== "object" || frame === null;
+	if (isFrameNotObject) return undefined;
+
+	const isFrameWithoutDetection = !("detection" in frame);
+	if (isFrameWithoutDetection) return undefined;
+
 	return frame.detection;
 }
 export async function* analyzePoseVideo(
@@ -88,10 +101,13 @@ export async function* analyzePoseVideo(
 			undelivered = videoDetection(rawFrame);
 			const frame = PoseVideoFrame.parse(rawFrame);
 			throwIfAborted(signal);
-			if (frame.timestampMs !== timestampMs)
+
+			const isTimestampMismatched = frame.timestampMs !== timestampMs;
+			if (isTimestampMismatched)
 				throw new Error(
 					"Native video timestamp does not match the requested sample",
 				);
+
 			onProgress?.({
 				completedFrames: index + 1,
 				totalFrames: plan.frameCount,
@@ -102,7 +118,8 @@ export async function* analyzePoseVideo(
 			yield frame;
 		}
 	} catch (error) {
-		failures.push(signal?.aborted ? createAbortError() : error);
+		const isSignalAborted = signal?.aborted === true;
+		failures.push(isSignalAborted ? createAbortError() : error);
 	} finally {
 		signal?.removeEventListener("abort", onAbort);
 		try {
