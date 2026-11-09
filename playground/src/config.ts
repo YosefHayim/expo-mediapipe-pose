@@ -1,5 +1,5 @@
 import {
-	BODY_PARTS,
+	type BODY_PARTS,
 	LANDMARK_NAMES,
 	POSE_CONNECTIONS,
 } from "expo-mediapipe-pose/core";
@@ -12,9 +12,19 @@ const landmark = z.enum(LANDMARK_NAMES);
 const connection = z.enum(
 	POSE_CONNECTIONS.map(([a, b]) => `${a}:${b}` as const),
 );
-const bodyPart = z.enum(
-	Object.keys(BODY_PARTS) as Array<keyof typeof BODY_PARTS>,
-);
+const BODY_PART_NAMES = [
+	"face",
+	"leftArm",
+	"rightArm",
+	"leftWrist",
+	"rightWrist",
+	"torso",
+	"leftLeg",
+	"rightLeg",
+	"leftAnkle",
+	"rightAnkle",
+] as const satisfies readonly (keyof typeof BODY_PARTS)[];
+const bodyPart = z.enum(BODY_PART_NAMES);
 export const RuleSchema = z
 	.strictObject({
 		id: z.string().regex(/^[a-zA-Z0-9-]{1,64}$/),
@@ -125,7 +135,7 @@ export function defaults(): Config {
 			jointRadius: 4,
 			lineWidth: 3,
 			minVisibility: 0.5,
-			bodyParts: Object.keys(BODY_PARTS) as Array<keyof typeof BODY_PARTS>,
+			bodyParts: [...BODY_PART_NAMES],
 			landmarks: [...LANDMARK_NAMES],
 			joints: {},
 			connections: {},
@@ -135,10 +145,13 @@ export function defaults(): Config {
 		native: { cameraFacing: "front", cameraLens: "auto", cameraZoomFactor: 1 },
 	};
 }
-export function parseConfig(json: string): Config {
-	if (json.length > 40000)
-		throw new Error("Configuration exceeds 40,000 characters.");
-	return ConfigSchema.parse(JSON.parse(json));
+export function parseConfig(serializedConfig: string): Config {
+	const maximumConfigCharacters = 40000;
+	const isTooLong = serializedConfig.length > maximumConfigCharacters;
+	if (isTooLong) throw new Error("Configuration exceeds 40,000 characters.");
+
+	const parsedConfig: unknown = JSON.parse(serializedConfig);
+	return ConfigSchema.parse(parsedConfig);
 }
 export function preset(name: string): Config {
 	const config = defaults();

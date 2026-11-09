@@ -207,7 +207,7 @@ The supported consumer API is TypeScript for Expo/React Native. The Swift and Ko
 <details>
 <summary>Which installation includes all the listed features?</summary>
 
-Install `expo-mediapipe-pose@^0.3.0` from npm for the features listed here. The older `v0.2.0` GitHub tag provides the earlier camera API. Read the documentation for your installed version; `main` can advance independently.
+Install `expo-mediapipe-pose@^0.4.0` from npm for the features listed here. npm installs zod with it, so `effect` is not needed. The older `v0.2.0` GitHub tag provides the earlier camera API. Read the documentation for your installed version; `main` can advance independently.
 
 </details>
 
@@ -267,7 +267,7 @@ Repository: https://github.com/YosefHayim/expo-mediapipe-pose
 Inspect this app's instructions, Expo/React Native versions, navigation,
 permission handling and existing camera code before changing anything.
 Read the README and API documentation for the exact installed tag/commit.
-The npm 0.3.0 API includes the current guides; the older v0.2.0 GitHub tag
+The npm 0.4.0 API includes the current guides; the older v0.2.0 GitHub tag
 predates the newer APIs. Check the installed version and compatibility.
 
 Use supported exports from expo-mediapipe-pose; import pure helpers from

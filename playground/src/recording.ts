@@ -1,18 +1,25 @@
 import {
 	Landmark,
 	type PoseLandmarks,
-	PoseResults,
 	parsePoseDetectionRecording,
 	parsePoseRecording,
 } from "expo-mediapipe-pose/core";
 import { z } from "zod";
 import type { BrowserFrame } from "./types";
 
+const MAXIMUM_LANDMARKS = 33;
+const MAXIMUM_POSES = 6;
+export const MAX_RECORDING_FRAMES = 1800;
 const positive = z.number().positive();
+const strictLandmark = z.strictObject(Landmark.shape);
+const strictPoseLandmarks = z.strictObject({
+	landmarks: z.array(strictLandmark).max(MAXIMUM_LANDMARKS),
+	worldLandmarks: z.array(strictLandmark).max(MAXIMUM_LANDMARKS),
+});
+const strictPoseResults = z.array(strictPoseLandmarks).max(MAXIMUM_POSES);
 const frameSchema = z.strictObject({
-	landmarks: z.array(Landmark).max(33),
-	worldLandmarks: z.array(Landmark).max(33),
-	poses: PoseResults,
+	...strictPoseLandmarks.shape,
+	poses: strictPoseResults,
 	imageSize: z.strictObject({ width: positive, height: positive }),
 	inferenceDurationMs: z.number().nonnegative(),
 });
@@ -27,29 +34,35 @@ const recordingSchema = z
 					frame: frameSchema,
 				}),
 			)
-			.max(1800),
+			.max(MAX_RECORDING_FRAMES),
 	})
 	.refine(
 		(recording) =>
 			(recording.frames.length === 0 ||
 				recording.frames[0]?.timestampMs === 0) &&
 			recording.frames.every(
-				(entry, i) =>
-					i === 0 ||
-					entry.timestampMs > (recording.frames[i - 1]?.timestampMs ?? 0),
+				(recordedFrame, index) =>
+					index === 0 ||
+					recordedFrame.timestampMs >
+						(recording.frames[index - 1]?.timestampMs ?? 0),
 			),
 	);
 export type Recording = z.infer<typeof recordingSchema>;
-export const MAX_RECORDING_FRAMES = 1800;
-export function parseRecording(json: string): Recording {
-	if (json.length > 16 * 1024 * 1024)
+export function parseRecording(serializedRecording: string): Recording {
+	const isTooLarge = serializedRecording.length > 16 * 1024 * 1024;
+	if (isTooLarge)
 		throw new Error("Recording exceeds the playground's 16 MiB limit.");
-	const data: unknown = JSON.parse(json);
-	if (typeof data === "object" && data !== null && "format" in data)
-		return recordingSchema.parse(data);
+
+	const parsedRecording: unknown = JSON.parse(serializedRecording);
+	const isPlaygroundFormat =
+		typeof parsedRecording === "object" &&
+		parsedRecording !== null &&
+		"format" in parsedRecording;
+	if (isPlaygroundFormat) return recordingSchema.parse(parsedRecording);
+
 	let frames: Array<{ timestampMs: number; frame: BrowserFrame }>;
 	try {
-		const native = parsePoseRecording(json);
+		const native = parsePoseRecording(serializedRecording);
 		frames = native.frames.map(({ timestampMs, frame }) => ({
 			timestampMs,
 			frame: {
@@ -64,7 +77,7 @@ export function parseRecording(json: string): Recording {
 			},
 		}));
 	} catch {
-		const native = parsePoseDetectionRecording(json);
+		const native = parsePoseDetectionRecording(serializedRecording);
 		frames = native.frames.map(({ timestampMs, frame }) => ({
 			timestampMs,
 			frame: {

@@ -1,6 +1,6 @@
 {
 	"name": "expo-mediapipe-pose",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "On-device pose camera for Expo with customizable skeletons, named landmarks, and pose feedback rules.",
 	"main": "build/index.js",
 	"types": "build/index.d.ts",

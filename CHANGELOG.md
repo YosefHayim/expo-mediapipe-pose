@@ -4,9 +4,10 @@
 
 Breaking: the `effect` peer dependency is removed, and exported schemas are zod schemas now. See "Breaking changes in 0.4.0" in the README.
 
-- Remove the `effect` peer dependency. `zod` is a regular dependency, pinned to 4.6.7.
-- Exported schemas keep their names. Use `.parse` or `.safeParse` instead of Effect's decode functions.
-- Parsing `PoseImageOptions` or `PoseVideoSampling` directly rejects unknown keys. The package's own functions behave as before.
+- The `effect` package is no longer needed. Remove it from your app.
+- Exported schemas keep their names but are zod schemas now. Replace `Schema.decodeUnknownSync(PoseFrame)(value)` with `PoseFrame.parse(value)`, and `Schema.decodeUnknownEither(PoseFrame)(value)` with `PoseFrame.safeParse(value)`.
+- Parsing `PoseImageOptions` or `PoseVideoSampling` directly now rejects unknown keys. The package's own functions behave as before.
+- Validation error messages come from zod now.
 
 ## 0.3.0
 
