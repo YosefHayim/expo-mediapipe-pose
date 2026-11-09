@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
-import { it } from "node:test";
-import { inspectPoseTracking } from "../src/core";
-import { poseFrame } from "./fixtures";
+import { it } from "vitest";
+import { inspectPoseTracking } from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 it("distinguishes no pose, absent joints, uncertain joints and complete tracking", () => {
 	const frame = poseFrame();

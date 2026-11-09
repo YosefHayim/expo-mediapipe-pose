@@ -1,6 +1,6 @@
-import type { CameraConfiguration } from "../src/core";
-import { usePoseRule } from "../src/rules/use-pose-rule";
-import { usePoseRules } from "../src/rules/use-pose-rules";
+import type { CameraConfiguration } from "../core";
+import { usePoseRule } from "../rules/use-pose-rule";
+import { usePoseRules } from "../rules/use-pose-rules";
 
 export const RuleTypesHarness = () => {
 	const rules = usePoseRules({

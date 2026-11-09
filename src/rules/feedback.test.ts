@@ -1,13 +1,13 @@
 import { strict as assert } from "node:assert";
-import { it } from "node:test";
+import { it } from "vitest";
 import {
 	composeSkeletonFeedback,
 	createThresholdRule,
 	evaluatePoseRule,
 	evaluatePoseThreshold,
 	type SkeletonOptions,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 it("uses distinct enter/exit boundaries and retains unknown inside the initial band", () => {
 	const below = {

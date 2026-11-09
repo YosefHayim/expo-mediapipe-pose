@@ -1,11 +1,11 @@
 import { strict as assert } from "node:assert";
-import { it } from "node:test";
 import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import type { PoseRuleOptions, PoseRuleStatus } from "../src/core";
-import { usePoseRule } from "../src/rules/use-pose-rule";
-import { poseFrame } from "./fixtures";
+import { it, vi } from "vitest";
+import type { PoseRuleOptions, PoseRuleStatus } from "../core";
+import { poseFrame } from "../testing/fixtures";
+import { usePoseRule } from "./use-pose-rule";
 
 type RuleHarnessProps = PoseRuleOptions<"leftWrist"> & {
 	onRule: (rule: ReturnType<typeof usePoseRule>) => void;
@@ -16,7 +16,7 @@ const RuleHarness = ({ onRule, ...options }: RuleHarnessProps) => {
 	return null;
 };
 
-it("emits transitions once, uses current callbacks, expires stale feedback and resets on pause", async (test) => {
+it("emits transitions once, uses current callbacks, expires stale feedback and resets on pause", async () => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
 	const globalNames = ["window", "document", "IS_REACT_ACT_ENVIRONMENT"];
 	const originalGlobals = globalNames.map((name) => ({
@@ -39,8 +39,8 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 	assert.ok(container);
 	const root = createRoot(container);
 	let now = 1000;
-	test.mock.method(performance, "now", () => now);
-	test.mock.timers.enable({ apis: ["setTimeout"] });
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	const transitions: PoseRuleStatus[] = [];
 	const updatedTransitions: PoseRuleStatus[] = [];
 	let activeRule: ReturnType<typeof usePoseRule> | undefined;
@@ -61,7 +61,7 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 	let frameNumber = 0;
 	const advanceTime = async (elapsed: number) => {
 		now += elapsed;
-		await act(() => test.mock.timers.tick(elapsed));
+		await act(() => vi.advanceTimersByTime(elapsed));
 	};
 	const sendFrame = async (elapsed: number) => {
 		await advanceTime(elapsed);
@@ -118,7 +118,7 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 		assert.equal(getRule().status, "unknown");
 	} finally {
 		await act(() => root.unmount());
-		test.mock.timers.reset();
+		vi.useRealTimers();
 		dom.window.close();
 		for (const { name, descriptor } of originalGlobals) {
 			if (descriptor) {

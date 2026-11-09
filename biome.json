@@ -3,7 +3,7 @@
 	"files": {
 		"includes": [
 			"src/**",
-			"tests/**",
+			"vitest.config.ts",
 			"example/*.ts",
 			"example/*.tsx",
 			"example/*.json",

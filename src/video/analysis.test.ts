@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import * as nodeModule from "node:module";
-import { test } from "node:test";
-import { createVideoSamplePlan, resolvePoseVideoOptions } from "../src/core";
+import { test, vi } from "vitest";
+import { createVideoSamplePlan, resolvePoseVideoOptions } from "../core";
+
+vi.mock("expo", async () => import("../testing/expo-video-stub"));
 
 test("video sampling is bounded, monotonic and excludes the range end", () => {
 	const plan = createVideoSamplePlan(1000, { samplingFps: 30 });
@@ -35,11 +36,6 @@ test("video sampling is bounded, monotonic and excludes the range end", () => {
 });
 
 test("video bridge applies backpressure and closes on completion, break, error and cancellation", async () => {
-	assert.equal(
-		typeof nodeModule.registerHooks,
-		"function",
-		"Contributor tests require Node 24 LTS",
-	);
 	const calls: Array<string | number> = [];
 	let failRead = false;
 	let invalidSession = false;
@@ -82,15 +78,8 @@ test("video bridge applies backpressure and closes on completion, break, error a
 			},
 		},
 	});
-	const moduleURL = new URL("./stubs/expo-video.cjs", import.meta.url).href;
-	const hooks = nodeModule.registerHooks({
-		resolve(specifier, context, next) {
-			if (specifier === "expo") return { url: moduleURL, shortCircuit: true };
-			return next(specifier, context);
-		},
-	});
 	try {
-		const { analyzePoseVideo } = await import("../src/video/native");
+		const { analyzePoseVideo } = await import("./native");
 		const progress: number[] = [];
 		const stream = analyzePoseVideo("/video.mp4", {
 			samplingFps: 2,
@@ -206,21 +195,20 @@ test("video bridge applies backpressure and closes on completion, break, error a
 		await assert.rejects(pending, { name: "AbortError" });
 		assert.equal(opened, false);
 	} finally {
-		hooks.deregister();
 		Reflect.deleteProperty(globalThis, mockKey);
 	}
 });
 
-test("video detections record and replay without inventing camera metadata", async (context) => {
+test("video detections record and replay without inventing camera metadata", async () => {
 	const {
 		createPoseDetectionRecorder,
 		createPoseDetectionReplay,
 		parsePoseDetectionRecording,
 		serializePoseDetectionRecording,
-	} = await import("../src/core");
-	context.mock.timers.enable({ apis: ["setTimeout"] });
+	} = await import("../core");
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	let now = 0;
-	context.mock.method(performance, "now", () => now);
+	vi.spyOn(performance, "now").mockImplementation(() => now);
 	const recorder = createPoseDetectionRecorder({ maxFrames: 2 });
 	const detection = {
 		landmarks: [{ x: 0.5, y: 0.5, z: 0 }],
@@ -257,9 +245,9 @@ test("video detections record and replay without inventing camera metadata", asy
 		},
 	});
 	replay.play();
-	context.mock.timers.tick(0);
+	vi.advanceTimersByTime(0);
 	now = 500;
-	context.mock.timers.tick(500);
+	vi.advanceTimersByTime(500);
 	assert.deepEqual(received, [0.5, 0.1]);
 	assert.equal(replay.state.status, "ended");
 	replay.dispose();

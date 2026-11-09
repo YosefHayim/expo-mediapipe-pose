@@ -1,11 +1,11 @@
 import { strict as assert } from "node:assert";
-import { it } from "node:test";
 import { Schema } from "effect";
+import { it } from "vitest";
 import {
 	getOverlayStaleAfterMs,
 	PosePerformanceMetrics,
 	validateFrameRates,
-} from "../src/core";
+} from "../core";
 
 it("accepts independent rates and rejects invalid public rate settings", () => {
 	validateFrameRates({ frameLimit: 15, previewFps: 60, callbackFps: 5 });

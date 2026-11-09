@@ -1,5 +1,5 @@
 import { strict as assert } from "node:assert";
-import { it } from "node:test";
+import { it } from "vitest";
 import {
 	evaluatePoseRule,
 	getImageDistance,
@@ -9,8 +9,8 @@ import {
 	LANDMARK_NAMES,
 	type Landmark,
 	type PoseMeasurement,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 const measurementValue = (measurement: PoseMeasurement) => {
 	assert.equal(measurement.status, "available");

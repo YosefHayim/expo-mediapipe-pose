@@ -1,13 +1,13 @@
 import { strict as assert } from "node:assert";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import {
 	advancePoseRule,
 	evaluatePoseRule,
 	initialPoseRuleState,
 	type PoseRuleOptions,
 	validatePoseRuleOptions,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 const raisedWrist: PoseRuleOptions<"leftWrist" | "leftShoulder"> = {
 	landmarks: ["leftWrist", "leftShoulder"],

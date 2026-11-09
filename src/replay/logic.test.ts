@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test, vi } from "vitest";
 import {
 	advancePoseRule,
 	createPoseRecorder,
@@ -8,8 +8,8 @@ import {
 	initialPoseRuleState,
 	type PoseReplay,
 	type PoseRuleState,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 function recording() {
 	const recorder = createPoseRecorder();
@@ -26,13 +26,13 @@ function recording() {
 	}
 	return recorder.stop();
 }
-test("replay schedules recorded frames, pauses, changes speed, seeks and disposes", (context) => {
-	context.mock.timers.enable({ apis: ["setTimeout"] });
+test("replay schedules recorded frames, pauses, changes speed, seeks and disposes", () => {
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	let now = 0;
-	context.mock.method(performance, "now", () => now);
+	vi.spyOn(performance, "now").mockImplementation(() => now);
 	const advance = (ms: number) => {
 		now += ms;
-		context.mock.timers.tick(ms);
+		vi.advanceTimersByTime(ms);
 	};
 	const frames: number[] = [];
 	let resets = 0;
@@ -72,10 +72,10 @@ test("replay schedules recorded frames, pauses, changes speed, seeks and dispose
 	assert.equal(frames.length, 4);
 	assert.throws(() => replay.play());
 });
-test("replay honors controls called inside callbacks and isolates returned frames", (context) => {
-	context.mock.timers.enable({ apis: ["setTimeout"] });
+test("replay honors controls called inside callbacks and isolates returned frames", () => {
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	let now = 0;
-	context.mock.method(performance, "now", () => now);
+	vi.spyOn(performance, "now").mockImplementation(() => now);
 	let replay: PoseReplay;
 	const originalX: number[] = [];
 	replay = createPoseReplay(recording(), {
@@ -88,13 +88,13 @@ test("replay honors controls called inside callbacks and isolates returned frame
 		},
 	});
 	replay.play();
-	context.mock.timers.tick(0);
+	vi.advanceTimersByTime(0);
 	now = 1000;
-	context.mock.timers.tick(1000);
+	vi.advanceTimersByTime(1000);
 	assert.equal(originalX.length, 1);
 	replay.reset();
 	replay.play();
-	context.mock.timers.tick(0);
+	vi.advanceTimersByTime(0);
 	assert.deepEqual(originalX, [0.5, 0.5]);
 	for (const speed of [0, -1, 5, NaN])
 		assert.throws(() => replay.setSpeed(speed));
@@ -102,10 +102,10 @@ test("replay honors controls called inside callbacks and isolates returned frame
 		assert.throws(() => replay.seek(position));
 	replay.dispose();
 });
-test("recorded relative time feeds deterministic pure rules without camera initialization", (context) => {
-	context.mock.timers.enable({ apis: ["setTimeout"] });
+test("recorded relative time feeds deterministic pure rules without camera initialization", () => {
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	let now = 0;
-	context.mock.method(performance, "now", () => now);
+	vi.spyOn(performance, "now").mockImplementation(() => now);
 	let state: PoseRuleState = initialPoseRuleState();
 	const replay = createPoseReplay(recording(), {
 		onFrame: (frame, timestamp) => {
@@ -118,19 +118,19 @@ test("recorded relative time feeds deterministic pure rules without camera initi
 		},
 	});
 	replay.play();
-	context.mock.timers.tick(0);
+	vi.advanceTimersByTime(0);
 	now = 100;
-	context.mock.timers.tick(100);
+	vi.advanceTimersByTime(100);
 	assert.equal(state.status, "unknown");
 	now = 250;
-	context.mock.timers.tick(150);
+	vi.advanceTimersByTime(150);
 	assert.equal(state.status, "pass");
 	assert.equal(replay.state.status, "ended");
 });
 
-test("callback failures pause and cancel replay instead of leaving a running controller", (context) => {
-	context.mock.timers.enable({ apis: ["setTimeout"] });
-	context.mock.method(performance, "now", () => 0);
+test("callback failures pause and cancel replay instead of leaving a running controller", () => {
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
+	vi.spyOn(performance, "now").mockImplementation(() => 0);
 	const failure = new Error("consumer callback failed");
 	const replay = createPoseReplay(recording(), {
 		onFrame: () => {
@@ -138,7 +138,7 @@ test("callback failures pause and cancel replay instead of leaving a running con
 		},
 	});
 	replay.play();
-	assert.throws(() => context.mock.timers.tick(0), failure);
+	assert.throws(() => vi.advanceTimersByTime(0), failure);
 	assert.equal(replay.state.status, "paused");
 	replay.dispose();
 	const resetFailure = createPoseReplay(recording(), {
@@ -162,9 +162,9 @@ test("callback failures pause and cancel replay instead of leaving a running con
 	stateFailure.dispose();
 });
 
-test("state callbacks can pause playback without rescheduling or recursive notifications", (context) => {
-	context.mock.timers.enable({ apis: ["setTimeout"] });
-	context.mock.method(performance, "now", () => 0);
+test("state callbacks can pause playback without rescheduling or recursive notifications", () => {
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
+	vi.spyOn(performance, "now").mockImplementation(() => 0);
 	let replay: PoseReplay;
 	let delivered = 0;
 	replay = createPoseReplay(recording(), {
@@ -175,7 +175,7 @@ test("state callbacks can pause playback without rescheduling or recursive notif
 		},
 	});
 	replay.play();
-	context.mock.timers.tick(1000);
+	vi.advanceTimersByTime(1000);
 	assert.equal(delivered, 0);
 	assert.equal(replay.state.status, "paused");
 	replay.dispose();

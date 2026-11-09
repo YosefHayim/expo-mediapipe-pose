@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 import { Schema } from "effect";
+import { test } from "vitest";
 import {
 	createDetectionSkeleton,
 	getNamedLandmarks,
 	PoseDetection,
 	resolvePoseImageOptions,
 	validateLocalFileLocation,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 test("photo analysis validates local inputs and bounded model options", () => {
 	for (const location of ["/cache/image.jpg", "file:///cache/image%20one.jpg"])

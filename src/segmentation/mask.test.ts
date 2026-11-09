@@ -1,15 +1,14 @@
 import assert from "node:assert/strict";
-import * as nodeModule from "node:module";
-import { test } from "node:test";
 import { Schema } from "effect";
+import { test } from "vitest";
 import {
 	createPoseDetectionRecorder,
 	createPoseRecorder,
 	PoseSegmentation,
 	parsePoseRecording,
 	resolvePoseImageOptions,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 const leaseId = "a766dfac-4266-4dac-8de2-e8c9983ce558";
 const segmentation = {
@@ -20,6 +19,8 @@ const segmentation = {
 		{ poseIndex: 0, uri: "file:///cache/mask.png", width: 256, height: 170 },
 	],
 };
+
+vi.mock("expo", async () => import("../testing/expo-video-stub"));
 
 test("segmentation is opt-in and validates bounded mask contracts", () => {
 	assert.equal(resolvePoseImageOptions().segmentationEnabled, false);
@@ -126,22 +127,15 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 			},
 		},
 	});
-	const moduleURL = new URL("./stubs/expo-video.cjs", import.meta.url).href;
-	const hooks = nodeModule.registerHooks({
-		resolve(specifier, context, next) {
-			if (specifier === "expo") return { url: moduleURL, shortCircuit: true };
-			return next(specifier, context);
-		},
-	});
 	try {
 		const { releasePoseSegmentation, discardResultSegmentation } = await import(
-			"../src/segmentation/native"
+			"./native"
 		);
 		await assert.rejects(releasePoseSegmentation("../../file"));
 		assert.deepEqual(calls, []);
 		await discardResultSegmentation({ segmentation: { leaseId: "invalid" } });
 		assert.deepEqual(calls, []);
-		const { analyzePoseImage } = await import("../src/image/native");
+		const { analyzePoseImage } = await import("../image/native");
 		await assert.rejects(analyzePoseImage("/photo.jpg"));
 		assert.deepEqual(calls, [leaseId]);
 		calls.length = 0;
@@ -157,7 +151,7 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 		assert.deepEqual(calls, [leaseId]);
 		releaseFailure = undefined;
 		calls.length = 0;
-		const { analyzePoseVideo } = await import("../src/video/native");
+		const { analyzePoseVideo } = await import("../video/native");
 		const controller = new AbortController();
 		await assert.rejects(
 			analyzePoseVideo("/video.mp4", {
@@ -205,7 +199,6 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 			"Video closes even if mask cleanup fails",
 		);
 	} finally {
-		hooks.deregister();
 		Reflect.deleteProperty(globalThis, nativeKey);
 	}
 });

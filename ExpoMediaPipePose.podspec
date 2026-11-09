@@ -17,5 +17,6 @@ Pod::Spec.new do |s|
   s.dependency 'MediaPipeTasksVision', '0.10.35'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.source_files = 'ios/**/*.swift'
+  s.exclude_files = 'ios/PoseFrameTimingTests.swift'
   s.resource_bundles = { 'ExpoMediaPipePoseModels' => ['assets/*.task'] }
 end

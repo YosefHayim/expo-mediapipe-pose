@@ -1,11 +1,11 @@
 import { strict as assert } from "node:assert";
-import { it } from "node:test";
 import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import type { PoseTrackingOptions, PoseTrackingStatus } from "../src/core";
-import { usePoseTracking } from "../src/tracking/use-pose-tracking";
-import { poseFrame } from "./fixtures";
+import { it, vi } from "vitest";
+import type { PoseTrackingOptions, PoseTrackingStatus } from "../core";
+import { poseFrame } from "../testing/fixtures";
+import { usePoseTracking } from "./use-pose-tracking";
 
 type TrackingHarnessProps = PoseTrackingOptions & {
 	onTracking: (tracking: ReturnType<typeof usePoseTracking>) => void;
@@ -16,7 +16,7 @@ const TrackingHarness = ({ onTracking, ...settings }: TrackingHarnessProps) => {
 	return null;
 };
 
-it("stabilizes tracking, emits transitions once, expires stale input and resets on pause", async (test) => {
+it("stabilizes tracking, emits transitions once, expires stale input and resets on pause", async () => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
 	const globalNames = ["window", "document", "IS_REACT_ACT_ENVIRONMENT"];
 	const originalGlobals = globalNames.map((name) => ({
@@ -39,8 +39,8 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 	assert.ok(container);
 	const root = createRoot(container);
 	let now = 1000;
-	test.mock.method(performance, "now", () => now);
-	test.mock.timers.enable({ apis: ["setTimeout"] });
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	let tracking: ReturnType<typeof usePoseTracking> | undefined;
 	const currentTracking = () => {
 		assert.ok(tracking);
@@ -60,7 +60,7 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 	let frameNumber = 0;
 	const advanceTime = async (elapsed: number) => {
 		now += elapsed;
-		await act(() => test.mock.timers.tick(elapsed));
+		await act(() => vi.advanceTimersByTime(elapsed));
 	};
 	const send = async (elapsed: number, visible = true) => {
 		await advanceTime(elapsed);
@@ -195,7 +195,7 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		await act(() => root.unmount());
 		await advanceTime(1000);
 		assert.equal(transitions.length + latestTransitions.length, callbackCount);
-		test.mock.timers.reset();
+		vi.useRealTimers();
 		dom.window.close();
 		for (const { name, descriptor } of originalGlobals) {
 			if (descriptor) {

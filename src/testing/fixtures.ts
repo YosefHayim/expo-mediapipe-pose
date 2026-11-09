@@ -1,5 +1,5 @@
-import type { PoseFrame } from "../src/core";
-import { LANDMARK_NAMES } from "../src/core";
+import type { PoseFrame } from "../core";
+import { LANDMARK_NAMES } from "../core";
 
 export const poseFrame = (): PoseFrame => ({
 	landmarks: LANDMARK_NAMES.map(() => ({
