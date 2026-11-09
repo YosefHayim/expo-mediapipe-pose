@@ -6,7 +6,7 @@ Breaking: the `effect` peer dependency is removed, and exported schemas are zod 
 
 - Remove the `effect` peer dependency. `zod` is a regular dependency, pinned to 4.6.7.
 - Exported schemas keep their names. Use `.parse` or `.safeParse` instead of Effect's decode functions.
-- `PoseImageOptions` and `PoseVideoSampling` reject unknown keys.
+- Parsing `PoseImageOptions` or `PoseVideoSampling` directly rejects unknown keys. The package's own functions behave as before.
 
 ## 0.3.0
 

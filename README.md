@@ -75,7 +75,7 @@ pnpm exec expo run:ios
 
 - The `effect` package is no longer needed. Remove it from your app.
 - Exported schemas keep their names but are [zod](https://zod.dev/) schemas now. Replace `Schema.decodeUnknownSync(PoseFrame)(value)` with `PoseFrame.parse(value)`, and `Schema.decodeUnknownEither(PoseFrame)(value)` with `PoseFrame.safeParse(value)`.
-- `PoseImageOptions` and `PoseVideoSampling` reject unknown keys instead of ignoring them.
+- Parsing `PoseImageOptions` or `PoseVideoSampling` directly now rejects unknown keys. The package's own functions behave as before.
 - Validation error messages come from zod now.
 
 ## Show a pose camera
