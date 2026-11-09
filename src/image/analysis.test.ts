@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { Schema } from "effect";
 import { describe, test } from "vitest";
 import {
 	createDetectionSkeleton,
@@ -63,7 +62,7 @@ describe("resolvePoseImageOptions", () => {
 describe("PoseDetection", () => {
 	test("media detections support geometry and skeletons without camera metadata", () => {
 		const { landmarks, worldLandmarks, additionalData } = poseFrame();
-		const detection = Schema.decodeUnknownSync(PoseDetection)({
+		const detection = PoseDetection.parse({
 			additionalData,
 			landmarks,
 			worldLandmarks,

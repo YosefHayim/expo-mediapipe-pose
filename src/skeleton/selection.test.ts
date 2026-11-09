@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { Schema } from "effect";
 import { describe, test, vi } from "vitest";
 import {
 	createPoseRecorder,
@@ -35,18 +34,18 @@ describe("MaxPoses", () => {
 	test("pose-count contracts enforce bounded requests and results", () => {
 		assert.equal(resolvePoseImageOptions().maxPoses, 1);
 		for (const value of [0, 7, 1.5, NaN])
-			assert.throws(() => Schema.decodeUnknownSync(MaxPoses)(value));
+			assert.throws(() => MaxPoses.parse(value));
 
 		const frame = multiplePoses();
-		assert.equal(Schema.decodeUnknownSync(PoseFrame)(frame).poses?.length, 2);
+		assert.equal(PoseFrame.parse(frame).poses?.length, 2);
 		assert.throws(() =>
-			Schema.decodeUnknownSync(PoseFrame)({
+			PoseFrame.parse({
 				...frame,
 				poses: Array(7).fill(frame.poses?.[0]),
 			}),
 		);
 		assert.throws(() =>
-			Schema.decodeUnknownSync(PoseFrame)({
+			PoseFrame.parse({
 				...frame,
 				poses: [
 					{ landmarks: Array(34).fill(frame.landmarks[0]), worldLandmarks: [] },

@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
-import { Schema } from "effect";
 import { describe, test } from "vitest";
 import { CameraCapabilities, findCameraCapability } from "../core";
 
-const decode = Schema.decodeUnknownSync(CameraCapabilities);
+const decode = (value: unknown) => CameraCapabilities.parse(value);
 
 describe("findCameraCapability", () => {
 	test("discovery retains format relationships and only resolves selectable lenses", () => {
