@@ -1,29 +1,34 @@
-import { Schema } from "effect";
-import { PoseFrame } from "../contracts";
-import { PoseDetection } from "../image/analysis";
+import { z } from "zod";
+import { createPoseFrameFields, type PoseFrame } from "../contracts";
+import {
+	createPoseDetectionFields,
+	type PoseDetection,
+} from "../image/analysis";
 
 const maximumFrames = 10_000;
 const maximumJsonCharacters = 64 * 1024 * 1024;
-const RecordedFrame = PoseFrame.pipe(Schema.omit("segmentation")).pipe(
-	Schema.filter(
+const RecordedFrame = z
+	.strictObject(createPoseFrameFields(true))
+	.refine(
 		(frame) =>
 			frame.landmarks.length <= 33 && frame.worldLandmarks.length <= 33,
-	),
-);
-function recordingSchema<Frame, Encoded>(frame: Schema.Schema<Frame, Encoded>) {
-	return Schema.Struct({
-		version: Schema.Literal(1),
-		frames: Schema.Array(
-			Schema.Struct({
-				timestampMs: Schema.Number.pipe(
-					Schema.finite(),
-					Schema.between(0, 86_400_000),
-				),
-				frame,
-			}),
-		).pipe(Schema.maxItems(maximumFrames)),
-	}).pipe(
-		Schema.filter((recording) => {
+	);
+function recordingSchema<FrameSchema extends z.ZodType>(
+	frameSchema: FrameSchema,
+) {
+	return z
+		.strictObject({
+			version: z.literal(1),
+			frames: z
+				.array(
+					z.strictObject({
+						timestampMs: z.number().min(0).max(86_400_000),
+						frame: frameSchema,
+					}),
+				)
+				.max(maximumFrames),
+		})
+		.refine((recording) => {
 			if (recording.frames.length === 0) return true;
 			if (recording.frames[0]?.timestampMs !== 0) return false;
 			return recording.frames.every((entry, index) => {
@@ -33,33 +38,26 @@ function recordingSchema<Frame, Encoded>(frame: Schema.Schema<Frame, Encoded>) {
 					previous !== undefined && entry.timestampMs > previous.timestampMs
 				);
 			});
-		}),
-	);
+		});
 }
 export const PoseRecording = recordingSchema(RecordedFrame);
-export type PoseRecording = Schema.Schema.Type<typeof PoseRecording>;
-const decodeRecording = Schema.decodeUnknownSync(PoseRecording, {
-	onExcessProperty: "error",
-});
+export type PoseRecording = z.infer<typeof PoseRecording>;
 function withoutSegmentation(value: unknown): unknown {
 	if (typeof value !== "object" || value === null) return value;
 	if (!("segmentation" in value)) return value;
 	const { segmentation: _segmentation, ...landmarks } = value;
 	return landmarks;
 }
-const decodeRecordedFrame = Schema.decodeUnknownSync(RecordedFrame, {
-	onExcessProperty: "error",
-});
 const decodeFrame = (value: unknown) =>
-	decodeRecordedFrame(withoutSegmentation(value));
+	RecordedFrame.parse(withoutSegmentation(value));
 
 export function parsePoseRecording(json: string): PoseRecording {
 	if (json.length > maximumJsonCharacters)
 		throw new RangeError("Recording JSON exceeds 64 Mi characters");
-	return decodeRecording(JSON.parse(json));
+	return PoseRecording.parse(JSON.parse(json));
 }
 export function serializePoseRecording(recording: PoseRecording): string {
-	const json = JSON.stringify(decodeRecording(recording));
+	const json = JSON.stringify(PoseRecording.parse(recording));
 	if (json.length > maximumJsonCharacters)
 		throw new RangeError("Recording JSON exceeds 64 Mi characters");
 	return json;
@@ -138,27 +136,18 @@ function createRecorder<Frame, Recording>(
 	};
 }
 
-const RecordedDetection = PoseDetection.pipe(Schema.omit("segmentation")).pipe(
-	Schema.filter(
+const RecordedDetection = z
+	.strictObject(createPoseDetectionFields(true))
+	.refine(
 		(frame) =>
 			frame.landmarks.length <= 33 && frame.worldLandmarks.length <= 33,
-	),
-);
+	);
 export const PoseDetectionRecording = recordingSchema(RecordedDetection);
-const decodeRecordedDetection = Schema.decodeUnknownSync(RecordedDetection, {
-	onExcessProperty: "error",
-});
-export type PoseDetectionRecording = Schema.Schema.Type<
-	typeof PoseDetectionRecording
->;
-const decodeDetectionRecording = Schema.decodeUnknownSync(
-	PoseDetectionRecording,
-	{ onExcessProperty: "error" },
-);
+export type PoseDetectionRecording = z.infer<typeof PoseDetectionRecording>;
 export function serializePoseDetectionRecording(
 	recording: PoseDetectionRecording,
 ): string {
-	const json = JSON.stringify(decodeDetectionRecording(recording));
+	const json = JSON.stringify(PoseDetectionRecording.parse(recording));
 	if (json.length > maximumJsonCharacters)
 		throw new RangeError("Recording JSON exceeds 64 Mi characters");
 	return json;
@@ -168,7 +157,7 @@ export function parsePoseDetectionRecording(
 ): PoseDetectionRecording {
 	if (json.length > maximumJsonCharacters)
 		throw new RangeError("Recording JSON exceeds 64 Mi characters");
-	return decodeDetectionRecording(JSON.parse(json));
+	return PoseDetectionRecording.parse(JSON.parse(json));
 }
 export function copyPoseDetectionRecording(
 	recording: PoseDetectionRecording,
@@ -182,7 +171,7 @@ export function createPoseDetectionRecorder(
 ) {
 	return createRecorder<PoseDetection, PoseDetectionRecording>(
 		options,
-		(value) => decodeRecordedDetection(withoutSegmentation(value)),
+		(value) => RecordedDetection.parse(withoutSegmentation(value)),
 		copyPoseDetectionRecording,
 	);
 }

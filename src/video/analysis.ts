@@ -1,45 +1,31 @@
-import { Schema } from "effect";
+import { z } from "zod";
 import {
 	PoseDetection,
 	type PoseImageOptions,
 	resolvePoseImageOptions,
 } from "../image/analysis";
 
-const Milliseconds = Schema.Number.pipe(
-	Schema.int(),
-	Schema.between(0, 86_400_000),
-);
-export const PoseVideoSampling = Schema.Struct({
-	samplingFps: Schema.optionalWith(
-		Schema.Number.pipe(Schema.int(), Schema.between(1, 60)),
-		{ default: () => 5 },
-	),
-	startMs: Schema.optionalWith(Milliseconds, { default: () => 0 }),
-	endMs: Schema.optional(Milliseconds),
-	maxFrames: Schema.optionalWith(
-		Schema.Number.pipe(Schema.int(), Schema.between(1, 10_000)),
-		{ default: () => 1000 },
-	),
-	minTrackingConfidence: Schema.optionalWith(
-		Schema.Number.pipe(Schema.finite(), Schema.between(0, 1)),
-		{ default: () => 0.35 },
-	),
+const Milliseconds = z.number().int().min(0).max(86_400_000);
+export const PoseVideoSampling = z.strictObject({
+	samplingFps: z.number().int().min(1).max(60).default(5),
+	startMs: Milliseconds.default(0),
+	endMs: Milliseconds.optional(),
+	maxFrames: z.number().int().min(1).max(10_000).default(1000),
+	minTrackingConfidence: z.number().min(0).max(1).default(0.35),
 });
-export const PoseVideoFrame = Schema.Struct({
+export const PoseVideoFrame = z.object({
 	timestampMs: Milliseconds,
-	decodedTimestampMs: Schema.NullOr(
-		Schema.Number.pipe(Schema.finite(), Schema.nonNegative()),
-	),
+	decodedTimestampMs: z.number().nonnegative().nullable(),
 	detection: PoseDetection,
 });
-export type PoseVideoFrame = Schema.Schema.Type<typeof PoseVideoFrame>;
+export type PoseVideoFrame = z.infer<typeof PoseVideoFrame>;
 export interface PoseVideoProgress {
 	completedFrames: number;
 	totalFrames: number;
 	timestampMs: number;
 }
 export type PoseVideoOptions = PoseImageOptions &
-	Schema.Schema.Encoded<typeof PoseVideoSampling> & {
+	z.input<typeof PoseVideoSampling> & {
 		signal?: AbortSignal;
 		onProgress?: (progress: PoseVideoProgress) => void;
 	};
@@ -54,7 +40,7 @@ export function resolvePoseVideoOptions(options: PoseVideoOptions = {}) {
 		onProgress,
 		...image
 	} = options;
-	const sampling = Schema.decodeUnknownSync(PoseVideoSampling)({
+	const sampling = PoseVideoSampling.parse({
 		samplingFps,
 		startMs,
 		endMs,
@@ -70,13 +56,11 @@ export function resolvePoseVideoOptions(options: PoseVideoOptions = {}) {
 }
 export function createVideoSamplePlan(
 	durationMs: number,
-	options: Schema.Schema.Encoded<typeof PoseVideoSampling> = {},
+	options: z.input<typeof PoseVideoSampling> = {},
 ) {
 	if (!Number.isFinite(durationMs) || durationMs <= 0)
 		throw new RangeError("Video duration must be finite and positive");
-	const sampling = Schema.decodeUnknownSync(PoseVideoSampling, {
-		onExcessProperty: "error",
-	})(options);
+	const sampling = PoseVideoSampling.parse(options);
 	const endMs = sampling.endMs ?? durationMs;
 	if (endMs > durationMs || endMs > 86_400_000)
 		throw new RangeError(

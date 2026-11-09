@@ -1,5 +1,5 @@
-import { Schema } from "effect";
 import { requireNativeModule } from "expo";
+import { z } from "zod";
 import { validateLocalFileLocation } from "../image/analysis";
 import { discardResultSegmentation } from "../segmentation/native";
 import {
@@ -9,12 +9,11 @@ import {
 	resolvePoseVideoOptions,
 } from "./analysis";
 
-const VideoHandle = Schema.Struct({
-	id: Schema.String.pipe(Schema.nonEmptyString()),
+const VideoHandle = z.object({
+	id: z.string().min(1),
 });
-const VideoSession = Schema.Struct({
-	...VideoHandle.fields,
-	durationMs: Schema.Number.pipe(Schema.finite(), Schema.positive()),
+const VideoSession = VideoHandle.extend({
+	durationMs: z.number().positive(),
 });
 interface NativeVideoAnalysis {
 	openPoseVideo(
@@ -65,7 +64,7 @@ export async function* analyzePoseVideo(
 		image,
 		sampling.minTrackingConfidence,
 	);
-	const handle = Schema.decodeUnknownSync(VideoHandle)(rawSession);
+	const handle = VideoHandle.parse(rawSession);
 	let closing: Promise<void> | undefined;
 	const close = () => {
 		closing ??= native.closePoseVideo(handle.id);
@@ -79,7 +78,7 @@ export async function* analyzePoseVideo(
 	const failures: unknown[] = [];
 	let undelivered: unknown;
 	try {
-		const session = Schema.decodeUnknownSync(VideoSession)(rawSession);
+		const session = VideoSession.parse(rawSession);
 		throwIfAborted(signal);
 		const plan = createVideoSamplePlan(session.durationMs, sampling);
 		for (let index = 0; index < plan.frameCount; index += 1) {
@@ -87,7 +86,7 @@ export async function* analyzePoseVideo(
 			const timestampMs = plan.timestampAt(index);
 			const rawFrame = await native.readPoseVideoFrame(session.id, timestampMs);
 			undelivered = videoDetection(rawFrame);
-			const frame = Schema.decodeUnknownSync(PoseVideoFrame)(rawFrame);
+			const frame = PoseVideoFrame.parse(rawFrame);
 			throwIfAborted(signal);
 			if (frame.timestampMs !== timestampMs)
 				throw new Error(

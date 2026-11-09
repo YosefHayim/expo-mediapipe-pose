@@ -1,4 +1,3 @@
-import { Schema } from "effect";
 import { requireNativeModule } from "expo";
 import { discardResultSegmentation } from "../segmentation/native";
 import {
@@ -22,7 +21,7 @@ export async function analyzePoseImage(
 	}>("ExpoMediaPipePose");
 	const result = await native.analyzePoseImage(location, resolved);
 	try {
-		return Schema.decodeUnknownSync(PoseDetection)(result);
+		return PoseDetection.parse(result);
 	} catch (error) {
 		try {
 			await discardResultSegmentation(result);

@@ -1,37 +1,43 @@
-import { Schema } from "effect";
-import { CameraFacing, type CameraLens } from "../contracts";
+import { z } from "zod";
+import {
+	CameraFacing,
+	type CameraLens,
+	CameraLensWithoutAuto,
+} from "../contracts";
 
-const Zoom = Schema.Number.pipe(Schema.finite(), Schema.between(1, 100));
-const ZoomRange = Schema.Struct({ min: Zoom, max: Zoom }).pipe(
-	Schema.filter((range) => range.min <= range.max),
-);
-const Resolution = Schema.Struct({
-	width: Schema.Number.pipe(Schema.int(), Schema.positive()),
-	height: Schema.Number.pipe(Schema.int(), Schema.positive()),
+const Zoom = z.number().min(1).max(100);
+const ZoomRange = z
+	.object({ min: Zoom, max: Zoom })
+	.refine((range) => range.min <= range.max);
+const Resolution = z.object({
+	width: z.number().int().positive(),
+	height: z.number().int().positive(),
 });
-export const CameraCapability = Schema.Struct({
+export const CameraCapability = z.object({
 	facing: CameraFacing,
-	lens: Schema.Literal("wide", "ultraWide"),
-	zoomRange: Schema.NullOr(ZoomRange),
-	modes: Schema.NonEmptyArray(
-		Schema.Struct({
-			previewFps: Schema.Number.pipe(Schema.int(), Schema.between(1, 60)),
-			resolution: Schema.NullOr(Resolution),
-		}),
-	),
+	lens: CameraLensWithoutAuto,
+	zoomRange: ZoomRange.nullable(),
+	modes: z
+		.array(
+			z.object({
+				previewFps: z.number().int().min(1).max(60),
+				resolution: Resolution.nullable(),
+			}),
+		)
+		.nonempty(),
 });
-export type CameraCapability = Schema.Schema.Type<typeof CameraCapability>;
-export const CameraCapabilities = Schema.Union(
-	Schema.Struct({
-		status: Schema.Literal("permissionRequired", "unavailable"),
+export type CameraCapability = z.infer<typeof CameraCapability>;
+export const CameraCapabilities = z.union([
+	z.object({
+		status: z.enum(["permissionRequired", "unavailable"]),
 	}),
-	Schema.Struct({
-		status: Schema.Literal("available"),
-		platform: Schema.Literal("ios", "android"),
-		cameras: Schema.NonEmptyArray(CameraCapability),
+	z.object({
+		status: z.literal("available"),
+		platform: z.enum(["ios", "android"]),
+		cameras: z.array(CameraCapability).nonempty(),
 	}),
-);
-export type CameraCapabilities = Schema.Schema.Type<typeof CameraCapabilities>;
+]);
+export type CameraCapabilities = z.infer<typeof CameraCapabilities>;
 
 export function findCameraCapability(
 	capabilities: CameraCapabilities,

@@ -1,4 +1,3 @@
-import { Schema } from "effect";
 import { requireNativeModule } from "expo";
 import { CameraCapabilities } from "./capabilities";
 
@@ -6,7 +5,6 @@ export async function getCameraCapabilities(): Promise<CameraCapabilities> {
 	const native = requireNativeModule<{
 		getCameraCapabilities(): Promise<unknown>;
 	}>("ExpoMediaPipePose");
-	return Schema.decodeUnknownSync(CameraCapabilities)(
-		await native.getCameraCapabilities(),
-	);
+	const capabilitiesReply = await native.getCameraCapabilities();
+	return CameraCapabilities.parse(capabilitiesReply);
 }

@@ -1,48 +1,66 @@
-import { Schema } from "effect";
+import { z } from "zod";
 import { PoseSegmentation } from "./segmentation/mask";
 
-const Finite = Schema.Number.pipe(Schema.finite());
-const Confidence = Finite.pipe(Schema.between(0, 1));
-const Positive = Finite.pipe(Schema.positive());
-const NonNegative = Finite.pipe(Schema.nonNegative());
+// zod numbers already reject NaN and Infinity, which is what Effect's finite() added.
+const Finite = z.number();
+const Confidence = Finite.min(0).max(1);
+const Positive = Finite.positive();
+const NonNegative = Finite.nonnegative();
 
-export const CameraFacing = Schema.Literal("front", "back");
-export const CameraLens = Schema.Literal("auto", "wide", "ultraWide");
-export type CameraFacing = Schema.Schema.Type<typeof CameraFacing>;
-export type CameraLens = Schema.Schema.Type<typeof CameraLens>;
-export const ModelVariant = Schema.Literal("lite", "full", "heavy");
+// Live native results drop unknown keys (zod's default). Recording files reject them at every depth.
+export const createObjectSchema = <Fields extends z.ZodRawShape>(
+	fields: Fields,
+	isStrict: boolean,
+) => (isStrict ? z.strictObject(fields) : z.object(fields));
 
-export const Landmark = Schema.mutable(
-	Schema.Struct({
-		x: Finite,
-		y: Finite,
-		z: Finite,
-		visibility: Schema.optional(Confidence),
-		presence: Schema.optional(Confidence),
-	}),
-);
+export const CameraFacing = z.enum(["front", "back"]);
+export const CameraLens = z.enum(["auto", "wide", "ultraWide"]);
+export const CameraLensWithoutAuto = z.enum(["wide", "ultraWide"]);
+export type CameraFacing = z.infer<typeof CameraFacing>;
+export type CameraLens = z.infer<typeof CameraLens>;
+export const ModelVariant = z.enum(["lite", "full", "heavy"]);
 
-export const MaxPoses = Schema.Number.pipe(Schema.int(), Schema.between(1, 6));
-export const PoseLandmarks = Schema.Struct({
-	landmarks: Schema.mutable(Schema.Array(Landmark).pipe(Schema.maxItems(33))),
-	worldLandmarks: Schema.mutable(
-		Schema.Array(Landmark).pipe(Schema.maxItems(33)),
-	),
-});
-export type PoseLandmarks = Schema.Schema.Type<typeof PoseLandmarks>;
-export const PoseResults = Schema.Array(PoseLandmarks).pipe(Schema.maxItems(6));
+export const createLandmarkSchema = (isStrict: boolean) =>
+	createObjectSchema(
+		{
+			x: Finite,
+			y: Finite,
+			z: Finite,
+			visibility: Confidence.optional(),
+			presence: Confidence.optional(),
+		},
+		isStrict,
+	);
+export const Landmark = createLandmarkSchema(false);
+export type Landmark = z.infer<typeof Landmark>;
 
-export const CameraConfiguration = Schema.Struct({
+export const MaxPoses = z.number().int().min(1).max(6);
+const createPoseLandmarksSchema = (isStrict: boolean) =>
+	createObjectSchema(
+		{
+			landmarks: z.array(createLandmarkSchema(isStrict)).max(33),
+			worldLandmarks: z.array(createLandmarkSchema(isStrict)).max(33),
+		},
+		isStrict,
+	);
+export const PoseLandmarks = createPoseLandmarksSchema(false);
+export type PoseLandmarks = z.infer<typeof PoseLandmarks>;
+export const createPoseResultsSchema = (isStrict: boolean) =>
+	z.array(createPoseLandmarksSchema(isStrict)).max(6);
+export const PoseResults = createPoseResultsSchema(false);
+
+export const CameraConfiguration = z.object({
 	effectiveFacing: CameraFacing,
-	effectiveLens: Schema.Literal("wide", "ultraWide"),
-	appliedZoomFactor: Finite.pipe(Schema.between(1, 100)),
-	mirrored: Schema.Boolean,
+	effectiveLens: CameraLensWithoutAuto,
+	appliedZoomFactor: Finite.min(1).max(100),
+	mirrored: z.boolean(),
 	captureWidth: Positive,
 	captureHeight: Positive,
 });
+export type CameraConfiguration = z.infer<typeof CameraConfiguration>;
 
-export const InferenceError = Schema.Struct({
-	code: Schema.Literal(
+export const InferenceError = z.object({
+	code: z.enum([
 		"cameraConfiguration",
 		"cameraPermission",
 		"cameraRuntime",
@@ -51,57 +69,57 @@ export const InferenceError = Schema.Struct({
 		"nativeViewInitialization",
 		"invalidNativeEvent",
 		"segmentationCleanup",
-	),
+	]),
 });
+export type InferenceError = z.infer<typeof InferenceError>;
 
-export const PosePerformanceMetrics = Schema.Struct({
+export const PosePerformanceMetrics = z.object({
 	intervalMs: Positive,
-	observedFrames: NonNegative.pipe(Schema.int()),
-	inferenceCount: NonNegative.pipe(Schema.int()),
-	resultCount: NonNegative.pipe(Schema.int()),
-	skippedInferenceFrames: NonNegative.pipe(Schema.int()),
+	observedFrames: NonNegative.int(),
+	inferenceCount: NonNegative.int(),
+	resultCount: NonNegative.int(),
+	skippedInferenceFrames: NonNegative.int(),
 	observedFps: NonNegative,
 	inferenceFps: NonNegative,
 	resultFps: NonNegative,
-	averageInferenceDurationMs: Schema.NullOr(NonNegative),
+	averageInferenceDurationMs: NonNegative.nullable(),
 });
-export type PosePerformanceMetrics = Schema.Schema.Type<
-	typeof PosePerformanceMetrics
->;
+export type PosePerformanceMetrics = z.infer<typeof PosePerformanceMetrics>;
 
-export const PoseFrame = Schema.Struct({
-	segmentation: Schema.optional(PoseSegmentation),
-	poses: Schema.optional(PoseResults),
-	landmarks: Schema.mutable(Schema.Array(Landmark)),
-	worldLandmarks: Schema.mutable(Schema.Array(Landmark)),
-	additionalData: Schema.Struct({
-		width: Positive,
-		height: Positive,
-		cameraFacing: CameraFacing,
-		cameraLens: Schema.Literal("wide", "ultraWide"),
-		cameraMirrored: Schema.Boolean,
-		cameraZoomFactor: Finite.pipe(Schema.between(1, 100)),
-		receivedAtMs: NonNegative,
-		frameNumber: NonNegative.pipe(Schema.int()),
-		inferenceDurationMs: NonNegative,
-		luminance: Confidence,
-		poseCount: NonNegative.pipe(Schema.int()),
-		poseModelDelegate: Schema.Literal("CPU", "GPU"),
-		poseModelSource: Schema.Literal("bundled", "local"),
-		poseModelVariant: ModelVariant,
-		thermalState: Schema.Literal(
-			"nominal",
-			"fair",
-			"serious",
-			"critical",
-			"unknown",
-		),
-	}),
+// Shared by PoseFrame and the strict recording schema, which drops `segmentation` first.
+export const createPoseFrameFields = (isStrict: boolean) => ({
+	poses: createPoseResultsSchema(isStrict).optional(),
+	landmarks: z.array(createLandmarkSchema(isStrict)),
+	worldLandmarks: z.array(createLandmarkSchema(isStrict)),
+	additionalData: createObjectSchema(
+		{
+			width: Positive,
+			height: Positive,
+			cameraFacing: CameraFacing,
+			cameraLens: CameraLensWithoutAuto,
+			cameraMirrored: z.boolean(),
+			cameraZoomFactor: Finite.min(1).max(100),
+			receivedAtMs: NonNegative,
+			frameNumber: NonNegative.int(),
+			inferenceDurationMs: NonNegative,
+			luminance: Confidence,
+			poseCount: NonNegative.int(),
+			poseModelDelegate: z.enum(["CPU", "GPU"]),
+			poseModelSource: z.enum(["bundled", "local"]),
+			poseModelVariant: ModelVariant,
+			thermalState: z.enum([
+				"nominal",
+				"fair",
+				"serious",
+				"critical",
+				"unknown",
+			]),
+		},
+		isStrict,
+	),
 });
-
-export type PoseFrame = Schema.Schema.Type<typeof PoseFrame>;
-export type Landmark = Schema.Schema.Type<typeof Landmark>;
-export type CameraConfiguration = Schema.Schema.Type<
-	typeof CameraConfiguration
->;
-export type InferenceError = Schema.Schema.Type<typeof InferenceError>;
+export const PoseFrame = z.object({
+	segmentation: PoseSegmentation.optional(),
+	...createPoseFrameFields(false),
+});
+export type PoseFrame = z.infer<typeof PoseFrame>;

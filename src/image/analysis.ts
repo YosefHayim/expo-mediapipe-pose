@@ -1,53 +1,52 @@
-import { Schema } from "effect";
-import { Landmark, MaxPoses, ModelVariant, PoseResults } from "../contracts";
-
+import { z } from "zod";
+import {
+	createLandmarkSchema,
+	createObjectSchema,
+	createPoseResultsSchema,
+	MaxPoses,
+	ModelVariant,
+} from "../contracts";
 import { MaskMaxDimension, PoseSegmentation } from "../segmentation/mask";
 
-const Confidence = Schema.Number.pipe(Schema.finite(), Schema.between(0, 1));
-export const PoseImageOptions = Schema.Struct({
-	segmentationEnabled: Schema.optionalWith(Schema.Boolean, {
-		default: () => false,
-	}),
-	maskMaxDimension: Schema.optionalWith(MaskMaxDimension, {
-		default: () => 256,
-	}),
-	maxPoses: Schema.optionalWith(MaxPoses, { default: () => 1 }),
-	modelVariant: Schema.optionalWith(ModelVariant, {
-		default: () => "full" as const,
-	}),
-	modelPath: Schema.optional(Schema.String),
-	maxImageDimension: Schema.optionalWith(
-		Schema.Number.pipe(Schema.int(), Schema.between(256, 2048)),
-		{ default: () => 2048 },
-	),
-	minPoseDetectionConfidence: Schema.optionalWith(Confidence, {
-		default: () => 0.35,
-	}),
-	minPosePresenceConfidence: Schema.optionalWith(Confidence, {
-		default: () => 0.35,
-	}),
+const Confidence = z.number().min(0).max(1);
+export const PoseImageOptions = z.strictObject({
+	segmentationEnabled: z.boolean().default(false),
+	maskMaxDimension: MaskMaxDimension.default(256),
+	maxPoses: MaxPoses.default(1),
+	modelVariant: ModelVariant.default("full"),
+	modelPath: z.string().optional(),
+	maxImageDimension: z.number().int().min(256).max(2048).default(2048),
+	minPoseDetectionConfidence: Confidence.default(0.35),
+	minPosePresenceConfidence: Confidence.default(0.35),
 });
-export type PoseImageOptions = Schema.Schema.Encoded<typeof PoseImageOptions>;
-export const PoseDetection = Schema.Struct({
-	segmentation: Schema.optional(PoseSegmentation),
-	poses: Schema.optional(PoseResults),
-	landmarks: Schema.mutable(Schema.Array(Landmark)),
-	worldLandmarks: Schema.mutable(Schema.Array(Landmark)),
-	imageSize: Schema.Struct({
-		width: Schema.Number.pipe(Schema.int(), Schema.positive()),
-		height: Schema.Number.pipe(Schema.int(), Schema.positive()),
-	}),
-	inferenceDurationMs: Schema.Number.pipe(
-		Schema.finite(),
-		Schema.nonNegative(),
+export type PoseImageOptions = z.input<typeof PoseImageOptions>;
+// Shared by PoseDetection and the strict detection recording schema, which drops `segmentation` first.
+export const createPoseDetectionFields = (isStrict: boolean) => ({
+	poses: createPoseResultsSchema(isStrict).optional(),
+	landmarks: z.array(createLandmarkSchema(isStrict)),
+	worldLandmarks: z.array(createLandmarkSchema(isStrict)),
+	imageSize: createObjectSchema(
+		{
+			width: z.number().int().positive(),
+			height: z.number().int().positive(),
+		},
+		isStrict,
 	),
-	model: Schema.Struct({
-		variant: ModelVariant,
-		source: Schema.Literal("bundled", "local"),
-		delegate: Schema.Literal("CPU", "GPU"),
-	}),
+	inferenceDurationMs: z.number().nonnegative(),
+	model: createObjectSchema(
+		{
+			variant: ModelVariant,
+			source: z.enum(["bundled", "local"]),
+			delegate: z.enum(["CPU", "GPU"]),
+		},
+		isStrict,
+	),
 });
-export type PoseDetection = Schema.Schema.Type<typeof PoseDetection>;
+export const PoseDetection = z.object({
+	segmentation: PoseSegmentation.optional(),
+	...createPoseDetectionFields(false),
+});
+export type PoseDetection = z.infer<typeof PoseDetection>;
 
 export function validateLocalFileLocation(location: string): void {
 	if (location.includes("\0"))
@@ -64,9 +63,7 @@ export function validateLocalFileLocation(location: string): void {
 		);
 }
 export function resolvePoseImageOptions(options: PoseImageOptions = {}) {
-	const resolved = Schema.decodeUnknownSync(PoseImageOptions, {
-		onExcessProperty: "error",
-	})(options);
+	const resolved = PoseImageOptions.parse(options);
 	if (resolved.modelPath !== undefined)
 		validateLocalFileLocation(resolved.modelPath);
 	if (resolved.modelVariant !== "full" && resolved.modelPath === undefined)
