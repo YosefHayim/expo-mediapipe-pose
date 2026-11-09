@@ -9,6 +9,7 @@ Breaking: the `effect` peer dependency is removed, and exported schemas are zod 
 - Parsing `PoseImageOptions` or `PoseVideoSampling` directly now rejects unknown keys. The package's own functions behave as before.
 - Validation error messages come from zod now.
 - Target Expo SDK 58 (React Native 0.88, React 19.3). The peer ranges add Expo SDK 58 and React Native 0.88 and keep Expo SDK 57 and React Native 0.86, since the native code needs no SDK 58 API.
+- Update MediaPipe Tasks native pins: iOS `MediaPipeTasksVision` 1.0.0 (latest CocoaPods release) and Android `tasks-vision` 1.2.2 (latest Maven 1.x). The pose landmarker API used by the Swift and Kotlin code is unchanged in these releases.
 
 ## 0.3.0
 
