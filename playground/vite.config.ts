@@ -11,6 +11,7 @@ export default defineConfig(({ command }) => ({
 	base: "/expo-mediapipe-pose/",
 	resolve: {
 		alias: {
+			"@": fileURLToPath(new URL("./src", import.meta.url)),
 			"expo-mediapipe-pose/core": fileURLToPath(
 				new URL("../src/core.ts", import.meta.url),
 			),
