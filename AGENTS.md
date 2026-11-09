@@ -37,7 +37,7 @@ pnpm verify:package
 git diff --check
 ```
 
-`pnpm check` is the one gate: lint (Biome and knip), typecheck, test and build through Turborepo. The pre-commit hook only runs Biome on staged files. After changes to `ios/PoseFrameTiming.swift` or `tests/native/`, run `pnpm test:swift` on a Mac.
+`pnpm check` is the one gate: lint (Biome and knip), typecheck, test and build through Turborepo. The pre-commit hook only runs Biome on staged files. `pnpm test` also runs the Swift frame-timing tests (`pnpm test:swift`) on macOS and skips them on other systems, so Linux CI still passes.
 
 Use `pnpm lint:fix` for Biome formatting and import order. Format Swift with `xcrun swift-format format --in-place ios/*.swift`. After native changes, generate the example with `pnpm --filter pose-camera-example exec expo prebuild`, then build iOS with `pnpm --filter pose-camera-example ios` and Android with `pnpm --filter pose-camera-example android` (or the Gradle commands in `.github/workflows/check.yml`). Generated native projects and `scripts/dev/` artifacts stay untracked.
 

@@ -8,6 +8,7 @@
 				"src/core.ts",
 				"tests/*.test.ts",
 				"tests/ruleTypes.ts",
+				"scripts/swift-tests.mjs",
 				"scripts/verify-package.mjs"
 			]
 		},
