@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { Either, Schema } from "effect";
-import { describe, it } from "vitest";
+import { describe, test } from "vitest";
 
 import { CameraConfiguration, InferenceError, PoseFrame } from "./contracts";
 
@@ -22,29 +22,31 @@ const frameMetadata = {
 	thermalState: "nominal",
 };
 
-describe("Pose camera wire contracts", () => {
-	it("delivers an empty detection without confusing it with a camera failure", () => {
+describe("PoseFrame", () => {
+	test("delivers an empty detection without confusing it with a camera failure", () => {
 		const frame = Schema.decodeUnknownSync(PoseFrame)({
 			landmarks: [],
 			worldLandmarks: [],
 			additionalData: frameMetadata,
 		});
+
 		assert.deepEqual(frame.landmarks, []);
 		assert.equal(frame.additionalData.poseCount, 0);
 	});
 
-	it("preserves offscreen coordinates and optional joint confidence for scoring", () => {
+	test("preserves offscreen coordinates and optional joint confidence for scoring", () => {
 		const joint = { x: -0.2, y: 1.2, z: -0.5, visibility: 0.35 };
 		const frame = Schema.decodeUnknownSync(PoseFrame)({
 			landmarks: [joint],
 			worldLandmarks: [joint],
 			additionalData: { ...frameMetadata, poseCount: 1 },
 		});
+
 		assert.deepEqual(frame.landmarks[0], joint);
 		assert.equal(Object.hasOwn(frame.landmarks[0] ?? {}, "presence"), false);
 	});
 
-	it("rejects non-finite coordinates and invalid confidence before scoring", () => {
+	test("rejects non-finite coordinates and invalid confidence before scoring", () => {
 		for (const joint of [
 			{ x: NaN, y: 0, z: 0 },
 			{ x: 0, y: 0, z: 0, visibility: -1 },
@@ -55,11 +57,12 @@ describe("Pose camera wire contracts", () => {
 				worldLandmarks: [],
 				additionalData: frameMetadata,
 			});
+
 			assert.equal(Either.isLeft(decodedFrame), true);
 		}
 	});
 
-	it("accepts local model telemetry for both native delegates", () => {
+	test("accepts local model telemetry for both native delegates", () => {
 		for (const poseModelVariant of ["lite", "full", "heavy"]) {
 			for (const poseModelDelegate of ["CPU", "GPU"]) {
 				const decodedFrame = Schema.decodeUnknownEither(PoseFrame)({
@@ -72,12 +75,15 @@ describe("Pose camera wire contracts", () => {
 						poseModelSource: "local",
 					},
 				});
+
 				assert.equal(Either.isRight(decodedFrame), true);
 			}
 		}
 	});
+});
 
-	it("rejects invalid capture dimensions and sub-one applied zoom", () => {
+describe("CameraConfiguration", () => {
+	test("rejects invalid capture dimensions and sub-one applied zoom", () => {
 		const configuration = {
 			effectiveFacing: "front",
 			effectiveLens: "wide",
@@ -86,6 +92,7 @@ describe("Pose camera wire contracts", () => {
 			captureWidth: 720,
 			captureHeight: 1280,
 		};
+
 		assert.equal(
 			Either.isRight(
 				Schema.decodeUnknownEither(CameraConfiguration)(configuration),
@@ -111,12 +118,15 @@ describe("Pose camera wire contracts", () => {
 			true,
 		);
 	});
+});
 
-	it("keeps native failures limited to stable codes without device paths or messages", () => {
+describe("InferenceError", () => {
+	test("keeps native failures limited to stable codes without device paths or messages", () => {
 		const failure = Schema.decodeUnknownSync(InferenceError)({
 			code: "modelInitialization",
 			message: "/private/model.task",
 		});
+
 		assert.deepEqual(failure, { code: "modelInitialization" });
 		assert.equal(
 			Either.isLeft(

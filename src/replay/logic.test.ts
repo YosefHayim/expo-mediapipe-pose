@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test, vi } from "vitest";
+import { describe, test, vi } from "vitest";
 import {
 	advancePoseRule,
 	createPoseRecorder,
@@ -26,157 +26,183 @@ function recording() {
 	}
 	return recorder.stop();
 }
-test("replay schedules recorded frames, pauses, changes speed, seeks and disposes", () => {
-	vi.useFakeTimers({ toFake: ["setTimeout"] });
-	let now = 0;
-	vi.spyOn(performance, "now").mockImplementation(() => now);
-	const advance = (ms: number) => {
-		now += ms;
-		vi.advanceTimersByTime(ms);
-	};
-	const frames: number[] = [];
-	let resets = 0;
-	const replay = createPoseReplay(recording(), {
-		onFrame: (_frame, timestamp) => frames.push(timestamp),
-		onReset: () => resets++,
+
+describe("createPoseReplay", () => {
+	test("replay schedules recorded frames, pauses, changes speed, seeks and disposes", () => {
+		vi.useFakeTimers({ toFake: ["setTimeout"] });
+		let now = 0;
+		vi.spyOn(performance, "now").mockImplementation(() => now);
+		const advance = (ms: number) => {
+			now += ms;
+			vi.advanceTimersByTime(ms);
+		};
+		const frames: number[] = [];
+		let resets = 0;
+		const replay = createPoseReplay(recording(), {
+			onFrame: (_frame, timestamp) => frames.push(timestamp),
+			onReset: () => resets++,
+		});
+
+		replay.play();
+		advance(0);
+		assert.deepEqual(frames, [0]);
+
+		advance(40);
+		replay.pause();
+		advance(500);
+		assert.equal(replay.state.positionMs, 40);
+
+		replay.setSpeed(2);
+		replay.play();
+		advance(29);
+		assert.deepEqual(frames, [0]);
+		advance(1);
+		assert.deepEqual(frames, [0, 100]);
+
+		replay.seek(200);
+		advance(24);
+		assert.equal(frames.length, 2);
+		advance(1);
+		assert.deepEqual(frames, [0, 100, 250]);
+		assert.equal(replay.state.status, "ended");
+
+		replay.play();
+		advance(100);
+		assert.equal(frames.length, 3);
+
+		replay.reset();
+		assert.equal(resets, 2);
+
+		replay.play();
+		advance(0);
+		assert.equal(frames.length, 4);
+
+		replay.dispose();
+		advance(1000);
+		assert.equal(frames.length, 4);
+		assert.throws(() => replay.play());
 	});
-	replay.play();
-	advance(0);
-	assert.deepEqual(frames, [0]);
-	advance(40);
-	replay.pause();
-	advance(500);
-	assert.equal(replay.state.positionMs, 40);
-	replay.setSpeed(2);
-	replay.play();
-	advance(29);
-	assert.deepEqual(frames, [0]);
-	advance(1);
-	assert.deepEqual(frames, [0, 100]);
-	replay.seek(200);
-	advance(24);
-	assert.equal(frames.length, 2);
-	advance(1);
-	assert.deepEqual(frames, [0, 100, 250]);
-	assert.equal(replay.state.status, "ended");
-	replay.play();
-	advance(100);
-	assert.equal(frames.length, 3);
-	replay.reset();
-	assert.equal(resets, 2);
-	replay.play();
-	advance(0);
-	assert.equal(frames.length, 4);
-	replay.dispose();
-	advance(1000);
-	assert.equal(frames.length, 4);
-	assert.throws(() => replay.play());
-});
-test("replay honors controls called inside callbacks and isolates returned frames", () => {
-	vi.useFakeTimers({ toFake: ["setTimeout"] });
-	let now = 0;
-	vi.spyOn(performance, "now").mockImplementation(() => now);
-	let replay: PoseReplay;
-	const originalX: number[] = [];
-	replay = createPoseReplay(recording(), {
-		onFrame: (frame) => {
-			const nose = frame.landmarks[0];
-			assert.ok(nose);
-			originalX.push(nose.x);
-			nose.x = 99;
-			replay.pause();
-		},
+
+	test("replay honors controls called inside callbacks and isolates returned frames", () => {
+		vi.useFakeTimers({ toFake: ["setTimeout"] });
+		let now = 0;
+		vi.spyOn(performance, "now").mockImplementation(() => now);
+		let replay: PoseReplay;
+		const originalX: number[] = [];
+		replay = createPoseReplay(recording(), {
+			onFrame: (frame) => {
+				const nose = frame.landmarks[0];
+				assert.ok(nose);
+				originalX.push(nose.x);
+				nose.x = 99;
+				replay.pause();
+			},
+		});
+
+		replay.play();
+		vi.advanceTimersByTime(0);
+		now = 1000;
+		vi.advanceTimersByTime(1000);
+		assert.equal(originalX.length, 1);
+
+		replay.reset();
+		replay.play();
+		vi.advanceTimersByTime(0);
+		assert.deepEqual(originalX, [0.5, 0.5]);
+
+		for (const speed of [0, -1, 5, NaN])
+			assert.throws(() => replay.setSpeed(speed));
+		for (const position of [-1, 251, Infinity])
+			assert.throws(() => replay.seek(position));
+		replay.dispose();
 	});
-	replay.play();
-	vi.advanceTimersByTime(0);
-	now = 1000;
-	vi.advanceTimersByTime(1000);
-	assert.equal(originalX.length, 1);
-	replay.reset();
-	replay.play();
-	vi.advanceTimersByTime(0);
-	assert.deepEqual(originalX, [0.5, 0.5]);
-	for (const speed of [0, -1, 5, NaN])
-		assert.throws(() => replay.setSpeed(speed));
-	for (const position of [-1, 251, Infinity])
-		assert.throws(() => replay.seek(position));
-	replay.dispose();
-});
-test("recorded relative time feeds deterministic pure rules without camera initialization", () => {
-	vi.useFakeTimers({ toFake: ["setTimeout"] });
-	let now = 0;
-	vi.spyOn(performance, "now").mockImplementation(() => now);
-	let state: PoseRuleState = initialPoseRuleState();
-	const replay = createPoseReplay(recording(), {
-		onFrame: (frame, timestamp) => {
-			state = advancePoseRule(
-				state,
-				evaluatePoseRule(frame, { landmarks: ["nose"], evaluate: () => true }),
-				timestamp,
-				200,
-			);
-		},
+
+	test("callback failures pause and cancel replay instead of leaving a running controller", () => {
+		vi.useFakeTimers({ toFake: ["setTimeout"] });
+		vi.spyOn(performance, "now").mockImplementation(() => 0);
+		const failure = new Error("consumer callback failed");
+
+		const replay = createPoseReplay(recording(), {
+			onFrame: () => {
+				throw failure;
+			},
+		});
+		replay.play();
+		assert.throws(() => vi.advanceTimersByTime(0), failure);
+		assert.equal(replay.state.status, "paused");
+		replay.dispose();
+
+		const resetFailure = createPoseReplay(recording(), {
+			onFrame: () => {},
+			onReset: () => {
+				throw failure;
+			},
+		});
+		resetFailure.play();
+		assert.throws(() => resetFailure.seek(100), failure);
+		assert.equal(resetFailure.state.status, "paused");
+		resetFailure.dispose();
+
+		const stateFailure = createPoseReplay(recording(), {
+			onFrame: () => {},
+			onStateChange: () => {
+				throw failure;
+			},
+		});
+		assert.throws(() => stateFailure.play(), failure);
+		assert.equal(stateFailure.state.status, "paused");
+		stateFailure.dispose();
 	});
-	replay.play();
-	vi.advanceTimersByTime(0);
-	now = 100;
-	vi.advanceTimersByTime(100);
-	assert.equal(state.status, "unknown");
-	now = 250;
-	vi.advanceTimersByTime(150);
-	assert.equal(state.status, "pass");
-	assert.equal(replay.state.status, "ended");
+
+	test("state callbacks can pause playback without rescheduling or recursive notifications", () => {
+		vi.useFakeTimers({ toFake: ["setTimeout"] });
+		vi.spyOn(performance, "now").mockImplementation(() => 0);
+		let replay: PoseReplay;
+		let delivered = 0;
+		replay = createPoseReplay(recording(), {
+			onFrame: () => delivered++,
+			onStateChange: () => {
+				replay.pause();
+				replay.setSpeed(1);
+			},
+		});
+
+		replay.play();
+		vi.advanceTimersByTime(1000);
+		assert.equal(delivered, 0);
+		assert.equal(replay.state.status, "paused");
+		replay.dispose();
+	});
 });
 
-test("callback failures pause and cancel replay instead of leaving a running controller", () => {
-	vi.useFakeTimers({ toFake: ["setTimeout"] });
-	vi.spyOn(performance, "now").mockImplementation(() => 0);
-	const failure = new Error("consumer callback failed");
-	const replay = createPoseReplay(recording(), {
-		onFrame: () => {
-			throw failure;
-		},
-	});
-	replay.play();
-	assert.throws(() => vi.advanceTimersByTime(0), failure);
-	assert.equal(replay.state.status, "paused");
-	replay.dispose();
-	const resetFailure = createPoseReplay(recording(), {
-		onFrame: () => {},
-		onReset: () => {
-			throw failure;
-		},
-	});
-	resetFailure.play();
-	assert.throws(() => resetFailure.seek(100), failure);
-	assert.equal(resetFailure.state.status, "paused");
-	resetFailure.dispose();
-	const stateFailure = createPoseReplay(recording(), {
-		onFrame: () => {},
-		onStateChange: () => {
-			throw failure;
-		},
-	});
-	assert.throws(() => stateFailure.play(), failure);
-	assert.equal(stateFailure.state.status, "paused");
-	stateFailure.dispose();
-});
+describe("advancePoseRule", () => {
+	test("recorded relative time feeds deterministic pure rules without camera initialization", () => {
+		vi.useFakeTimers({ toFake: ["setTimeout"] });
+		let now = 0;
+		vi.spyOn(performance, "now").mockImplementation(() => now);
+		let state: PoseRuleState = initialPoseRuleState();
+		const replay = createPoseReplay(recording(), {
+			onFrame: (frame, timestamp) => {
+				state = advancePoseRule(
+					state,
+					evaluatePoseRule(frame, {
+						landmarks: ["nose"],
+						evaluate: () => true,
+					}),
+					timestamp,
+					200,
+				);
+			},
+		});
 
-test("state callbacks can pause playback without rescheduling or recursive notifications", () => {
-	vi.useFakeTimers({ toFake: ["setTimeout"] });
-	vi.spyOn(performance, "now").mockImplementation(() => 0);
-	let replay: PoseReplay;
-	let delivered = 0;
-	replay = createPoseReplay(recording(), {
-		onFrame: () => delivered++,
-		onStateChange: () => {
-			replay.pause();
-			replay.setSpeed(1);
-		},
+		replay.play();
+		vi.advanceTimersByTime(0);
+		now = 100;
+		vi.advanceTimersByTime(100);
+		assert.equal(state.status, "unknown");
+		now = 250;
+		vi.advanceTimersByTime(150);
+		assert.equal(state.status, "pass");
+		assert.equal(replay.state.status, "ended");
 	});
-	replay.play();
-	vi.advanceTimersByTime(1000);
-	assert.equal(delivered, 0);
-	assert.equal(replay.state.status, "paused");
-	replay.dispose();
 });
