@@ -64,12 +64,12 @@ export function validateLocalFileLocation(location: string): void {
 }
 export function resolvePoseImageOptions(imageOptions: PoseImageOptions = {}) {
 	const checkedOptions = PoseImageOptions.parse(imageOptions);
-	const isModelPathGiven = checkedOptions.modelPath !== undefined;
-	if (isModelPathGiven) validateLocalFileLocation(checkedOptions.modelPath);
+	const { modelPath } = checkedOptions;
+	const isModelPathGiven = modelPath != null;
+	if (isModelPathGiven) validateLocalFileLocation(modelPath);
 
 	const isLocalModelMissing =
-		checkedOptions.modelVariant !== "full" &&
-		checkedOptions.modelPath === undefined;
+		checkedOptions.modelVariant !== "full" && modelPath == null;
 	if (isLocalModelMissing)
 		throw new TypeError(
 			"A local modelPath is required for lite or heavy models",
