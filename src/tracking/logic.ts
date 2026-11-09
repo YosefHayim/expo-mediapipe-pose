@@ -20,7 +20,7 @@ export interface PoseTrackingState {
 export interface PoseTrackingOptions
 	extends Pick<
 		PoseRuleOptions,
-		"names" | "minVisibility" | "holdMs" | "staleAfterMs" | "isActive"
+		"landmarks" | "minVisibility" | "holdMs" | "staleAfterMs" | "isActive"
 	> {
 	onChange?: (state: PoseTrackingState) => void;
 }

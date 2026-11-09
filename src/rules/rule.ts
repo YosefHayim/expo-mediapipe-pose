@@ -36,7 +36,7 @@ export const initialPoseRuleState = (): PoseRuleState => ({
 export const validatePoseRuleOptions = (
 	options: Pick<
 		PoseRuleOptions,
-		"names" | "minVisibility" | "holdMs" | "staleAfterMs" | "resetKey"
+		"landmarks" | "minVisibility" | "holdMs" | "staleAfterMs" | "resetKey"
 	>,
 ) => {
 	const invalidResetKey =
