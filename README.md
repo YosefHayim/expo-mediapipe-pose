@@ -43,13 +43,13 @@ Version 0.3.0 targets Expo SDK 57, React Native 0.86, and React 19.2. Requires a
 Install [expo-mediapipe-pose from npm](https://www.npmjs.com/package/expo-mediapipe-pose) with [pnpm](https://pnpm.io/):
 
 ```sh
-pnpm add expo-mediapipe-pose@^0.3.0 effect@^3.21.4
+pnpm add expo-mediapipe-pose
 pnpm exec expo install react-native-svg expo-camera
 ```
 
 The package includes compiled JavaScript, TypeScript declarations, native Swift/Kotlin sources and the full pose model. Use the [v0.3.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.3.0/docs/api.md) for this release; `main` may advance independently. Native dependency or configuration changes require a new development build. The older `v0.2.0` GitHub tag contains the earlier camera API.
 
-[Effect](https://effect.website/) validates events at the native boundary. [react-native-svg](https://docs.expo.dev/versions/latest/sdk/svg/) draws the optional overlay. The example uses [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) for permissions; another permission provider is also fine.
+[zod](https://zod.dev/) validates events at the native boundary. [react-native-svg](https://docs.expo.dev/versions/latest/sdk/svg/) draws the optional overlay. The example uses [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) for permissions; another permission provider is also fine.
 
 Configure the permission message in your app config, then rebuild:
 
@@ -70,6 +70,13 @@ Configure the permission message in your app config, then rebuild:
 pnpm exec expo run:ios
 # or: pnpm exec expo run:android
 ```
+
+## Breaking changes in 0.4.0
+
+- The `effect` package is no longer needed. Remove it from your app.
+- Exported schemas keep their names but are [zod](https://zod.dev/) schemas now. Replace `Schema.decodeUnknownSync(PoseFrame)(value)` with `PoseFrame.parse(value)`, and `Schema.decodeUnknownEither(PoseFrame)(value)` with `PoseFrame.safeParse(value)`.
+- `PoseImageOptions` and `PoseVideoSampling` reject unknown keys instead of ignoring them.
+- Validation error messages come from zod now.
 
 ## Show a pose camera
 

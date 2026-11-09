@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { PoseSegmentation } from "./segmentation/mask";
 
-// zod numbers already reject NaN and Infinity, which is what Effect's finite() added.
+// zod numbers reject NaN and Infinity, so no separate finite check is needed.
 const Finite = z.number();
 const Confidence = Finite.min(0).max(1);
 const Positive = Finite.positive();

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const Dimension = z.number().int().positive();
 export const MaskMaxDimension = z.number().int().min(64).max(512);
-// The same UUID rule Effect used: 8-4-4-4-12 hex digits, either case.
+// UUID shape: 8-4-4-4-12 hex digits, either case.
 export const SegmentationLeaseId = z
 	.string()
 	.regex(

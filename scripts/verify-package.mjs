@@ -77,6 +77,14 @@ try {
 		createHash("sha256").update(model).digest("hex"),
 		"5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1",
 	);
+	const packageText = execFileSync("tar", ["-xOf", archive], {
+		maxBuffer: 100 * 1024 * 1024,
+	}).toString("latin1");
+	assert.doesNotMatch(
+		packageText,
+		/from "effect"|require\("effect"\)|@effect\//,
+		"Package must not import effect",
+	);
 	const consumerDirectory = join(packageDirectory, "consumer");
 	const modulesDirectory = join(consumerDirectory, "node_modules");
 	mkdirSync(modulesDirectory, { recursive: true });
@@ -85,7 +93,7 @@ try {
 		JSON.stringify({
 			name: "pose-package-verification",
 			private: true,
-			dependencies: { effect: manifest.peerDependencies.effect },
+			dependencies: { zod: manifest.dependencies.zod },
 		}),
 	);
 	execFileSync("pnpm", ["install", "--ignore-workspace", "--ignore-scripts"], {
