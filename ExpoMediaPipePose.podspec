@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
   s.swift_version = '5.9'
   s.static_framework = true
   s.dependency 'ExpoModulesCore'
-  s.dependency 'MediaPipeTasksVision', '0.10.35'
+  s.dependency 'MediaPipeTasksVision', '1.0.0'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.source_files = 'ios/**/*.swift'
   s.exclude_files = 'ios/PoseFrameTimingTests.swift'
