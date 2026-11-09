@@ -1,5 +1,4 @@
 import { strict as assert } from "node:assert";
-import { Schema } from "effect";
 import { describe, test } from "vitest";
 import {
 	getOverlayStaleAfterMs,
@@ -44,25 +43,22 @@ describe("PosePerformanceMetrics", () => {
 			averageInferenceDurationMs: 12,
 		};
 
-		assert.deepEqual(
-			Schema.decodeUnknownSync(PosePerformanceMetrics)(snapshot),
-			snapshot,
-		);
+		assert.deepEqual(PosePerformanceMetrics.parse(snapshot), snapshot);
 		assert.equal(
-			Schema.decodeUnknownSync(PosePerformanceMetrics)({
+			PosePerformanceMetrics.parse({
 				...snapshot,
 				averageInferenceDurationMs: null,
 			}).averageInferenceDurationMs,
 			null,
 		);
 		assert.throws(() =>
-			Schema.decodeUnknownSync(PosePerformanceMetrics)({
+			PosePerformanceMetrics.parse({
 				...snapshot,
 				intervalMs: 0,
 			}),
 		);
 		assert.throws(() =>
-			Schema.decodeUnknownSync(PosePerformanceMetrics)({
+			PosePerformanceMetrics.parse({
 				...snapshot,
 				inferenceFps: NaN,
 			}),

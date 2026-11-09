@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { Schema } from "effect";
 import { describe, test, vi } from "vitest";
 import {
 	createPoseDetectionRecorder,
@@ -28,7 +27,7 @@ describe("PoseSegmentation", () => {
 		for (const maskMaxDimension of [0, 63, 513, 255.5, NaN])
 			assert.throws(() => resolvePoseImageOptions({ maskMaxDimension }));
 
-		const decode = Schema.decodeUnknownSync(PoseSegmentation);
+		const decode = (value: unknown) => PoseSegmentation.parse(value);
 		assert.deepEqual(decode(segmentation), segmentation);
 		assert.deepEqual(decode({ status: "backpressure" }), {
 			status: "backpressure",

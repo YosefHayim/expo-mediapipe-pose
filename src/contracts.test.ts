@@ -1,5 +1,4 @@
 import { strict as assert } from "node:assert";
-import { Either, Schema } from "effect";
 import { describe, test } from "vitest";
 
 import { CameraConfiguration, InferenceError, PoseFrame } from "./contracts";
@@ -24,7 +23,7 @@ const frameMetadata = {
 
 describe("PoseFrame", () => {
 	test("delivers an empty detection without confusing it with a camera failure", () => {
-		const frame = Schema.decodeUnknownSync(PoseFrame)({
+		const frame = PoseFrame.parse({
 			landmarks: [],
 			worldLandmarks: [],
 			additionalData: frameMetadata,
@@ -36,7 +35,7 @@ describe("PoseFrame", () => {
 
 	test("preserves offscreen coordinates and optional joint confidence for scoring", () => {
 		const joint = { x: -0.2, y: 1.2, z: -0.5, visibility: 0.35 };
-		const frame = Schema.decodeUnknownSync(PoseFrame)({
+		const frame = PoseFrame.parse({
 			landmarks: [joint],
 			worldLandmarks: [joint],
 			additionalData: { ...frameMetadata, poseCount: 1 },
@@ -52,20 +51,20 @@ describe("PoseFrame", () => {
 			{ x: 0, y: 0, z: 0, visibility: -1 },
 			{ x: 0, y: 0, z: Infinity },
 		]) {
-			const decodedFrame = Schema.decodeUnknownEither(PoseFrame)({
+			const frameParse = PoseFrame.safeParse({
 				landmarks: [joint],
 				worldLandmarks: [],
 				additionalData: frameMetadata,
 			});
 
-			assert.equal(Either.isLeft(decodedFrame), true);
+			assert.equal(frameParse.success, false);
 		}
 	});
 
 	test("accepts local model telemetry for both native delegates", () => {
 		for (const poseModelVariant of ["lite", "full", "heavy"]) {
 			for (const poseModelDelegate of ["CPU", "GPU"]) {
-				const decodedFrame = Schema.decodeUnknownEither(PoseFrame)({
+				const frameParse = PoseFrame.safeParse({
 					landmarks: [],
 					worldLandmarks: [],
 					additionalData: {
@@ -76,7 +75,7 @@ describe("PoseFrame", () => {
 					},
 				});
 
-				assert.equal(Either.isRight(decodedFrame), true);
+				assert.equal(frameParse.success, true);
 			}
 		}
 	});
@@ -93,46 +92,30 @@ describe("CameraConfiguration", () => {
 			captureHeight: 1280,
 		};
 
+		assert.equal(CameraConfiguration.safeParse(configuration).success, true);
 		assert.equal(
-			Either.isRight(
-				Schema.decodeUnknownEither(CameraConfiguration)(configuration),
-			),
-			true,
+			CameraConfiguration.safeParse({ ...configuration, captureWidth: 0 })
+				.success,
+			false,
 		);
 		assert.equal(
-			Either.isLeft(
-				Schema.decodeUnknownEither(CameraConfiguration)({
-					...configuration,
-					captureWidth: 0,
-				}),
-			),
-			true,
-		);
-		assert.equal(
-			Either.isLeft(
-				Schema.decodeUnknownEither(CameraConfiguration)({
-					...configuration,
-					appliedZoomFactor: 0.5,
-				}),
-			),
-			true,
+			CameraConfiguration.safeParse({
+				...configuration,
+				appliedZoomFactor: 0.5,
+			}).success,
+			false,
 		);
 	});
 });
 
 describe("InferenceError", () => {
 	test("keeps native failures limited to stable codes without device paths or messages", () => {
-		const failure = Schema.decodeUnknownSync(InferenceError)({
+		const failure = InferenceError.parse({
 			code: "modelInitialization",
 			message: "/private/model.task",
 		});
 
 		assert.deepEqual(failure, { code: "modelInitialization" });
-		assert.equal(
-			Either.isLeft(
-				Schema.decodeUnknownEither(InferenceError)({ code: "unknown" }),
-			),
-			true,
-		);
+		assert.equal(InferenceError.safeParse({ code: "unknown" }).success, false);
 	});
 });
