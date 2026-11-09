@@ -43,13 +43,13 @@ Version 0.3.0 targets Expo SDK 57, React Native 0.86, and React 19.2. Requires a
 Install [expo-mediapipe-pose from npm](https://www.npmjs.com/package/expo-mediapipe-pose) with [pnpm](https://pnpm.io/):
 
 ```sh
-pnpm add expo-mediapipe-pose@^0.3.0 effect@^3.21.4
+pnpm add expo-mediapipe-pose
 pnpm exec expo install react-native-svg expo-camera
 ```
 
 The package includes compiled JavaScript, TypeScript declarations, native Swift/Kotlin sources and the full pose model. Use the [v0.3.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.3.0/docs/api.md) for this release; `main` may advance independently. Native dependency or configuration changes require a new development build. The older `v0.2.0` GitHub tag contains the earlier camera API.
 
-[Effect](https://effect.website/) validates events at the native boundary. [react-native-svg](https://docs.expo.dev/versions/latest/sdk/svg/) draws the optional overlay. The example uses [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) for permissions; another permission provider is also fine.
+[zod](https://zod.dev/) validates events at the native boundary. [react-native-svg](https://docs.expo.dev/versions/latest/sdk/svg/) draws the optional overlay. The example uses [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) for permissions; another permission provider is also fine.
 
 Configure the permission message in your app config, then rebuild:
 
@@ -70,6 +70,13 @@ Configure the permission message in your app config, then rebuild:
 pnpm exec expo run:ios
 # or: pnpm exec expo run:android
 ```
+
+## Breaking changes in 0.4.0
+
+- The `effect` package is no longer needed. Remove it from your app.
+- Exported schemas keep their names but are [zod](https://zod.dev/) schemas now. Replace `Schema.decodeUnknownSync(PoseFrame)(value)` with `PoseFrame.parse(value)`, and `Schema.decodeUnknownEither(PoseFrame)(value)` with `PoseFrame.safeParse(value)`.
+- Parsing `PoseImageOptions` or `PoseVideoSampling` directly now rejects unknown keys. The package's own functions behave as before.
+- Validation error messages come from zod now.
 
 ## Show a pose camera
 
@@ -200,7 +207,7 @@ The supported consumer API is TypeScript for Expo/React Native. The Swift and Ko
 <details>
 <summary>Which installation includes all the listed features?</summary>
 
-Install `expo-mediapipe-pose@^0.3.0` from npm for the features listed here. The older `v0.2.0` GitHub tag provides the earlier camera API. Read the documentation for your installed version; `main` can advance independently.
+Install `expo-mediapipe-pose@^0.4.0` from npm for the features listed here. npm installs zod with it, so `effect` is not needed. The older `v0.2.0` GitHub tag provides the earlier camera API. Read the documentation for your installed version; `main` can advance independently.
 
 </details>
 
@@ -260,7 +267,7 @@ Repository: https://github.com/YosefHayim/expo-mediapipe-pose
 Inspect this app's instructions, Expo/React Native versions, navigation,
 permission handling and existing camera code before changing anything.
 Read the README and API documentation for the exact installed tag/commit.
-The npm 0.3.0 API includes the current guides; the older v0.2.0 GitHub tag
+The npm 0.4.0 API includes the current guides; the older v0.2.0 GitHub tag
 predates the newer APIs. Check the installed version and compatibility.
 
 Use supported exports from expo-mediapipe-pose; import pure helpers from

@@ -1,63 +1,68 @@
-import { Schema } from "effect";
 import {
 	Landmark,
 	type PoseLandmarks,
-	PoseResults,
 	parsePoseDetectionRecording,
 	parsePoseRecording,
 } from "expo-mediapipe-pose/core";
+import { z } from "zod";
 import type { BrowserFrame } from "./types";
 
-const positive = Schema.Number.pipe(Schema.finite(), Schema.positive());
-const frameSchema = Schema.Struct({
-	landmarks: Schema.mutable(Schema.Array(Landmark).pipe(Schema.maxItems(33))),
-	worldLandmarks: Schema.mutable(
-		Schema.Array(Landmark).pipe(Schema.maxItems(33)),
-	),
-	poses: Schema.mutable(PoseResults),
-	imageSize: Schema.Struct({ width: positive, height: positive }),
-	inferenceDurationMs: Schema.Number.pipe(
-		Schema.finite(),
-		Schema.nonNegative(),
-	),
+const MAXIMUM_LANDMARKS = 33;
+const MAXIMUM_POSES = 6;
+export const MAX_RECORDING_FRAMES = 1800;
+const positive = z.number().positive();
+const strictLandmark = z.strictObject(Landmark.shape);
+const strictPoseLandmarks = z.strictObject({
+	landmarks: z.array(strictLandmark).max(MAXIMUM_LANDMARKS),
+	worldLandmarks: z.array(strictLandmark).max(MAXIMUM_LANDMARKS),
 });
-const recordingSchema = Schema.Struct({
-	format: Schema.Literal("pose-playground"),
-	version: Schema.Literal(1),
-	frames: Schema.Array(
-		Schema.Struct({
-			timestampMs: Schema.Number.pipe(
-				Schema.finite(),
-				Schema.between(0, 86400000),
-			),
-			frame: frameSchema,
-		}),
-	).pipe(Schema.maxItems(1800)),
-}).pipe(
-	Schema.filter(
+const strictPoseResults = z.array(strictPoseLandmarks).max(MAXIMUM_POSES);
+const frameSchema = z.strictObject({
+	...strictPoseLandmarks.shape,
+	poses: strictPoseResults,
+	imageSize: z.strictObject({ width: positive, height: positive }),
+	inferenceDurationMs: z.number().nonnegative(),
+});
+const recordingSchema = z
+	.strictObject({
+		format: z.literal("pose-playground"),
+		version: z.literal(1),
+		frames: z
+			.array(
+				z.strictObject({
+					timestampMs: z.number().min(0).max(86400000),
+					frame: frameSchema,
+				}),
+			)
+			.max(MAX_RECORDING_FRAMES),
+	})
+	.refine(
 		(recording) =>
 			(recording.frames.length === 0 ||
 				recording.frames[0]?.timestampMs === 0) &&
 			recording.frames.every(
-				(entry, i) =>
-					i === 0 ||
-					entry.timestampMs > (recording.frames[i - 1]?.timestampMs ?? 0),
+				(recordedFrame, index) =>
+					index === 0 ||
+					recordedFrame.timestampMs >
+						(recording.frames[index - 1]?.timestampMs ?? 0),
 			),
-	),
-);
-export type Recording = Schema.Schema.Type<typeof recordingSchema>;
-export const MAX_RECORDING_FRAMES = 1800;
-export function parseRecording(json: string): Recording {
-	if (json.length > 16 * 1024 * 1024)
+	);
+export type Recording = z.infer<typeof recordingSchema>;
+export function parseRecording(serializedRecording: string): Recording {
+	const isTooLarge = serializedRecording.length > 16 * 1024 * 1024;
+	if (isTooLarge)
 		throw new Error("Recording exceeds the playground's 16 MiB limit.");
-	const data: unknown = JSON.parse(json);
-	if (typeof data === "object" && data !== null && "format" in data)
-		return Schema.decodeUnknownSync(recordingSchema, {
-			onExcessProperty: "error",
-		})(data);
+
+	const parsedRecording: unknown = JSON.parse(serializedRecording);
+	const isPlaygroundFormat =
+		typeof parsedRecording === "object" &&
+		parsedRecording !== null &&
+		"format" in parsedRecording;
+	if (isPlaygroundFormat) return recordingSchema.parse(parsedRecording);
+
 	let frames: Array<{ timestampMs: number; frame: BrowserFrame }>;
 	try {
-		const native = parsePoseRecording(json);
+		const native = parsePoseRecording(serializedRecording);
 		frames = native.frames.map(({ timestampMs, frame }) => ({
 			timestampMs,
 			frame: {
@@ -72,7 +77,7 @@ export function parseRecording(json: string): Recording {
 			},
 		}));
 	} catch {
-		const native = parsePoseDetectionRecording(json);
+		const native = parsePoseDetectionRecording(serializedRecording);
 		frames = native.frames.map(({ timestampMs, frame }) => ({
 			timestampMs,
 			frame: {
@@ -84,7 +89,7 @@ export function parseRecording(json: string): Recording {
 			},
 		}));
 	}
-	return Schema.decodeUnknownSync(recordingSchema)({
+	return recordingSchema.parse({
 		format: "pose-playground",
 		version: 1,
 		frames,

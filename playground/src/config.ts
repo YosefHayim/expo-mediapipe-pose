@@ -1,99 +1,103 @@
-import { Schema } from "effect";
 import {
-	BODY_PARTS,
+	type BODY_PARTS,
 	LANDMARK_NAMES,
 	POSE_CONNECTIONS,
 } from "expo-mediapipe-pose/core";
+import { z } from "zod";
 
-const number = (min: number, max: number) =>
-	Schema.Number.pipe(Schema.finite(), Schema.between(min, max));
-const integer = (min: number, max: number) =>
-	number(min, max).pipe(Schema.int());
-const color = Schema.String.pipe(Schema.pattern(/^#[0-9a-fA-F]{6}$/));
-const landmark = Schema.Literal(...LANDMARK_NAMES);
-const connection = Schema.Literal(
-	...POSE_CONNECTIONS.map(([a, b]) => `${a}:${b}` as const),
+const number = (min: number, max: number) => z.number().min(min).max(max);
+const integer = (min: number, max: number) => number(min, max).int();
+const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+const landmark = z.enum(LANDMARK_NAMES);
+const connection = z.enum(
+	POSE_CONNECTIONS.map(([a, b]) => `${a}:${b}` as const),
 );
-const bodyPart = Schema.Literal(
-	...(Object.keys(BODY_PARTS) as Array<keyof typeof BODY_PARTS>),
-);
-export const RuleSchema = Schema.Struct({
-	id: Schema.String.pipe(Schema.pattern(/^[a-zA-Z0-9-]{1,64}$/)),
-	kind: Schema.Literal("angle", "distance", "height"),
-	space: Schema.Literal("image", "world"),
-	start: landmark,
-	vertex: landmark,
-	end: landmark,
-	direction: Schema.Literal("below", "above"),
-	enterThreshold: number(-10000, 10000),
-	exitThreshold: number(-10000, 10000),
-	minVisibility: number(0, 1),
-	holdMs: integer(0, 10000),
-	staleAfterMs: integer(1, 30000),
-	passColor: color,
-	failColor: color,
-	unknownColor: color,
-}).pipe(
-	Schema.filter((r) => r.kind !== "height" || r.space === "image"),
-	Schema.filter((r) =>
-		r.direction === "above"
-			? r.enterThreshold > r.exitThreshold
-			: r.enterThreshold < r.exitThreshold,
-	),
-);
-export const ConfigSchema = Schema.Struct({
-	version: Schema.Literal(1),
-	detection: Schema.Struct({
+const BODY_PART_NAMES = [
+	"face",
+	"leftArm",
+	"rightArm",
+	"leftWrist",
+	"rightWrist",
+	"torso",
+	"leftLeg",
+	"rightLeg",
+	"leftAnkle",
+	"rightAnkle",
+] as const satisfies readonly (keyof typeof BODY_PARTS)[];
+const bodyPart = z.enum(BODY_PART_NAMES);
+export const RuleSchema = z
+	.strictObject({
+		id: z.string().regex(/^[a-zA-Z0-9-]{1,64}$/),
+		kind: z.enum(["angle", "distance", "height"]),
+		space: z.enum(["image", "world"]),
+		start: landmark,
+		vertex: landmark,
+		end: landmark,
+		direction: z.enum(["below", "above"]),
+		enterThreshold: number(-10000, 10000),
+		exitThreshold: number(-10000, 10000),
+		minVisibility: number(0, 1),
+		holdMs: integer(0, 10000),
+		staleAfterMs: integer(1, 30000),
+		passColor: color,
+		failColor: color,
+		unknownColor: color,
+	})
+	.refine((rule) => rule.kind !== "height" || rule.space === "image")
+	.refine((rule) =>
+		rule.direction === "above"
+			? rule.enterThreshold > rule.exitThreshold
+			: rule.enterThreshold < rule.exitThreshold,
+	);
+export const ConfigSchema = z.strictObject({
+	version: z.literal(1),
+	detection: z.strictObject({
 		minPoseDetectionConfidence: number(0, 1),
 		minPosePresenceConfidence: number(0, 1),
 		minTrackingConfidence: number(0, 1),
 		maxPoses: integer(1, 6),
-		segmentationEnabled: Schema.Boolean,
+		segmentationEnabled: z.boolean(),
 		maskMaxDimension: integer(64, 512),
-		modelVariant: Schema.Literal("full", "lite", "heavy"),
+		modelVariant: z.enum(["full", "lite", "heavy"]),
 	}),
-	timing: Schema.Struct({
+	timing: z.strictObject({
 		frameLimit: integer(1, 60),
 		callbackFps: integer(1, 60),
 		previewFps: integer(1, 60),
 	}),
-	skeleton: Schema.Struct({
-		enabled: Schema.Boolean,
+	skeleton: z.strictObject({
+		enabled: z.boolean(),
 		poseIndex: integer(0, 5),
 		color,
 		jointRadius: number(0, 20),
 		lineWidth: number(0, 15),
 		minVisibility: number(0, 1),
-		bodyParts: Schema.Array(bodyPart),
-		landmarks: Schema.Array(landmark),
-		joints: Schema.partial(
-			Schema.Record({
-				key: landmark,
-				value: Schema.Struct({ color, radius: number(0, 20) }),
-			}),
+		bodyParts: z.array(bodyPart),
+		landmarks: z.array(landmark),
+		joints: z.partialRecord(
+			landmark,
+			z.strictObject({ color, radius: number(0, 20) }),
 		),
-		connections: Schema.partial(
-			Schema.Record({
-				key: connection,
-				value: Schema.Struct({ color, width: number(0, 15) }),
-			}),
+		connections: z.partialRecord(
+			connection,
+			z.strictObject({ color, width: number(0, 15) }),
 		),
 	}),
-	mask: Schema.Struct({ color, opacity: number(0, 1) }),
-	rules: Schema.Array(RuleSchema).pipe(
-		Schema.maxItems(6),
-		Schema.filter(
+	mask: z.strictObject({ color, opacity: number(0, 1) }),
+	rules: z
+		.array(RuleSchema)
+		.max(6)
+		.refine(
 			(rules) => new Set(rules.map((rule) => rule.id)).size === rules.length,
 		),
-	),
-	native: Schema.Struct({
-		cameraFacing: Schema.Literal("front", "back"),
-		cameraLens: Schema.Literal("auto", "wide", "ultraWide"),
+	native: z.strictObject({
+		cameraFacing: z.enum(["front", "back"]),
+		cameraLens: z.enum(["auto", "wide", "ultraWide"]),
 		cameraZoomFactor: number(1, 100),
 	}),
 });
-export type Config = Schema.Schema.Type<typeof ConfigSchema>;
-export type Rule = Schema.Schema.Type<typeof RuleSchema>;
+export type Config = z.infer<typeof ConfigSchema>;
+export type Rule = z.infer<typeof RuleSchema>;
 export const defaultRule: Rule = {
 	id: "elbow-rule",
 	kind: "angle",
@@ -131,7 +135,7 @@ export function defaults(): Config {
 			jointRadius: 4,
 			lineWidth: 3,
 			minVisibility: 0.5,
-			bodyParts: Object.keys(BODY_PARTS) as Array<keyof typeof BODY_PARTS>,
+			bodyParts: [...BODY_PART_NAMES],
 			landmarks: [...LANDMARK_NAMES],
 			joints: {},
 			connections: {},
@@ -141,12 +145,13 @@ export function defaults(): Config {
 		native: { cameraFacing: "front", cameraLens: "auto", cameraZoomFactor: 1 },
 	};
 }
-export function parseConfig(json: string): Config {
-	if (json.length > 40000)
-		throw new Error("Configuration exceeds 40,000 characters.");
-	return Schema.decodeUnknownSync(ConfigSchema, { onExcessProperty: "error" })(
-		JSON.parse(json),
-	);
+export function parseConfig(serializedConfig: string): Config {
+	const maximumConfigCharacters = 40000;
+	const isTooLong = serializedConfig.length > maximumConfigCharacters;
+	if (isTooLong) throw new Error("Configuration exceeds 40,000 characters.");
+
+	const parsedConfig: unknown = JSON.parse(serializedConfig);
+	return ConfigSchema.parse(parsedConfig);
 }
 export function preset(name: string): Config {
 	const config = defaults();

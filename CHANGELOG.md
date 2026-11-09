@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+Breaking: the `effect` peer dependency is removed, and exported schemas are zod schemas now. See "Breaking changes in 0.4.0" in the README.
+
+- The `effect` package is no longer needed. Remove it from your app.
+- Exported schemas keep their names but are zod schemas now. Replace `Schema.decodeUnknownSync(PoseFrame)(value)` with `PoseFrame.parse(value)`, and `Schema.decodeUnknownEither(PoseFrame)(value)` with `PoseFrame.safeParse(value)`.
+- Parsing `PoseImageOptions` or `PoseVideoSampling` directly now rejects unknown keys. The package's own functions behave as before.
+- Validation error messages come from zod now.
+
 ## 0.3.0
 
 First npm distribution of `expo-mediapipe-pose`. Requires a native Expo development build; targets Expo SDK 57, React Native 0.86 and React 19.2.

@@ -10,7 +10,6 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"effect": "3.22.4",
 		"expo": "57.0.32",
 		"expo-asset": "57.0.21",
 		"expo-camera": "57.0.6",

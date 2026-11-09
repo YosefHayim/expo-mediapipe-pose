@@ -6,7 +6,7 @@ An Expo native pose-detection library using Google's MediaPipe Tasks SDK. Read [
 
 - `src/camera/`, `src/segmentation/`, `src/skeleton/`, `src/tracking/`, `src/replay/`, `src/rules/`, `src/image/`, `src/video/`: one folder per job. Each holds its React component or hook, its pure logic and, where it needs them, its validated Expo async bridge (`native.ts`).
 - `src/landmarks/`: landmark names and connections, confidence checks and measurement geometry.
-- `src/contracts.ts`: Effect schemas for the native event boundary; `src/core.ts` must remain importable without React Native initialization.
+- `src/contracts.ts`: zod schemas for the native event boundary; `src/core.ts` must remain importable without React Native initialization.
 - `ios/`: Swift capture, file decoding, detector/mask ownership and Expo registration.
 - `android/src/main/java/expo/modules/mediapipepose/`: Kotlin equivalents; `android/src/test/` holds their JVM unit tests.
 - `example/`: one standalone Expo app exercising the public API; `example/fixtures/README.md` documents cold-launch native checks and mask pixel verification.
