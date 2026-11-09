@@ -8,6 +8,7 @@ Breaking: the `effect` peer dependency is removed, and exported schemas are zod 
 - Exported schemas keep their names but are zod schemas now. Replace `Schema.decodeUnknownSync(PoseFrame)(value)` with `PoseFrame.parse(value)`, and `Schema.decodeUnknownEither(PoseFrame)(value)` with `PoseFrame.safeParse(value)`.
 - Parsing `PoseImageOptions` or `PoseVideoSampling` directly now rejects unknown keys. The package's own functions behave as before.
 - Validation error messages come from zod now.
+- Target Expo SDK 58 (React Native 0.88, React 19.3). The peer ranges add Expo SDK 58 and React Native 0.88 and keep Expo SDK 57 and React Native 0.86, since the native code needs no SDK 58 API.
 
 ## 0.3.0
 
