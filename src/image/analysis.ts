@@ -62,13 +62,17 @@ export function validateLocalFileLocation(location: string): void {
 			"File URIs must not contain query or fragment components",
 		);
 }
-export function resolvePoseImageOptions(options: PoseImageOptions = {}) {
-	const resolved = PoseImageOptions.parse(options);
-	if (resolved.modelPath !== undefined)
-		validateLocalFileLocation(resolved.modelPath);
-	if (resolved.modelVariant !== "full" && resolved.modelPath === undefined)
+export function resolvePoseImageOptions(imageOptions: PoseImageOptions = {}) {
+	const checkedOptions = PoseImageOptions.parse(imageOptions);
+	const isModelPathGiven = checkedOptions.modelPath !== undefined;
+	if (isModelPathGiven) validateLocalFileLocation(checkedOptions.modelPath);
+
+	const isLocalModelMissing =
+		checkedOptions.modelVariant !== "full" &&
+		checkedOptions.modelPath === undefined;
+	if (isLocalModelMissing)
 		throw new TypeError(
 			"A local modelPath is required for lite or heavy models",
 		);
-	return resolved;
+	return checkedOptions;
 }

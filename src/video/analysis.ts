@@ -56,11 +56,11 @@ export function resolvePoseVideoOptions(options: PoseVideoOptions = {}) {
 }
 export function createVideoSamplePlan(
 	durationMs: number,
-	options: z.input<typeof PoseVideoSampling> = {},
+	samplingOptions: z.input<typeof PoseVideoSampling> = {},
 ) {
 	if (!Number.isFinite(durationMs) || durationMs <= 0)
 		throw new RangeError("Video duration must be finite and positive");
-	const sampling = PoseVideoSampling.parse(options);
+	const sampling = PoseVideoSampling.parse(samplingOptions);
 	const endMs = sampling.endMs ?? durationMs;
 	if (endMs > durationMs || endMs > 86_400_000)
 		throw new RangeError(

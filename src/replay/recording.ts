@@ -5,90 +5,169 @@ import {
 	type PoseDetection,
 } from "../image/analysis";
 
-const maximumFrames = 10_000;
-const maximumJsonCharacters = 64 * 1024 * 1024;
+const RECORDING_VERSION = 1 as const;
+const MAXIMUM_FRAMES = 10_000;
+const MAXIMUM_LANDMARKS = 33;
+const MAXIMUM_RECORDING_MILLISECONDS = 86_400_000;
+const MAXIMUM_SERIALIZED_CHARACTERS = 64 * 1024 * 1024;
+
+const hasWithinLandmarkLimit = (frame: {
+	landmarks: unknown[];
+	worldLandmarks: unknown[];
+}) => {
+	const hasWithinLandmarks = frame.landmarks.length <= MAXIMUM_LANDMARKS;
+	const hasWithinWorldLandmarks =
+		frame.worldLandmarks.length <= MAXIMUM_LANDMARKS;
+	return hasWithinLandmarks && hasWithinWorldLandmarks;
+};
+
+const hasIncreasingTimestamps = (recording: {
+	frames: Array<{ timestampMs: number }>;
+}) => {
+	const hasNoFrames = recording.frames.length === 0;
+	if (hasNoFrames) return true;
+
+	const isFirstFrameAtZero = recording.frames[0]?.timestampMs === 0;
+	if (!isFirstFrameAtZero) return false;
+
+	return recording.frames.every((recordedFrame, index) => {
+		const isFirstFrame = index === 0;
+		const previousFrame = recording.frames[index - 1];
+		const isAfterPrevious =
+			previousFrame !== undefined &&
+			recordedFrame.timestampMs > previousFrame.timestampMs;
+		return isFirstFrame || isAfterPrevious;
+	});
+};
+
+const createRecordingSchema = <FrameSchema extends z.ZodType>(
+	frameSchema: FrameSchema,
+) => {
+	const frameEntrySchema = z.strictObject({
+		timestampMs: z.number().min(0).max(MAXIMUM_RECORDING_MILLISECONDS),
+		frame: frameSchema,
+	});
+	const recordingShapeSchema = z.strictObject({
+		version: z.literal(RECORDING_VERSION),
+		frames: z.array(frameEntrySchema).max(MAXIMUM_FRAMES),
+	});
+	return recordingShapeSchema.refine(hasIncreasingTimestamps);
+};
+
+const withoutSegmentation = (candidateFrame: unknown): unknown => {
+	const isObjectFrame =
+		typeof candidateFrame === "object" && candidateFrame !== null;
+	const hasSegmentation = isObjectFrame && "segmentation" in candidateFrame;
+	if (!hasSegmentation) return candidateFrame;
+
+	const { segmentation: _segmentation, ...landmarks } = candidateFrame;
+	return landmarks;
+};
+
 const RecordedFrame = z
 	.strictObject(createPoseFrameFields(true))
-	.refine(
-		(frame) =>
-			frame.landmarks.length <= 33 && frame.worldLandmarks.length <= 33,
-	);
-function recordingSchema<FrameSchema extends z.ZodType>(
-	frameSchema: FrameSchema,
-) {
-	return z
-		.strictObject({
-			version: z.literal(1),
-			frames: z
-				.array(
-					z.strictObject({
-						timestampMs: z.number().min(0).max(86_400_000),
-						frame: frameSchema,
-					}),
-				)
-				.max(maximumFrames),
-		})
-		.refine((recording) => {
-			if (recording.frames.length === 0) return true;
-			if (recording.frames[0]?.timestampMs !== 0) return false;
-			return recording.frames.every((entry, index) => {
-				if (index === 0) return true;
-				const previous = recording.frames[index - 1];
-				return (
-					previous !== undefined && entry.timestampMs > previous.timestampMs
-				);
-			});
-		});
-}
-export const PoseRecording = recordingSchema(RecordedFrame);
+	.refine(hasWithinLandmarkLimit);
+export const PoseRecording = createRecordingSchema(RecordedFrame);
 export type PoseRecording = z.infer<typeof PoseRecording>;
-function withoutSegmentation(value: unknown): unknown {
-	if (typeof value !== "object" || value === null) return value;
-	if (!("segmentation" in value)) return value;
-	const { segmentation: _segmentation, ...landmarks } = value;
-	return landmarks;
-}
-const decodeFrame = (value: unknown) =>
-	RecordedFrame.parse(withoutSegmentation(value));
 
-export function parsePoseRecording(json: string): PoseRecording {
-	if (json.length > maximumJsonCharacters)
-		throw new RangeError("Recording JSON exceeds 64 Mi characters");
-	return PoseRecording.parse(JSON.parse(json));
-}
-export function serializePoseRecording(recording: PoseRecording): string {
-	const json = JSON.stringify(PoseRecording.parse(recording));
-	if (json.length > maximumJsonCharacters)
-		throw new RangeError("Recording JSON exceeds 64 Mi characters");
-	return json;
-}
-export function copyPoseRecording(recording: PoseRecording): PoseRecording {
-	return parsePoseRecording(serializePoseRecording(recording));
-}
+const RecordedDetection = z
+	.strictObject(createPoseDetectionFields(true))
+	.refine(hasWithinLandmarkLimit);
+export const PoseDetectionRecording = createRecordingSchema(RecordedDetection);
+export type PoseDetectionRecording = z.infer<typeof PoseDetectionRecording>;
+
+const decodeFrame = (candidateFrame: unknown) => {
+	const frameWithoutSegmentation = withoutSegmentation(candidateFrame);
+	return RecordedFrame.parse(frameWithoutSegmentation);
+};
+
+const decodeDetection = (candidateDetection: unknown) => {
+	const detectionWithoutSegmentation = withoutSegmentation(candidateDetection);
+	return RecordedDetection.parse(detectionWithoutSegmentation);
+};
+
+const assertWithinSerializedLimit = (serializedRecording: string) => {
+	const isWithinLimit =
+		serializedRecording.length <= MAXIMUM_SERIALIZED_CHARACTERS;
+	if (isWithinLimit) return;
+
+	throw new RangeError("Recording JSON exceeds 64 Mi characters");
+};
+
+const parseSerializedRecording = <Recording>(
+	recordingSchema: z.ZodType<Recording>,
+	serializedRecording: string,
+): Recording => {
+	assertWithinSerializedLimit(serializedRecording);
+
+	const parsedRecording: unknown = JSON.parse(serializedRecording);
+	return recordingSchema.parse(parsedRecording);
+};
+
+const serializeCheckedRecording = <Recording>(
+	recordingSchema: z.ZodType<Recording>,
+	recording: Recording,
+): string => {
+	const checkedRecording = recordingSchema.parse(recording);
+
+	const serializedRecording = JSON.stringify(checkedRecording);
+	assertWithinSerializedLimit(serializedRecording);
+	return serializedRecording;
+};
+
+export const parsePoseRecording = (serializedRecording: string) =>
+	parseSerializedRecording(PoseRecording, serializedRecording);
+
+export const serializePoseRecording = (recording: PoseRecording) =>
+	serializeCheckedRecording(PoseRecording, recording);
+
+export const copyPoseRecording = (recording: PoseRecording) => {
+	const serializedRecording = serializePoseRecording(recording);
+	return parsePoseRecording(serializedRecording);
+};
+
+export const parsePoseDetectionRecording = (serializedRecording: string) =>
+	parseSerializedRecording(PoseDetectionRecording, serializedRecording);
+
+export const serializePoseDetectionRecording = (
+	recording: PoseDetectionRecording,
+) => serializeCheckedRecording(PoseDetectionRecording, recording);
+
+export const copyPoseDetectionRecording = (
+	recording: PoseDetectionRecording,
+) => {
+	const serializedRecording = serializePoseDetectionRecording(recording);
+	return parsePoseDetectionRecording(serializedRecording);
+};
+
 export type PoseRecorderStatus = "idle" | "recording" | "stopped" | "full";
-export function createPoseRecorder(options: { maxFrames?: number } = {}) {
-	return createRecorder<PoseFrame, PoseRecording>(
-		options,
-		decodeFrame,
-		copyPoseRecording,
-	);
-}
-function createRecorder<Frame, Recording>(
-	options: { maxFrames?: number },
-	decode: (value: unknown) => Frame,
+
+const createRecorder = <Frame, Recording>(
+	recorderSettings: { maxFrames?: number },
+	decode: (candidateFrame: unknown) => Frame,
 	copy: (recording: {
 		version: 1;
 		frames: Array<{ timestampMs: number; frame: Frame }>;
 	}) => Recording,
-) {
-	const capacity = options.maxFrames ?? 1800;
-	if (!Number.isInteger(capacity) || capacity < 1 || capacity > maximumFrames)
+) => {
+	const defaultFrameCapacity = 1800;
+	const frameCapacity = recorderSettings.maxFrames ?? defaultFrameCapacity;
+	const isCapacityValid =
+		Number.isInteger(frameCapacity) &&
+		frameCapacity >= 1 &&
+		frameCapacity <= MAXIMUM_FRAMES;
+	if (!isCapacityValid)
 		throw new RangeError("maxFrames must be an integer from 1 to 10000");
+
+	const emptyRecordingCharacters = JSON.stringify({
+		version: RECORDING_VERSION,
+		frames: [],
+	}).length;
 	let status: PoseRecorderStatus = "idle";
 	let frames: Array<{ timestampMs: number; frame: Frame }> = [];
 	let startedAt: number | undefined;
 	let previousTimestamp = -1;
-	let serializedCharacters = JSON.stringify({ version: 1, frames: [] }).length;
+	let serializedCharacters = emptyRecordingCharacters;
 	return {
 		get status() {
 			return status;
@@ -100,78 +179,70 @@ function createRecorder<Frame, Recording>(
 			frames = [];
 			startedAt = undefined;
 			previousTimestamp = -1;
-			serializedCharacters = JSON.stringify({ version: 1, frames: [] }).length;
+			serializedCharacters = emptyRecordingCharacters;
 			status = "recording";
 		},
 		append(frame: Frame, now = performance.now()): boolean {
-			if (status !== "recording") return false;
-			if (!Number.isFinite(now) || now < 0)
+			const isRecording = status === "recording";
+			if (!isRecording) return false;
+
+			const isTimeInvalid = !Number.isFinite(now) || now < 0;
+			if (isTimeInvalid)
 				throw new RangeError("Recording time must be finite and non-negative");
+
 			const origin = startedAt ?? now;
 			const timestampMs = now - origin;
-			if (timestampMs <= previousTimestamp)
+			const isOutOfOrder = timestampMs <= previousTimestamp;
+			if (isOutOfOrder)
 				throw new RangeError("Recording timestamps must strictly increase");
-			if (timestampMs > 86_400_000)
-				throw new RangeError("Recordings cannot exceed 24 hours");
+
+			const isTooLong = timestampMs > MAXIMUM_RECORDING_MILLISECONDS;
+			if (isTooLong) throw new RangeError("Recordings cannot exceed 24 hours");
+
 			const snapshot = { timestampMs, frame: decode(frame) };
-			const entry = JSON.stringify(snapshot);
-			const separatorLength = frames.length === 0 ? 0 : 1;
-			const nextSize = serializedCharacters + separatorLength + entry.length;
-			if (nextSize > maximumJsonCharacters)
+			const serializedEntry = JSON.stringify(snapshot);
+			const isFirstEntry = frames.length === 0;
+			const separatorCharacters = isFirstEntry ? 0 : 1;
+			const nextSerializedCharacters =
+				serializedCharacters + separatorCharacters + serializedEntry.length;
+			const isOverLimit =
+				nextSerializedCharacters > MAXIMUM_SERIALIZED_CHARACTERS;
+			if (isOverLimit)
 				throw new RangeError(
 					"Recording JSON exceeds 64 Mi characters; stop to retrieve captured frames",
 				);
+
 			frames.push(snapshot);
-			serializedCharacters = nextSize;
+			serializedCharacters = nextSerializedCharacters;
 			startedAt = origin;
 			previousTimestamp = timestampMs;
-			if (frames.length === capacity) status = "full";
+			const isFull = frames.length === frameCapacity;
+			if (isFull) status = "full";
 			return true;
 		},
 		stop(): Recording {
-			const recording = copy({ version: 1, frames });
-			if (status === "recording") status = "stopped";
+			const recording = copy({ version: RECORDING_VERSION, frames });
+			const isRecording = status === "recording";
+			if (isRecording) status = "stopped";
 			return recording;
 		},
 	};
-}
+};
 
-const RecordedDetection = z
-	.strictObject(createPoseDetectionFields(true))
-	.refine(
-		(frame) =>
-			frame.landmarks.length <= 33 && frame.worldLandmarks.length <= 33,
+export const createPoseRecorder = (
+	recorderSettings: { maxFrames?: number } = {},
+) =>
+	createRecorder<PoseFrame, PoseRecording>(
+		recorderSettings,
+		decodeFrame,
+		copyPoseRecording,
 	);
-export const PoseDetectionRecording = recordingSchema(RecordedDetection);
-export type PoseDetectionRecording = z.infer<typeof PoseDetectionRecording>;
-export function serializePoseDetectionRecording(
-	recording: PoseDetectionRecording,
-): string {
-	const json = JSON.stringify(PoseDetectionRecording.parse(recording));
-	if (json.length > maximumJsonCharacters)
-		throw new RangeError("Recording JSON exceeds 64 Mi characters");
-	return json;
-}
-export function parsePoseDetectionRecording(
-	json: string,
-): PoseDetectionRecording {
-	if (json.length > maximumJsonCharacters)
-		throw new RangeError("Recording JSON exceeds 64 Mi characters");
-	return PoseDetectionRecording.parse(JSON.parse(json));
-}
-export function copyPoseDetectionRecording(
-	recording: PoseDetectionRecording,
-): PoseDetectionRecording {
-	return parsePoseDetectionRecording(
-		serializePoseDetectionRecording(recording),
-	);
-}
-export function createPoseDetectionRecorder(
-	options: { maxFrames?: number } = {},
-) {
-	return createRecorder<PoseDetection, PoseDetectionRecording>(
-		options,
-		(value) => RecordedDetection.parse(withoutSegmentation(value)),
+
+export const createPoseDetectionRecorder = (
+	recorderSettings: { maxFrames?: number } = {},
+) =>
+	createRecorder<PoseDetection, PoseDetectionRecording>(
+		recorderSettings,
+		decodeDetection,
 		copyPoseDetectionRecording,
 	);
-}

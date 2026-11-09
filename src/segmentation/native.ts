@@ -8,14 +8,18 @@ export async function releasePoseSegmentation(leaseId: string): Promise<void> {
 	}>("ExpoMediaPipePose").releasePoseSegmentation(leaseId);
 }
 export async function discardResultSegmentation(
-	result: unknown,
+	candidateAnalysis: unknown,
 ): Promise<void> {
-	if (typeof result !== "object" || result === null) return;
-	if (!("segmentation" in result)) return;
-	const segmentation = result.segmentation;
+	if (typeof candidateAnalysis !== "object" || candidateAnalysis === null)
+		return;
+	if (!("segmentation" in candidateAnalysis)) return;
+	const segmentation = candidateAnalysis.segmentation;
 	if (typeof segmentation !== "object" || segmentation === null) return;
 	if (!("leaseId" in segmentation)) return;
 	const leaseIdReply = SegmentationLeaseId.safeParse(segmentation.leaseId);
-	if (!leaseIdReply.success) return;
+
+	const isLeaseIdInvalid = !leaseIdReply.success;
+	if (isLeaseIdInvalid) return;
+
 	await releasePoseSegmentation(leaseIdReply.data);
 }

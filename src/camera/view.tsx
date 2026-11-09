@@ -59,12 +59,14 @@ interface NativeCameraProps extends ViewProps, CameraOptions {
 }
 
 const NativeCamera = requireNativeView<NativeCameraProps>("ExpoMediaPipePose");
-const decodeFrame = (value: unknown) => PoseFrame.safeParse(value);
-const decodeConfiguration = (value: unknown) =>
-	CameraConfiguration.safeParse(value);
-const decodeFailure = (value: unknown) => InferenceError.safeParse(value);
-const decodeMetrics = (value: unknown) =>
-	PosePerformanceMetrics.safeParse(value);
+const decodeFrame = (candidateNativeEvent: unknown) =>
+	PoseFrame.safeParse(candidateNativeEvent);
+const decodeConfiguration = (candidateNativeEvent: unknown) =>
+	CameraConfiguration.safeParse(candidateNativeEvent);
+const decodeFailure = (candidateNativeEvent: unknown) =>
+	InferenceError.safeParse(candidateNativeEvent);
+const decodeMetrics = (candidateNativeEvent: unknown) =>
+	PosePerformanceMetrics.safeParse(candidateNativeEvent);
 const styles = StyleSheet.create({
 	container: { overflow: "hidden" },
 	overlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
@@ -156,12 +158,15 @@ export const PoseCameraView = ({
 				return;
 			}
 			const decoded = decodeFrame(event.nativeEvent);
-			if (!decoded.success) {
+
+			const isDecodeInvalid = !decoded.success;
+			if (isDecodeInvalid) {
 				clear();
 				discard();
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
+
 			if (skeletonEnabled) {
 				updateOverlay(decoded.data);
 			}
@@ -189,10 +194,13 @@ export const PoseCameraView = ({
 		(event: { nativeEvent: unknown }) => {
 			if (!isActive) return;
 			const decoded = decodeMetrics(event.nativeEvent);
-			if (!decoded.success) {
+
+			const isDecodeInvalid = !decoded.success;
+			if (isDecodeInvalid) {
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
+
 			onPerformanceMetrics?.(decoded.data);
 		},
 		[isActive, onInferenceError, onPerformanceMetrics],
@@ -202,10 +210,13 @@ export const PoseCameraView = ({
 		(event: { nativeEvent: unknown }) => {
 			clear();
 			const decoded = decodeConfiguration(event.nativeEvent);
-			if (!decoded.success) {
+
+			const isDecodeInvalid = !decoded.success;
+			if (isDecodeInvalid) {
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
+
 			onCameraConfigured?.(decoded.data);
 		},
 		[clear, onCameraConfigured, onInferenceError],
@@ -214,10 +225,15 @@ export const PoseCameraView = ({
 	const handleFailure = React.useCallback(
 		(event: { nativeEvent: unknown }) => {
 			clear();
-			const decoded = decodeFailure(event.nativeEvent);
-			onInferenceError?.(
-				decoded.success ? decoded.data : { code: "invalidNativeEvent" },
-			);
+			const decodedFailure = decodeFailure(event.nativeEvent);
+
+			const isFailureInvalid = !decodedFailure.success;
+			if (isFailureInvalid) {
+				onInferenceError?.({ code: "invalidNativeEvent" });
+				return;
+			}
+
+			onInferenceError?.(decodedFailure.data);
 		},
 		[clear, onInferenceError],
 	);
