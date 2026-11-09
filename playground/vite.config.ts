@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
@@ -32,4 +33,5 @@ export default defineConfig(({ command }) => ({
 	],
 	worker: { format: "es" },
 	build: { chunkSizeWarningLimit: 800 },
+	test: { include: ["src/**/*.test.ts"] },
 }));
