@@ -1,5 +1,5 @@
 import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
-import type { BrowserMask, WorkerRequest, WorkerResponse } from "./types";
+import type { BrowserMask, WorkerRequest, WorkerResponse } from "@/types";
 
 let detector: PoseLandmarker | undefined;
 let generation = 0;

@@ -1,13 +1,13 @@
 import { type RefObject, useEffect, useRef, useState } from "react";
-import type { Config } from "./config";
-import InferenceWorker from "./inference.worker?worker&inline";
+import type { Config } from "@/config";
 import type {
 	BrowserFrame,
 	BrowserMask,
 	SourceMode,
 	WorkerRequest,
 	WorkerResponse,
-} from "./types";
+} from "@/types";
+import InferenceWorker from "./inference.worker?worker&inline";
 
 interface Options {
 	config: Config;
