@@ -6,7 +6,7 @@ import {
 	LANDMARK_NAMES,
 	type LandmarkName,
 	POSE_CONNECTIONS,
-} from "./landmarks";
+} from "../landmarks/names";
 
 import { type SelectablePose, selectPose } from "./selection";
 

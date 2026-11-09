@@ -4,8 +4,26 @@ import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { createThresholdRule, type PoseRuleOptions } from "../src/core";
-import { usePoseRules } from "../src/hooks/usePoseRules";
+import { usePoseRules } from "../src/rules/use-pose-rules";
 import { poseFrame } from "./fixtures";
+
+interface RulesHarnessProps {
+	rules: Record<string, PoseRuleOptions>;
+	onResult: (ruleSet: ReturnType<typeof usePoseRules>) => void;
+}
+
+const RulesHarness = ({ rules, onResult }: RulesHarnessProps) => {
+	const ruleSet = usePoseRules(rules);
+	onResult(ruleSet);
+	assert.deepEqual(
+		Object.keys(ruleSet.statuses).sort(),
+		Object.keys(rules).sort(),
+	);
+	assert.ok(
+		Object.values(ruleSet.statuses).every((status) => status !== undefined),
+	);
+	return null;
+};
 
 it("maintains independent named rules through changes, expiry, removal and reset", async (test) => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
@@ -52,19 +70,15 @@ it("maintains independent named rules through changes, expiry, removal and reset
 		staleAfterMs: 1000,
 		onChange: (status) => transitions.push(`elbow:${status}`),
 	};
-	const Harness = ({ rules }: { rules: Record<string, PoseRuleOptions> }) => {
-		result = usePoseRules(rules);
-		assert.deepEqual(
-			Object.keys(result.statuses).sort(),
-			Object.keys(rules).sort(),
-		);
-		assert.ok(
-			Object.values(result.statuses).every((status) => status !== undefined),
-		);
-		return null;
+	const captureResult = (captured: ReturnType<typeof usePoseRules>) => {
+		result = captured;
 	};
 	const render = async (rules: Record<string, PoseRuleOptions>) => {
-		await act(() => root.render(createElement(Harness, { rules })));
+		await act(() =>
+			root.render(
+				createElement(RulesHarness, { onResult: captureResult, rules }),
+			),
+		);
 	};
 	let frameNumber = 0;
 	const advanceTime = async (elapsed: number) => {

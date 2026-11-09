@@ -1,7 +1,7 @@
 import type { PoseFrame } from "../contracts";
-import { hasLandmarkConfidence } from "./confidence";
-import { LANDMARK_NAMES, type LandmarkName } from "./landmarks";
-import { type PoseRuleOptions, validatePoseRuleOptions } from "./poseRule";
+import { hasLandmarkConfidence } from "../landmarks/confidence";
+import { LANDMARK_NAMES, type LandmarkName } from "../landmarks/names";
+import { type PoseRuleOptions, validatePoseRuleOptions } from "../rules/rule";
 
 export type PoseTrackingStatus =
 	| "searching"
@@ -20,7 +20,7 @@ export interface PoseTrackingState {
 export interface PoseTrackingOptions
 	extends Pick<
 		PoseRuleOptions,
-		"landmarks" | "minVisibility" | "holdMs" | "staleAfterMs" | "isActive"
+		"names" | "minVisibility" | "holdMs" | "staleAfterMs" | "isActive"
 	> {
 	onChange?: (state: PoseTrackingState) => void;
 }

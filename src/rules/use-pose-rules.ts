@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { PoseFrame } from "../contracts";
-import type { LandmarkName } from "../pose/landmarks";
+import type { LandmarkName } from "../landmarks/names";
 import {
 	advancePoseRule,
 	evaluatePoseRule,
@@ -9,7 +9,7 @@ import {
 	type PoseRuleState,
 	type PoseRuleStatus,
 	validatePoseRuleOptions,
-} from "../pose/poseRule";
+} from "./rule";
 
 interface RuleRuntime {
 	identity: string;

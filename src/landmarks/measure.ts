@@ -1,6 +1,6 @@
 import type { Landmark } from "../contracts";
 import { hasLandmarkConfidence } from "./confidence";
-import { LANDMARK_NAMES, type LandmarkName } from "./landmarks";
+import { LANDMARK_NAMES, type LandmarkName } from "./names";
 
 export interface GeometryOptions {
 	minVisibility?: number;

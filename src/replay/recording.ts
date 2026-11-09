@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 import { PoseFrame } from "../contracts";
-import { PoseDetection } from "./imageAnalysis";
+import { PoseDetection } from "../image/analysis";
 
 const maximumFrames = 10_000;
 const maximumJsonCharacters = 64 * 1024 * 1024;

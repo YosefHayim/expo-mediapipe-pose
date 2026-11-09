@@ -3,7 +3,7 @@ import {
 	PoseDetection,
 	type PoseImageOptions,
 	resolvePoseImageOptions,
-} from "./imageAnalysis";
+} from "../image/analysis";
 
 const Milliseconds = Schema.Number.pipe(
 	Schema.int(),

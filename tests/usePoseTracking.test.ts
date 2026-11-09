@@ -4,8 +4,17 @@ import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import type { PoseTrackingOptions, PoseTrackingStatus } from "../src/core";
-import { usePoseTracking } from "../src/hooks/usePoseTracking";
+import { usePoseTracking } from "../src/tracking/use-pose-tracking";
 import { poseFrame } from "./fixtures";
+
+type TrackingHarnessProps = PoseTrackingOptions & {
+	onTracking: (tracking: ReturnType<typeof usePoseTracking>) => void;
+};
+
+const TrackingHarness = ({ onTracking, ...settings }: TrackingHarnessProps) => {
+	onTracking(usePoseTracking(settings));
+	return null;
+};
 
 it("stabilizes tracking, emits transitions once, expires stale input and resets on pause", async (test) => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
@@ -45,9 +54,8 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		staleAfterMs: 500,
 		onChange: (state) => transitions.push(state.status),
 	};
-	const Harness = (settings: PoseTrackingOptions) => {
-		tracking = usePoseTracking(settings);
-		return null;
+	const captureTracking = (captured: ReturnType<typeof usePoseTracking>) => {
+		tracking = captured;
 	};
 	let frameNumber = 0;
 	const advanceTime = async (elapsed: number) => {
@@ -67,7 +75,14 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		);
 	};
 	try {
-		await act(() => root.render(createElement(Harness, options)));
+		await act(() =>
+			root.render(
+				createElement(TrackingHarness, {
+					onTracking: captureTracking,
+					...options,
+				}),
+			),
+		);
 		assert.equal(currentTracking().status, "searching");
 		await send(0);
 		assert.equal(currentTracking().status, "acquiring");
@@ -82,7 +97,8 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		assert.equal(currentTracking().status, "found");
 		await act(() =>
 			root.render(
-				createElement(Harness, {
+				createElement(TrackingHarness, {
+					onTracking: captureTracking,
 					...options,
 					onChange: (state) => latestTransitions.push(state.status),
 				}),
@@ -98,13 +114,26 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		await send(0);
 		assert.equal(currentTracking().status, "acquiring");
 		await act(() =>
-			root.render(createElement(Harness, { ...options, isActive: false })),
+			root.render(
+				createElement(TrackingHarness, {
+					onTracking: captureTracking,
+					...options,
+					isActive: false,
+				}),
+			),
 		);
 		await send(100);
 		assert.equal(currentTracking().status, "inactive");
 		await advanceTime(1000);
 		assert.equal(currentTracking().status, "inactive");
-		await act(() => root.render(createElement(Harness, options)));
+		await act(() =>
+			root.render(
+				createElement(TrackingHarness, {
+					onTracking: captureTracking,
+					...options,
+				}),
+			),
+		);
 		assert.equal(currentTracking().status, "searching");
 		await send(0);
 		await act(() => currentTracking().reset());
@@ -113,7 +142,11 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		await send(100);
 		await act(() =>
 			root.render(
-				createElement(Harness, { ...options, landmarks: ["rightWrist"] }),
+				createElement(TrackingHarness, {
+					onTracking: captureTracking,
+					...options,
+					landmarks: ["rightWrist"],
+				}),
 			),
 		);
 		assert.equal(currentTracking().status, "searching");
@@ -121,14 +154,21 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		await send(100);
 		assert.equal(currentTracking().status, "found");
 		await act(() =>
-			root.render(createElement(Harness, { ...options, minVisibility: 1 })),
+			root.render(
+				createElement(TrackingHarness, {
+					onTracking: captureTracking,
+					...options,
+					minVisibility: 1,
+				}),
+			),
 		);
 		await send(0);
 		assert.equal(currentTracking().status, "incomplete");
 		assert.deepEqual(currentTracking().uncertainLandmarks, ["leftWrist"]);
 		await act(() =>
 			root.render(
-				createElement(Harness, {
+				createElement(TrackingHarness, {
+					onTracking: captureTracking,
 					...options,
 					holdMs: 0,
 					onChange: (state) => {
@@ -141,7 +181,14 @@ it("stabilizes tracking, emits transitions once, expires stale input and resets 
 		assert.equal(currentTracking().status, "searching");
 		await advanceTime(1000);
 		assert.equal(currentTracking().status, "searching");
-		await act(() => root.render(createElement(Harness, options)));
+		await act(() =>
+			root.render(
+				createElement(TrackingHarness, {
+					onTracking: captureTracking,
+					...options,
+				}),
+			),
+		);
 		await send(0);
 	} finally {
 		const callbackCount = transitions.length + latestTransitions.length;

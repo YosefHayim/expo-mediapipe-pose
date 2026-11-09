@@ -1,13 +1,13 @@
 import * as React from "react";
 import Svg, { Circle, Line } from "react-native-svg";
 import type { PoseFrame } from "../contracts";
-import type { SelectablePose } from "../pose/selection";
 import {
 	createDetectionSkeleton,
 	createSkeleton,
 	type Dimensions,
 	type SkeletonOptions,
-} from "../pose/skeleton";
+} from "./logic";
+import type { SelectablePose } from "./selection";
 
 export type PoseSkeletonProps = SkeletonOptions &
 	Dimensions &

@@ -1,10 +1,10 @@
 import type { Landmark, PoseFrame } from "../contracts";
-import type { LandmarkName } from "./landmarks";
+import type { LandmarkName } from "../landmarks/names";
 import {
 	type PoseRuleOptions,
 	type PoseRuleStatus,
 	validatePoseRuleOptions,
-} from "./poseRule";
+} from "./rule";
 
 export interface PoseThreshold {
 	direction: "above" | "below";

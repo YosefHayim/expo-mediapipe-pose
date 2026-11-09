@@ -135,13 +135,13 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 	});
 	try {
 		const { releasePoseSegmentation, discardResultSegmentation } = await import(
-			"../src/native/segmentation"
+			"../src/segmentation/native"
 		);
 		await assert.rejects(releasePoseSegmentation("../../file"));
 		assert.deepEqual(calls, []);
 		await discardResultSegmentation({ segmentation: { leaseId: "invalid" } });
 		assert.deepEqual(calls, []);
-		const { analyzePoseImage } = await import("../src/native/imageAnalysis");
+		const { analyzePoseImage } = await import("../src/image/native");
 		await assert.rejects(analyzePoseImage("/photo.jpg"));
 		assert.deepEqual(calls, [leaseId]);
 		calls.length = 0;
@@ -157,7 +157,7 @@ test("native mask cleanup validates handles and reclaims malformed or undelivere
 		assert.deepEqual(calls, [leaseId]);
 		releaseFailure = undefined;
 		calls.length = 0;
-		const { analyzePoseVideo } = await import("../src/native/videoAnalysis");
+		const { analyzePoseVideo } = await import("../src/video/native");
 		const controller = new AbortController();
 		await assert.rejects(
 			analyzePoseVideo("/video.mp4", {

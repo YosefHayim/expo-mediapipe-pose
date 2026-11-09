@@ -1,5 +1,5 @@
-import type { PoseRuleStatus } from "./poseRule";
-import type { SkeletonOptions } from "./skeleton";
+import type { SkeletonOptions } from "../skeleton/logic";
+import type { PoseRuleStatus } from "./rule";
 
 export type SkeletonAppearance = Pick<
 	SkeletonOptions,

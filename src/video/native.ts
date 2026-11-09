@@ -1,14 +1,13 @@
 import { Schema } from "effect";
 import { requireNativeModule } from "expo";
-import { validateLocalFileLocation } from "../pose/imageAnalysis";
+import { validateLocalFileLocation } from "../image/analysis";
+import { discardResultSegmentation } from "../segmentation/native";
 import {
 	createVideoSamplePlan,
 	PoseVideoFrame,
 	type PoseVideoOptions,
 	resolvePoseVideoOptions,
-} from "../pose/videoAnalysis";
-
-import { discardResultSegmentation } from "./segmentation";
+} from "./analysis";
 
 const VideoHandle = Schema.Struct({
 	id: Schema.String.pipe(Schema.nonEmptyString()),

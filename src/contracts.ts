@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { PoseSegmentation } from "./pose/segmentation";
+import { PoseSegmentation } from "./segmentation/mask";
 
 const Finite = Schema.Number.pipe(Schema.finite());
 const Confidence = Finite.pipe(Schema.between(0, 1));

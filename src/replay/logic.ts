@@ -1,5 +1,5 @@
 import type { PoseFrame } from "../contracts";
-import type { PoseDetection } from "./imageAnalysis";
+import type { PoseDetection } from "../image/analysis";
 import {
 	copyPoseDetectionRecording,
 	copyPoseRecording,

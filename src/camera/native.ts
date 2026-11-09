@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 import { requireNativeModule } from "expo";
-import { CameraCapabilities } from "../pose/cameraCapabilities";
+import { CameraCapabilities } from "./capabilities";
 
 export async function getCameraCapabilities(): Promise<CameraCapabilities> {
 	const native = requireNativeModule<{

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Image, type ImageProps, View } from "react-native";
-import type { PoseSegmentation } from "../pose/segmentation";
-import { projectLandmark } from "../pose/skeleton";
+import { projectLandmark } from "../skeleton/logic";
+import type { PoseSegmentation } from "./mask";
 
 export interface PoseSegmentationOverlayProps {
 	segmentation: PoseSegmentation;

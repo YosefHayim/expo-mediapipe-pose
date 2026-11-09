@@ -17,12 +17,12 @@ import {
 	PoseFrame,
 	PosePerformanceMetrics,
 } from "../contracts";
-import { usePoseOverlayFrame } from "../hooks/usePoseOverlayFrame";
-import { discardResultSegmentation } from "../native/segmentation";
-import { getOverlayStaleAfterMs } from "../pose/frameRates";
-import { MaskMaxDimension } from "../pose/segmentation";
-import type { SkeletonOptions } from "../pose/skeleton";
-import { PoseSkeleton } from "./PoseSkeleton";
+import { MaskMaxDimension } from "../segmentation/mask";
+import { discardResultSegmentation } from "../segmentation/native";
+import type { SkeletonOptions } from "../skeleton/logic";
+import { PoseSkeleton } from "../skeleton/view";
+import { getOverlayStaleAfterMs } from "./frame-rates";
+import { usePoseOverlayFrame } from "./use-overlay-frame";
 
 interface CameraOptions {
 	isActive?: boolean;
