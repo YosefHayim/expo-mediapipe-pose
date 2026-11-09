@@ -29,7 +29,7 @@ Version 0.3.0 includes these features. Styling and rules are configurable withou
 
 ## Status and requirements
 
-Version 0.3.0 targets Expo SDK 57, React Native 0.86, and React 19.2. Requires an iOS/Android development build; Expo Go cannot load this native module. Native builds, TypeScript, packaging and automated behavior tests are checked. Physical-device alignment, long-session performance and accuracy comparisons remain release evaluation work; no performance advantage over other wrappers is claimed.
+Version 0.4.0 targets Expo SDK 58, React Native 0.88, and React 19.3; its peer ranges also allow Expo SDK 57, React Native 0.86, and React 19.2. Requires an iOS/Android development build; Expo Go cannot load this native module. Native builds, TypeScript, packaging and automated behavior tests are checked. Physical-device alignment, long-session performance and accuracy comparisons remain release evaluation work; no performance advantage over other wrappers is claimed.
 
 ## Documentation
 
@@ -193,7 +193,7 @@ No. The Expo integration uses a different public API: replace `RNMediapipe` with
 <details>
 <summary>Does it work in Expo Go, a bare React Native app, or a browser?</summary>
 
-Camera and file inference require an iOS/Android development build. Expo Go cannot load this custom native module. An existing React Native app needs [Expo modules installed](https://docs.expo.dev/bare/installing-expo-modules/) and compatible dependencies; the current development target is Expo SDK 57 / React Native 0.86, not a verified compatibility matrix for older versions. There is no browser inference backend. Pure helpers are available through `expo-mediapipe-pose/core` without initializing React Native.
+Camera and file inference require an iOS/Android development build. Expo Go cannot load this custom native module. An existing React Native app needs [Expo modules installed](https://docs.expo.dev/bare/installing-expo-modules/) and compatible dependencies; the current development target is Expo SDK 58 / React Native 0.88, not a verified compatibility matrix for older versions. There is no browser inference backend. Pure helpers are available through `expo-mediapipe-pose/core` without initializing React Native.
 
 </details>
 
