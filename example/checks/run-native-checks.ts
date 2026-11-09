@@ -2,9 +2,9 @@ import { Asset } from "expo-asset";
 import { File, Paths } from "expo-file-system";
 import { analyzePoseImage, getCameraCapabilities } from "expo-mediapipe-pose";
 import { Platform } from "react-native";
-import { runMultiplePoseChecks } from "./runMultiplePoseChecks";
-import { runSegmentationChecks } from "./runSegmentationChecks";
-import { runVideoChecks } from "./runVideoChecks";
+import { runMultiplePoseChecks } from "./run-multiple-pose-checks";
+import { runSegmentationChecks } from "./run-segmentation-checks";
+import { runVideoChecks } from "./run-video-checks";
 
 function verify(condition: boolean, message: string): asserts condition {
 	if (!condition) throw new Error(message);

@@ -8,7 +8,7 @@ import {
 } from "expo-mediapipe-pose";
 import * as React from "react";
 import { Button, Text, View } from "react-native";
-import { raisedArmRule } from "./poseRules";
+import { raisedArmRule } from "@/rules/pose-rules";
 
 export function ReplayPanel({
 	recording,

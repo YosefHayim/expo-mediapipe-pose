@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ScrollView, Text } from "react-native";
-import { runNativeChecks } from "./runNativeChecks";
+import { runNativeChecks } from "./run-native-checks";
 
 export function NativeChecks() {
 	const [report, setReport] = React.useState("Running native fixture checks…");
