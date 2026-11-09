@@ -1,0 +1,25 @@
+{
+	"$schema": "https://unpkg.com/knip@6/schema.json",
+	"includeEntryExports": true,
+	"workspaces": {
+		".": {
+			"entry": [
+				"src/index.ts",
+				"src/core.ts",
+				"tests/*.test.ts",
+				"tests/ruleTypes.ts",
+				"scripts/verify-package.mjs"
+			]
+		},
+		"playground": {
+			"entry": [
+				"src/main.tsx",
+				"tests/*.test.ts",
+				"tests/*.spec.ts",
+				"playwright.config.ts",
+				"vite.config.ts",
+				"scripts/assets.mjs"
+			]
+		}
+	}
+}

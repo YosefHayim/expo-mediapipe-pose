@@ -5,8 +5,13 @@
 		"//#lint": {},
 		"//#typecheck": { "dependsOn": ["//#build"] },
 		"//#test": { "dependsOn": ["//#build"] },
+		"build": { "outputs": ["dist/**"] },
+		"lint": {},
+		"test": {},
+		"typecheck": {},
 		"pose-camera-example#typecheck": { "dependsOn": ["//#build"] },
-		"pose-playground#typecheck": { "dependsOn": ["//#build"] },
-		"pose-playground#test": { "dependsOn": ["//#build"] }
+		"pose-playground#build": { "dependsOn": ["//#build"], "outputs": ["dist/**"] },
+		"pose-playground#test": { "dependsOn": ["//#build"] },
+		"pose-playground#typecheck": { "dependsOn": ["//#build"] }
 	}
 }

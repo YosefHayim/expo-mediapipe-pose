@@ -10,6 +10,6 @@ First npm distribution of `expo-mediapipe-pose`. Requires a native Expo developm
 - Add camera capability discovery, bounded landmark recording/replay, local photo and sampled video analysis, multiple-pose selection and opt-in segmentation with explicit mask cleanup.
 - Add practical camera setup, skeleton styling and angle-triggered feedback guides.
 
-The earlier `v0.2.0` GitHub source tag contains the initial camera API. Existing consumers should follow the [0.3.0 API](docs/api.md) for the additions. The native Swift/Kotlin code remains an internal Expo bridge, not a standalone native SDK.
+The earlier `v0.2.0` GitHub source tag contains the initial camera API. Existing consumers should follow the [0.3.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.3.0/docs/api.md) for the additions. The native Swift/Kotlin code remains an internal Expo bridge, not a standalone native SDK.
 
 Builds and fixture tests do not establish physical-camera alignment, sustained performance or medical accuracy. Pose indices are not persistent identities; exercise scoring and repetition counting remain application responsibilities.

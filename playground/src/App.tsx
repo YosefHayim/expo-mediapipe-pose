@@ -6,6 +6,7 @@ import {
 	selectPose,
 } from "expo-mediapipe-pose/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import libraryPackage from "../../package.json";
 import { Controls, Range, Select } from "./Controls";
 import { generateCode, skeletonOptions } from "./codegen";
 import {
@@ -1055,7 +1056,7 @@ export default function App() {
 					</div>
 					<div className="code-panel">
 						<div>
-							<span>expo-mediapipe-pose · 0.3.0</span>
+							<span>expo-mediapipe-pose · {libraryPackage.version}</span>
 							<span>TypeScript</span>
 						</div>
 						{/* biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable code must be keyboard accessible. */}

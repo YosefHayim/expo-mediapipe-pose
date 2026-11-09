@@ -1,28 +1,27 @@
 {
 	"name": "pose-camera-example",
-	"version": "1.0.0",
+	"version": "0.0.0",
 	"private": true,
 	"main": "index.ts",
 	"scripts": {
-		"start": "expo start",
+		"dev": "expo start",
 		"ios": "expo run:ios",
 		"android": "expo run:android",
-		"prebuild": "expo prebuild",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"effect": "^3.21.4",
-		"expo": "^57.0.0",
-		"expo-asset": "~57.0.18",
-		"expo-camera": "~57.0.5",
-		"expo-file-system": "~57.0.7",
+		"effect": "3.22.4",
+		"expo": "57.0.32",
+		"expo-asset": "57.0.21",
+		"expo-camera": "57.0.6",
+		"expo-file-system": "57.0.7",
 		"expo-mediapipe-pose": "workspace:*",
 		"react": "19.2.3",
 		"react-native": "0.86.3",
-		"react-native-svg": "15.15.4"
+		"react-native-svg": "15.16.1"
 	},
 	"devDependencies": {
-		"@types/react": "~19.2.14",
-		"typescript": "^5.9.3"
+		"@types/react": "19.3.0",
+		"typescript": "5.9.3"
 	}
 }

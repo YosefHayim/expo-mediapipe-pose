@@ -28,6 +28,14 @@ try {
 		.trim()
 		.split("\n");
 	const manifest = JSON.parse(readFileSync("package.json", "utf8"));
+	const nativeSourceFiles = [
+		...readdirSync("ios")
+			.filter((name) => name.endsWith(".swift"))
+			.map((name) => `ios/${name}`),
+		...readdirSync("android/src/main", { recursive: true })
+			.filter((name) => name.endsWith(".kt"))
+			.map((name) => `android/src/main/${name}`),
+	];
 	const requiredFiles = [
 		"README.md",
 		"llms.txt",
@@ -36,17 +44,10 @@ try {
 		"THIRD_PARTY_NOTICES.md",
 		"expo-module.config.json",
 		"ExpoMediaPipePose.podspec",
-		"ios/ExpoMediaPipePoseModule.swift",
-		"ios/ExpoMediaPipePoseView.swift",
-		"ios/PoseCameraOptions.swift",
-		"ios/PoseFrameTiming.swift",
 		"android/build.gradle",
 		"android/src/main/AndroidManifest.xml",
-		"android/src/main/java/expo/modules/mediapipepose/ExpoMediaPipePoseModule.kt",
-		"android/src/main/java/expo/modules/mediapipepose/ExpoMediaPipePoseView.kt",
-		"android/src/main/java/expo/modules/mediapipepose/PoseCameraOptions.kt",
-		"android/src/main/java/expo/modules/mediapipepose/PoseFrameTiming.kt",
 		"assets/pose_landmarker_full.task",
+		...nativeSourceFiles,
 	];
 	for (const definition of Object.values(manifest.exports)) {
 		if (typeof definition === "string") {

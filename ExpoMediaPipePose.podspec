@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
   s.swift_version = '5.9'
   s.static_framework = true
   s.dependency 'ExpoModulesCore'
-  s.dependency 'MediaPipeTasksVision', '0.10.14'
+  s.dependency 'MediaPipeTasksVision', '1.0.0'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.source_files = 'ios/**/*.swift'
   s.resource_bundles = { 'ExpoMediaPipePoseModels' => ['assets/*.task'] }

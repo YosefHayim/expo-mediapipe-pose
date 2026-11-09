@@ -21,7 +21,7 @@ export default defineConfig({
 	webServer: process.env.PLAYGROUND_URL
 		? undefined
 		: {
-				command: "pnpm preview --port 4173",
+				command: "pnpm exec vite preview --port 4173",
 				url: "http://127.0.0.1:4173/expo-mediapipe-pose/",
 				reuseExistingServer: !process.env.CI,
 			},
