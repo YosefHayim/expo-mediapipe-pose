@@ -104,8 +104,8 @@ importers:
         specifier: 1.2.2
         version: 1.2.2
       effect:
-        specifier: 3.22.4
-        version: 3.22.4
+        specifier: 3.22.2
+        version: 3.22.2
       expo-mediapipe-pose:
         specifier: workspace:*
         version: link:..
