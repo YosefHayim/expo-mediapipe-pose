@@ -1,13 +1,12 @@
 import { Schema } from "effect";
 import { requireNativeModule } from "expo";
+import { discardResultSegmentation } from "../segmentation/native";
 import {
 	PoseDetection,
 	type PoseImageOptions,
 	resolvePoseImageOptions,
 	validateLocalFileLocation,
-} from "../pose/imageAnalysis";
-
-import { discardResultSegmentation } from "./segmentation";
+} from "./analysis";
 
 export async function analyzePoseImage(
 	location: string,

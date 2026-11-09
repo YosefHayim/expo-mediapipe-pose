@@ -3,8 +3,18 @@ import { it } from "node:test";
 import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { usePoseOverlayFrame } from "../src/hooks/usePoseOverlayFrame";
+import { usePoseOverlayFrame } from "../src/camera/use-overlay-frame";
 import { poseFrame } from "./fixtures";
+
+interface OverlayHarnessProps {
+	staleAfterMs: number;
+	onOverlay: (overlay: ReturnType<typeof usePoseOverlayFrame>) => void;
+}
+
+const OverlayHarness = ({ staleAfterMs, onOverlay }: OverlayHarnessProps) => {
+	onOverlay(usePoseOverlayFrame(staleAfterMs));
+	return null;
+};
 
 it("reschedules existing overlay expiry from its arrival time when cadence changes", async (test) => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
@@ -36,20 +46,31 @@ it("reschedules existing overlay expiry from its arrival time when cadence chang
 		assert.ok(overlay);
 		return overlay;
 	};
-	const Harness = ({ staleAfterMs }: { staleAfterMs: number }) => {
-		overlay = usePoseOverlayFrame(staleAfterMs);
-		return null;
+	const captureOverlay = (captured: ReturnType<typeof usePoseOverlayFrame>) => {
+		overlay = captured;
 	};
 	const tick = async (elapsed: number) => {
 		now += elapsed;
 		await act(() => test.mock.timers.tick(elapsed));
 	};
 	try {
-		await act(() => root.render(createElement(Harness, { staleAfterMs: 500 })));
+		await act(() =>
+			root.render(
+				createElement(OverlayHarness, {
+					staleAfterMs: 500,
+					onOverlay: captureOverlay,
+				}),
+			),
+		);
 		await act(() => currentOverlay().update(poseFrame()));
 		await tick(200);
 		await act(() =>
-			root.render(createElement(Harness, { staleAfterMs: 2000 })),
+			root.render(
+				createElement(OverlayHarness, {
+					staleAfterMs: 2000,
+					onOverlay: captureOverlay,
+				}),
+			),
 		);
 		await tick(400);
 		assert.ok(currentOverlay().frame);
@@ -59,7 +80,14 @@ it("reschedules existing overlay expiry from its arrival time when cadence chang
 		assert.equal(currentOverlay().frame, null);
 		await act(() => currentOverlay().update(poseFrame()));
 		await tick(600);
-		await act(() => root.render(createElement(Harness, { staleAfterMs: 500 })));
+		await act(() =>
+			root.render(
+				createElement(OverlayHarness, {
+					staleAfterMs: 500,
+					onOverlay: captureOverlay,
+				}),
+			),
+		);
 		assert.equal(currentOverlay().frame, null);
 		await act(() => currentOverlay().update(poseFrame()));
 		await tick(300);

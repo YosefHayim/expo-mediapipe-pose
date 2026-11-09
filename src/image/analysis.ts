@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 import { Landmark, MaxPoses, ModelVariant, PoseResults } from "../contracts";
 
-import { MaskMaxDimension, PoseSegmentation } from "./segmentation";
+import { MaskMaxDimension, PoseSegmentation } from "../segmentation/mask";
 
 const Confidence = Schema.Number.pipe(Schema.finite(), Schema.between(0, 1));
 export const PoseImageOptions = Schema.Struct({

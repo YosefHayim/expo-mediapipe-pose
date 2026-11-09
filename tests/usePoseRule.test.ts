@@ -4,8 +4,17 @@ import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import type { PoseRuleOptions, PoseRuleStatus } from "../src/core";
-import { usePoseRule } from "../src/hooks/usePoseRule";
+import { usePoseRule } from "../src/rules/use-pose-rule";
 import { poseFrame } from "./fixtures";
+
+type RuleHarnessProps = PoseRuleOptions<"leftWrist"> & {
+	onRule: (rule: ReturnType<typeof usePoseRule>) => void;
+};
+
+const RuleHarness = ({ onRule, ...options }: RuleHarnessProps) => {
+	onRule(usePoseRule(options));
+	return null;
+};
 
 it("emits transitions once, uses current callbacks, expires stale feedback and resets on pause", async (test) => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
@@ -39,9 +48,8 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 		assert.ok(activeRule);
 		return activeRule;
 	};
-	const Harness = (options: PoseRuleOptions<"leftWrist">) => {
-		activeRule = usePoseRule(options);
-		return null;
+	const captureRule = (captured: ReturnType<typeof usePoseRule>) => {
+		activeRule = captured;
 	};
 	const options: PoseRuleOptions<"leftWrist"> = {
 		landmarks: ["leftWrist"],
@@ -68,7 +76,11 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 	};
 
 	try {
-		await act(() => root.render(createElement(Harness, options)));
+		await act(() =>
+			root.render(
+				createElement(RuleHarness, { onRule: captureRule, ...options }),
+			),
+		);
 		await sendFrame(0);
 		await sendFrame(100);
 		await sendFrame(20);
@@ -77,7 +89,8 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 
 		await act(() =>
 			root.render(
-				createElement(Harness, {
+				createElement(RuleHarness, {
+					onRule: captureRule,
 					...options,
 					onChange: (status) => updatedTransitions.push(status),
 				}),
@@ -92,7 +105,13 @@ it("emits transitions once, uses current callbacks, expires stale feedback and r
 		await sendFrame(100);
 		assert.equal(getRule().status, "pass");
 		await act(() =>
-			root.render(createElement(Harness, { ...options, isActive: false })),
+			root.render(
+				createElement(RuleHarness, {
+					onRule: captureRule,
+					...options,
+					isActive: false,
+				}),
+			),
 		);
 		assert.equal(getRule().status, "unknown");
 		await sendFrame(100);

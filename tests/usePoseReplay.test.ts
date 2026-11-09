@@ -4,9 +4,44 @@ import { JSDOM } from "jsdom";
 import { act, createElement, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createPoseRecorder, type PoseRecording } from "../src/core";
-import { usePoseReplay } from "../src/hooks/usePoseReplay";
-import { usePoseRule } from "../src/hooks/usePoseRule";
+import { usePoseReplay } from "../src/replay/use-pose-replay";
+import { usePoseRule } from "../src/rules/use-pose-rule";
 import { poseFrame } from "./fixtures";
+
+interface ReplayHarnessReports {
+	setStatus: (status: string) => void;
+	setReplay: (replay: ReturnType<typeof usePoseReplay>) => void;
+	onDelivered: (label: string) => void;
+	playCurrent: () => void;
+}
+
+interface ReplayHarnessProps {
+	session: PoseRecording;
+	label: string;
+	reports: ReplayHarnessReports;
+}
+
+const ReplayHarness = ({ session, label, reports }: ReplayHarnessProps) => {
+	const rule = usePoseRule({ landmarks: ["nose"], evaluate: () => true });
+	reports.setStatus(rule.status);
+	reports.setReplay(
+		usePoseReplay(session, {
+			onFrame: (frame) => {
+				reports.onDelivered(label);
+				rule.update(frame);
+			},
+			onReset: () => {
+				if (label !== "reset failure") {
+					rule.reset();
+					return;
+				}
+				reports.playCurrent();
+				throw new Error("reset failed");
+			},
+		}),
+	);
+	return null;
+};
 
 test("replay hook uses current callbacks, resets replaced sessions, and cancels on unmount", async (context) => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
@@ -45,38 +80,27 @@ test("replay hook uses current callbacks, resets replaced sessions, and cancels 
 		assert.ok(replay);
 		return replay;
 	};
-	function Harness({
-		session,
-		label,
-	}: {
-		session: PoseRecording;
-		label: string;
-	}) {
-		const rule = usePoseRule({ landmarks: ["nose"], evaluate: () => true });
-		status = rule.status;
-		replay = usePoseReplay(session, {
-			onFrame: (frame) => {
-				delivered.push(label);
-				rule.update(frame);
-			},
-			onReset: () => {
-				if (label !== "reset failure") {
-					rule.reset();
-					return;
-				}
-				current().play();
-				throw new Error("reset failed");
-			},
-		});
-		return null;
-	}
+	const reports: ReplayHarnessReports = {
+		setStatus: (value) => {
+			status = value;
+		},
+		setReplay: (value) => {
+			replay = value;
+		},
+		onDelivered: (label) => {
+			delivered.push(label);
+		},
+		playCurrent: () => {
+			current().play();
+		},
+	};
 	const render = async (session: PoseRecording, label: string) => {
 		await act(() =>
 			root.render(
 				createElement(
 					StrictMode,
 					{},
-					createElement(Harness, { session, label }),
+					createElement(ReplayHarness, { session, label, reports }),
 				),
 			),
 		);

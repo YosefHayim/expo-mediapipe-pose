@@ -26,9 +26,7 @@ test("public discovery decodes native responses and propagates failures", async 
 		},
 	});
 	try {
-		const { getCameraCapabilities } = await import(
-			"../src/native/cameraCapabilities"
-		);
+		const { getCameraCapabilities } = await import("../src/camera/native");
 		assert.deepEqual(await getCameraCapabilities(), {
 			status: "permissionRequired",
 		});

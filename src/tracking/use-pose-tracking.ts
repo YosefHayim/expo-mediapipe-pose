@@ -4,13 +4,13 @@ import {
 	advancePoseRule,
 	initialPoseRuleState,
 	validatePoseRuleOptions,
-} from "../pose/poseRule";
+} from "../rules/rule";
 import {
 	inspectPoseTracking,
 	type PoseTrackingOptions,
 	type PoseTrackingState,
 	trackingState,
-} from "../pose/tracking";
+} from "./logic";
 
 export const usePoseTracking = (options: PoseTrackingOptions) => {
 	validatePoseRuleOptions(options);

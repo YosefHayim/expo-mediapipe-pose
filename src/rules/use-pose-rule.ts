@@ -1,7 +1,7 @@
 import * as React from "react";
-import type { LandmarkName } from "../pose/landmarks";
-import type { PoseRuleOptions } from "../pose/poseRule";
-import { usePoseRules } from "./usePoseRules";
+import type { LandmarkName } from "../landmarks/names";
+import type { PoseRuleOptions } from "./rule";
+import { usePoseRules } from "./use-pose-rules";
 
 export const usePoseRule = <Name extends LandmarkName>(
 	options: PoseRuleOptions<Name>,

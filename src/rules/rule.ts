@@ -1,6 +1,6 @@
 import type { Landmark, PoseFrame } from "../contracts";
-import { hasLandmarkConfidence } from "./confidence";
-import { getNamedLandmarks, type LandmarkName } from "./landmarks";
+import { hasLandmarkConfidence } from "../landmarks/confidence";
+import { getNamedLandmarks, type LandmarkName } from "../landmarks/names";
 
 export type PoseRuleStatus = "pass" | "fail" | "unknown";
 

@@ -90,7 +90,7 @@ test("video bridge applies backpressure and closes on completion, break, error a
 		},
 	});
 	try {
-		const { analyzePoseVideo } = await import("../src/native/videoAnalysis");
+		const { analyzePoseVideo } = await import("../src/video/native");
 		const progress: number[] = [];
 		const stream = analyzePoseVideo("/video.mp4", {
 			samplingFps: 2,
