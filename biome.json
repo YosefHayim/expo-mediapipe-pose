@@ -10,7 +10,7 @@
 			"scripts/*.mjs",
 			"*.json",
 			"playground/src/**",
-			"playground/tests/**",
+			"playground/e2e/**",
 			"playground/*.ts",
 			"playground/*.json",
 			"playground/scripts/*.mjs"

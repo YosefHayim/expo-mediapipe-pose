@@ -15,8 +15,8 @@
 		"playground": {
 			"entry": [
 				"src/main.tsx",
-				"tests/*.test.ts",
-				"tests/*.spec.ts",
+				"src/**/*.test.ts",
+				"e2e/*.spec.ts",
 				"playwright.config.ts",
 				"vite.config.ts",
 				"scripts/assets.mjs"
