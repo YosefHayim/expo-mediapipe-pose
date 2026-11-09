@@ -1,12 +1,12 @@
 import { strict as assert } from "node:assert";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import {
 	createSkeleton,
 	getLandmark,
 	getNamedLandmarks,
 	projectLandmark,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 describe("Pose presentation", () => {
 	it("rejects invalid visibility thresholds before rendering", () => {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 import { Schema } from "effect";
+import { test, vi } from "vitest";
 import {
 	createPoseRecorder,
 	createPoseReplay,
@@ -11,8 +11,8 @@ import {
 	PoseFrame,
 	resolvePoseImageOptions,
 	selectPose,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 function multiplePoses(): PoseFrame {
 	const first = poseFrame();
@@ -97,8 +97,8 @@ test("rules, tracking and overlays evaluate the explicit pose selection", () => 
 		0,
 	);
 });
-test("recording and replay retain all poses without callback mutation leaking into later playback", (context) => {
-	context.mock.timers.enable({ apis: ["setTimeout"] });
+test("recording and replay retain all poses without callback mutation leaking into later playback", () => {
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	const recorder = createPoseRecorder();
 	recorder.start();
 	recorder.append(multiplePoses(), 0);
@@ -114,10 +114,10 @@ test("recording and replay retain all poses without callback mutation leaking in
 		},
 	});
 	replay.play();
-	context.mock.timers.tick(0);
+	vi.advanceTimersByTime(0);
 	replay.reset();
 	replay.play();
-	context.mock.timers.tick(0);
+	vi.advanceTimersByTime(0);
 	assert.deepEqual(seen, [0.25, 0.25]);
 	replay.dispose();
 });

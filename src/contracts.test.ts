@@ -1,12 +1,8 @@
 import { strict as assert } from "node:assert";
-import { describe, it } from "node:test";
 import { Either, Schema } from "effect";
+import { describe, it } from "vitest";
 
-import {
-	CameraConfiguration,
-	InferenceError,
-	PoseFrame,
-} from "../src/contracts";
+import { CameraConfiguration, InferenceError, PoseFrame } from "./contracts";
 
 const frameMetadata = {
 	width: 720,

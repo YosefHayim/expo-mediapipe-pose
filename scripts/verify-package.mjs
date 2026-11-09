@@ -30,7 +30,9 @@ try {
 	const manifest = JSON.parse(readFileSync("package.json", "utf8"));
 	const nativeSourceFiles = [
 		...readdirSync("ios")
-			.filter((name) => name.endsWith(".swift"))
+			.filter(
+				(name) => name.endsWith(".swift") && !name.endsWith("Tests.swift"),
+			)
 			.map((name) => `ios/${name}`),
 		...readdirSync("android/src/main", { recursive: true })
 			.filter((name) => name.endsWith(".kt"))

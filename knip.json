@@ -6,8 +6,8 @@
 			"entry": [
 				"src/index.ts",
 				"src/core.ts",
-				"tests/*.test.ts",
-				"tests/ruleTypes.ts",
+				"src/**/*.test.ts",
+				"src/testing/*.ts",
 				"scripts/swift-tests.mjs",
 				"scripts/verify-package.mjs"
 			]

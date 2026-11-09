@@ -12,7 +12,7 @@ An Expo native pose-detection library using Google's MediaPipe Tasks SDK. Read [
 - `example/`: one standalone Expo app exercising the public API; `example/fixtures/README.md` documents cold-launch native checks and mask pixel verification.
 - `playground/`: browser demo (Vite, deployed to GitHub Pages) that runs the same pose code.
 - `scripts/`: package verification (`verify-package.mjs`) and fixture generators/checkers.
-- `tests/`: behavior tests, including a DOM harness for React-only hooks; `tests/native/` holds the Swift frame-timing tests.
+- `src/**/*.test.ts`: behavior tests next to their source, including a DOM harness for React-only hooks. `src/testing/` holds shared test helpers and expo stubs. `ios/PoseFrameTimingTests.swift`: the Swift frame-timing tests.
 - `assets/`: bundled Google full pose model; preserve provenance and checksum.
 
 ## Domain rules

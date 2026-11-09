@@ -16,7 +16,7 @@ const compileReply = spawnSync(
 	[
 		"swiftc",
 		"ios/PoseFrameTiming.swift",
-		"tests/native/FrameTimingTests.swift",
+		"ios/PoseFrameTimingTests.swift",
 		"-o",
 		testBinaryPath,
 	],

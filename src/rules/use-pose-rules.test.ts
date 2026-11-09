@@ -1,11 +1,11 @@
 import { strict as assert } from "node:assert";
-import { it } from "node:test";
 import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { createThresholdRule, type PoseRuleOptions } from "../src/core";
-import { usePoseRules } from "../src/rules/use-pose-rules";
-import { poseFrame } from "./fixtures";
+import { it, vi } from "vitest";
+import { createThresholdRule, type PoseRuleOptions } from "../core";
+import { poseFrame } from "../testing/fixtures";
+import { usePoseRules } from "./use-pose-rules";
 
 interface RulesHarnessProps {
 	rules: Record<string, PoseRuleOptions>;
@@ -25,7 +25,7 @@ const RulesHarness = ({ rules, onResult }: RulesHarnessProps) => {
 	return null;
 };
 
-it("maintains independent named rules through changes, expiry, removal and reset", async (test) => {
+it("maintains independent named rules through changes, expiry, removal and reset", async () => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
 	const globalNames = ["window", "document", "IS_REACT_ACT_ENVIRONMENT"];
 	const originalGlobals = globalNames.map((name) => ({
@@ -48,8 +48,8 @@ it("maintains independent named rules through changes, expiry, removal and reset
 	assert.ok(container);
 	const root = createRoot(container);
 	let now = 1000;
-	test.mock.method(performance, "now", () => now);
-	test.mock.timers.enable({ apis: ["setTimeout"] });
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	let result: ReturnType<typeof usePoseRules> | undefined;
 	const current = () => {
 		assert.ok(result);
@@ -83,7 +83,7 @@ it("maintains independent named rules through changes, expiry, removal and reset
 	let frameNumber = 0;
 	const advanceTime = async (elapsed: number) => {
 		now += elapsed;
-		await act(() => test.mock.timers.tick(elapsed));
+		await act(() => vi.advanceTimersByTime(elapsed));
 	};
 	const send = async (elapsed = 0) => {
 		await advanceTime(elapsed);
@@ -227,7 +227,7 @@ it("maintains independent named rules through changes, expiry, removal and reset
 		await act(() => current().update(poseFrame()));
 		await advanceTime(1000);
 		assert.equal(updatedTransitions.length, notifications);
-		test.mock.timers.reset();
+		vi.useRealTimers();
 		dom.window.close();
 		for (const { name, descriptor } of originalGlobals) {
 			if (descriptor) {

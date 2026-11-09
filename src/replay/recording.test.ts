@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 import {
 	createPoseRecorder,
 	parsePoseRecording,
 	serializePoseRecording,
-} from "../src/core";
-import { poseFrame } from "./fixtures";
+} from "../core";
+import { poseFrame } from "../testing/fixtures";
 
 test("recording is opt-in, bounded, and copies camera results", () => {
 	const recorder = createPoseRecorder({ maxFrames: 2 });

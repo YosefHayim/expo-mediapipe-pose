@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 import { JSDOM } from "jsdom";
 import { act, createElement, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createPoseRecorder, type PoseRecording } from "../src/core";
-import { usePoseReplay } from "../src/replay/use-pose-replay";
-import { usePoseRule } from "../src/rules/use-pose-rule";
-import { poseFrame } from "./fixtures";
+import { test, vi } from "vitest";
+import { createPoseRecorder, type PoseRecording } from "../core";
+import { usePoseRule } from "../rules/use-pose-rule";
+import { poseFrame } from "../testing/fixtures";
+import { usePoseReplay } from "./use-pose-replay";
 
 interface ReplayHarnessReports {
 	setStatus: (status: string) => void;
@@ -43,7 +43,7 @@ const ReplayHarness = ({ session, label, reports }: ReplayHarnessProps) => {
 	return null;
 };
 
-test("replay hook uses current callbacks, resets replaced sessions, and cancels on unmount", async (context) => {
+test("replay hook uses current callbacks, resets replaced sessions, and cancels on unmount", async () => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
 	const names = ["window", "document", "IS_REACT_ACT_ENVIRONMENT"];
 	const savedGlobals = names.map((name) => ({
@@ -65,9 +65,9 @@ test("replay hook uses current callbacks, resets replaced sessions, and cancels 
 	const container = dom.window.document.getElementById("root");
 	assert.ok(container);
 	const root = createRoot(container);
-	context.mock.timers.enable({ apis: ["setTimeout"] });
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	let now = 0;
-	context.mock.method(performance, "now", () => now);
+	vi.spyOn(performance, "now").mockImplementation(() => now);
 	const recorder = createPoseRecorder();
 	recorder.start();
 	recorder.append(poseFrame(), 0);
@@ -109,13 +109,13 @@ test("replay hook uses current callbacks, resets replaced sessions, and cancels 
 		await render(recording, "first");
 		await act(() => {
 			current().play();
-			context.mock.timers.tick(0);
+			vi.advanceTimersByTime(0);
 		});
 		assert.deepEqual(delivered, ["first"]);
 		assert.equal(status, "pass");
 		await render(recording, "latest");
 		now = 100;
-		await act(() => context.mock.timers.tick(100));
+		await act(() => vi.advanceTimersByTime(100));
 		assert.deepEqual(delivered, ["first", "latest"]);
 		await render({ version: 1, frames: [] }, "empty");
 		assert.equal(current().status, "paused");
@@ -123,14 +123,14 @@ test("replay hook uses current callbacks, resets replaced sessions, and cancels 
 		await act(() => current().play());
 		assert.equal(current().status, "ended");
 		await assert.rejects(render(recording, "reset failure"), /reset failed/);
-		context.mock.timers.tick(500);
+		vi.advanceTimersByTime(500);
 		assert.deepEqual(delivered, ["first", "latest"]);
 		assert.throws(() => current().play(), /mounted/);
 		await render(recording, "unmount");
 		await act(() => current().play());
 		await act(() => root.unmount());
 		now = 1000;
-		context.mock.timers.tick(1000);
+		vi.advanceTimersByTime(1000);
 		assert.deepEqual(delivered, ["first", "latest"]);
 		assert.throws(() => current().play(), /mounted/);
 	} finally {

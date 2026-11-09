@@ -1,10 +1,10 @@
 import { strict as assert } from "node:assert";
-import { it } from "node:test";
 import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { usePoseOverlayFrame } from "../src/camera/use-overlay-frame";
-import { poseFrame } from "./fixtures";
+import { it, vi } from "vitest";
+import { poseFrame } from "../testing/fixtures";
+import { usePoseOverlayFrame } from "./use-overlay-frame";
 
 interface OverlayHarnessProps {
 	staleAfterMs: number;
@@ -16,7 +16,7 @@ const OverlayHarness = ({ staleAfterMs, onOverlay }: OverlayHarnessProps) => {
 	return null;
 };
 
-it("reschedules existing overlay expiry from its arrival time when cadence changes", async (test) => {
+it("reschedules existing overlay expiry from its arrival time when cadence changes", async () => {
 	const dom = new JSDOM("<!doctype html><div id='root'></div>");
 	const globalNames = ["window", "document", "IS_REACT_ACT_ENVIRONMENT"];
 	const originalGlobals = globalNames.map((name) => ({
@@ -39,8 +39,8 @@ it("reschedules existing overlay expiry from its arrival time when cadence chang
 	assert.ok(container);
 	const root = createRoot(container);
 	let now = 1000;
-	test.mock.method(performance, "now", () => now);
-	test.mock.timers.enable({ apis: ["setTimeout"] });
+	vi.spyOn(performance, "now").mockImplementation(() => now);
+	vi.useFakeTimers({ toFake: ["setTimeout"] });
 	let overlay: ReturnType<typeof usePoseOverlayFrame> | undefined;
 	const currentOverlay = () => {
 		assert.ok(overlay);
@@ -51,7 +51,7 @@ it("reschedules existing overlay expiry from its arrival time when cadence chang
 	};
 	const tick = async (elapsed: number) => {
 		now += elapsed;
-		await act(() => test.mock.timers.tick(elapsed));
+		await act(() => vi.advanceTimersByTime(elapsed));
 	};
 	try {
 		await act(() =>
@@ -100,7 +100,7 @@ it("reschedules existing overlay expiry from its arrival time when cadence chang
 		assert.equal(currentOverlay().frame, null);
 	} finally {
 		await act(() => root.unmount());
-		test.mock.timers.reset();
+		vi.useRealTimers();
 		dom.window.close();
 		for (const { name, descriptor } of originalGlobals) {
 			if (descriptor) {
