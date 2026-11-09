@@ -48,11 +48,12 @@ export function usePoseReplay(
 	}, [recording]);
 	const controls = React.useMemo(() => {
 		const current = () => {
-			const isControllerMissing = controller.current == null;
+			const mountedController = controller.current;
+			const isControllerMissing = mountedController == null;
 			if (isControllerMissing)
 				throw new Error("Replay controls require a mounted hook");
 
-			return controller.current;
+			return mountedController;
 		};
 		return {
 			play: () => current().play(),

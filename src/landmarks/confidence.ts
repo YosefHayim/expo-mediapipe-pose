@@ -1,21 +1,22 @@
 import type { Landmark } from "../contracts";
 
 export const hasLandmarkConfidence = (joint: Landmark, minimum: number) => {
-	const isJointVisibilityMissing = joint.visibility === undefined;
-	if (isJointVisibilityMissing) return false;
+	const visibility = joint.visibility;
+	const isVisibilityMissing = visibility == null;
+	if (isVisibilityMissing) return false;
 
-	const hasNonFiniteVisibility = !Number.isFinite(joint.visibility);
+	const hasNonFiniteVisibility = !Number.isFinite(visibility);
 	if (hasNonFiniteVisibility) return false;
 
-	const isVisibilityOutOfRange =
-		joint.visibility < minimum || joint.visibility > 1;
+	const isVisibilityOutOfRange = visibility < minimum || visibility > 1;
 	if (isVisibilityOutOfRange) return false;
 
-	const isJointPresenceMissing = joint.presence === undefined;
-	if (isJointPresenceMissing) return true;
+	const presence = joint.presence;
+	const isPresenceMissing = presence == null;
+	if (isPresenceMissing) return true;
 
-	const hasNonFinitePresence = !Number.isFinite(joint.presence);
+	const hasNonFinitePresence = !Number.isFinite(presence);
 	if (hasNonFinitePresence) return false;
 
-	return joint.presence >= minimum && joint.presence <= 1;
+	return presence >= minimum && presence <= 1;
 };

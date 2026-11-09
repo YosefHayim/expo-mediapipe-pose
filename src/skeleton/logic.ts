@@ -112,13 +112,14 @@ export const createDetectionSkeleton = (
 			options.landmarks && !options.landmarks.includes(name);
 		if (excludedBySelection) return [];
 
-		const isJointVisibilityMissing = joint.visibility === undefined;
-		if (isJointVisibilityMissing) return [];
+		const visibility = joint.visibility;
+		const isVisibilityMissing = visibility == null;
+		if (isVisibilityMissing) return [];
 
-		const hasNonFiniteVisibility = !Number.isFinite(joint.visibility);
+		const hasNonFiniteVisibility = !Number.isFinite(visibility);
 		if (hasNonFiniteVisibility) return [];
 
-		const isJointBelowMinVisibility = joint.visibility < style.minVisibility;
+		const isJointBelowMinVisibility = visibility < style.minVisibility;
 		if (isJointBelowMinVisibility) return [];
 
 		const jointStyle = {
