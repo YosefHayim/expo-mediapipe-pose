@@ -31,9 +31,13 @@ type PointsResult =
 
 const validateConfidence = (options: GeometryOptions) => {
 	const minimum = options.minVisibility ?? 0.6;
+
 	const inRange = minimum >= 0 && minimum <= 1;
-	if (!Number.isFinite(minimum) || !inRange)
+
+	const isNotMinimumFiniteOrInRange = !Number.isFinite(minimum) || !inRange;
+	if (isNotMinimumFiniteOrInRange)
 		throw new RangeError("minVisibility must be between 0 and 1");
+
 	return minimum;
 };
 const readPoints = (
@@ -46,12 +50,21 @@ const readPoints = (
 	const points: Point[] = [];
 	for (const name of names) {
 		const joint = landmarks[LANDMARK_NAMES.indexOf(name)];
-		if (!joint) return { status: "unavailable", reason: "missing-landmark" };
-		if (!hasLandmarkConfidence(joint, minimum))
+
+		const isJointMissing = !joint;
+		if (isJointMissing)
+			return { status: "unavailable", reason: "missing-landmark" };
+
+		const isNotLandmarkConfidenceJoint = !hasLandmarkConfidence(joint, minimum);
+		if (isNotLandmarkConfidenceJoint)
 			return { status: "unavailable", reason: "uncertain-landmark" };
+
 		const point = project(joint);
-		if (!point.every(Number.isFinite))
+
+		const isNotPointEvery = !point.every(Number.isFinite);
+		if (isNotPointEvery)
 			return { status: "unavailable", reason: "invalid-coordinates" };
+
 		points.push(point);
 	}
 	return { status: "available", points };
@@ -62,11 +75,15 @@ const imagePoints = (
 	options: GeometryOptions,
 ) => {
 	const { width, height } = input.imageSize;
+
 	const dimensionsValid = [width, height].every(
 		(value) => Number.isFinite(value) && value > 0,
 	);
-	if (!dimensionsValid)
+
+	const isDimensionsValidMissing = !dimensionsValid;
+	if (isDimensionsValidMissing)
 		throw new RangeError("Image width and height must be finite and positive");
+
 	return readPoints(
 		input.landmarks,
 		names,
@@ -92,18 +109,31 @@ const subtract = (left: Point, right: Point): Point => [
 ];
 
 const angle = (result: PointsResult): PoseMeasurement<"degrees"> => {
-	if (result.status === "unavailable") return result;
+	const isStatusUnavailable = result.status === "unavailable";
+	if (isStatusUnavailable) return result;
+
 	const [start, vertex, end] = result.points;
-	if (!start || !vertex || !end)
+
+	const isStartMissingOrVertexMissingOrEndMissing = !start || !vertex || !end;
+	if (isStartMissingOrVertexMissingOrEndMissing)
 		throw new Error("An angle requires three points");
+
 	const first = subtract(start, vertex);
 	const second = subtract(end, vertex);
 	const firstLength = Math.hypot(...first);
+
 	const secondLength = Math.hypot(...second);
-	if (![firstLength, secondLength].every(Number.isFinite))
+
+	const isAnyLengthNotFinite = ![firstLength, secondLength].every(
+		Number.isFinite,
+	);
+	if (isAnyLengthNotFinite)
 		return { status: "unavailable", reason: "invalid-coordinates" };
-	if (firstLength === 0 || secondLength === 0)
+
+	const isFirstLength0OrSecondLength0 = firstLength === 0 || secondLength === 0;
+	if (isFirstLength0OrSecondLength0)
 		return { status: "unavailable", reason: "degenerate-angle" };
+
 	const firstDirectionX = first[0] / firstLength;
 	const firstDirectionY = first[1] / firstLength;
 	const firstDirectionZ = first[2] / firstLength;
@@ -129,12 +159,21 @@ const distance = <Unit extends "pixels" | "meters">(
 	result: PointsResult,
 	unit: Unit,
 ): PoseMeasurement<Unit> => {
-	if (result.status === "unavailable") return result;
+	const isStatusUnavailable = result.status === "unavailable";
+	if (isStatusUnavailable) return result;
+
 	const [start, end] = result.points;
-	if (!start || !end) throw new Error("A distance requires two points");
+
+	const isStartMissingOrEndMissing = !start || !end;
+	if (isStartMissingOrEndMissing)
+		throw new Error("A distance requires two points");
+
 	const value = Math.hypot(...subtract(start, end));
-	if (!Number.isFinite(value))
+
+	const isNotFinite = !Number.isFinite(value);
+	if (isNotFinite)
 		return { status: "unavailable", reason: "invalid-coordinates" };
+
 	return { status: "available", value, unit };
 };
 

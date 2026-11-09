@@ -36,22 +36,32 @@ export function useInference(options: Options) {
 		setError(null);
 		setActualCapture(null);
 		setCadence({ inference: 0, results: 0 });
-		if (mode === "replay") {
+
+		const isModeReplay = mode === "replay";
+		if (isModeReplay) {
 			setStatus("Landmark replay");
 			return;
 		}
+
 		if (paused) {
 			setStatus("Paused");
 			return;
 		}
-		if (config.detection.modelVariant !== "full" && !model) {
+
+		const isDetectionModelVariantNotFullAndModelMissing =
+			config.detection.modelVariant !== "full" && !model;
+		if (isDetectionModelVariantNotFullAndModelMissing) {
 			setStatus("Choose a local model");
 			return;
 		}
-		if ((mode === "photo" || mode === "video") && !url) {
+
+		const isModePhotoOrVideoAndUrlMissing =
+			(mode === "photo" || mode === "video") && !url;
+		if (isModePhotoOrVideoAndUrlMissing) {
 			setStatus("Choose a file to begin");
 			return;
 		}
+
 		let disposed = false;
 		let failed = false;
 		let stream: MediaStream | undefined;
@@ -71,7 +81,9 @@ export function useInference(options: Options) {
 		const send = (message: WorkerRequest, transfer: Transferable[] = []) =>
 			worker.postMessage(message, transfer);
 		const fail = (message: string) => {
-			if (disposed || failed) return;
+			const isDisposedOrFailed = disposed || failed;
+			if (isDisposedOrFailed) return;
+
 			failed = true;
 			cancelAnimationFrame(timer);
 			ready = false;
@@ -85,48 +97,64 @@ export function useInference(options: Options) {
 			setTimeout(() => worker.terminate(), 100);
 		};
 		const tick = async () => {
-			if (disposed || failed) return;
+			const isDisposedOrFailed = disposed || failed;
+			if (isDisposedOrFailed) return;
+
 			timer = requestAnimationFrame(() => void tick());
 			const now = performance.now();
+
 			const { timing } = latest.current.config;
-			if (!ready || busy || now - lastTimestamp < 1000 / timing.frameLimit)
-				return;
-			const moving = mode === "camera" || mode === "video";
-			const source = moving ? video.current : image.current;
-			if (!source) return;
-			if (source instanceof HTMLVideoElement) {
-				if (
+
+			const isFrameSkipped =
+				!ready || busy || now - lastTimestamp < 1000 / timing.frameLimit;
+			if (isFrameSkipped) return;
+
+			const isMoving = mode === "camera" || mode === "video";
+
+			const source = isMoving ? video.current : image.current;
+
+			const isSourceMissing = source == null;
+			if (isSourceMissing) return;
+
+			const isVideoSource = source instanceof HTMLVideoElement;
+			if (isVideoSource) {
+				const isVideoFrameSkipped =
 					source.readyState < 2 ||
 					source.paused ||
-					source.currentTime === lastVideoTime
-				)
-					return;
+					source.currentTime === lastVideoTime;
+				if (isVideoFrameSkipped) return;
 			} else {
-				if (!source.complete || source.naturalWidth === 0 || stillSent) return;
-				if (source.currentSrc !== new URL(url, location.href).href) return;
+				const isNotCompleteOrNaturalWidth0OrStillSent =
+					!source.complete || source.naturalWidth === 0 || stillSent;
+				if (isNotCompleteOrNaturalWidth0OrStillSent) return;
+
+				const isSourceUrlChanged =
+					source.currentSrc !== new URL(url, location.href).href;
+				if (isSourceUrlChanged) return;
 			}
+
 			busy = true;
 			try {
-				const width =
-					source instanceof HTMLVideoElement
-						? source.videoWidth
-						: source.naturalWidth;
-				const height =
-					source instanceof HTMLVideoElement
-						? source.videoHeight
-						: source.naturalHeight;
+				const width = isVideoSource ? source.videoWidth : source.naturalWidth;
+				const height = isVideoSource
+					? source.videoHeight
+					: source.naturalHeight;
 				const scale = Math.min(1, 1280 / Math.max(width, height));
 				const bitmap = await createImageBitmap(source, {
 					resizeWidth: Math.max(1, Math.round(width * scale)),
 					resizeHeight: Math.max(1, Math.round(height * scale)),
 				});
-				if (disposed || failed) {
+
+				const isDisposedOrFailedAfterDecode = disposed || failed;
+				if (isDisposedOrFailedAfterDecode) {
 					bitmap.close();
 					return;
 				}
+
 				lastTimestamp = performance.now();
-				if (source instanceof HTMLVideoElement)
-					lastVideoTime = source.currentTime;
+
+				if (isVideoSource) lastVideoTime = source.currentTime;
+
 				stillSent = true;
 				send(
 					{
@@ -144,34 +172,46 @@ export function useInference(options: Options) {
 			}
 		};
 		worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-			if (disposed || failed) return;
+			const isDisposedOrFailed = disposed || failed;
+			if (isDisposedOrFailed) return;
+
 			const message = event.data;
-			if (message.type === "error") {
+
+			const isMessageTypeError = message.type === "error";
+			if (isMessageTypeError) {
 				busy = false;
 				fail(message.message);
 				return;
 			}
-			if (message.type === "ready") {
+
+			const isMessageTypeReady = message.type === "ready";
+			if (isMessageTypeReady) {
 				ready = true;
 				setStatus("Ready");
 				return;
 			}
+
 			busy = false;
 			const now = performance.now();
 			inferenceCount++;
+
 			const still = mode === "sample" || mode === "photo";
-			if (
+
+			const isDeliveryDue =
 				still ||
-				now - lastDelivery >= 1000 / latest.current.config.timing.callbackFps
-			) {
+				now - lastDelivery >= 1000 / latest.current.config.timing.callbackFps;
+			if (isDeliveryDue) {
 				lastDelivery = now;
 				resultCount++;
 				latest.current.onFrame(message.frame, message.masks);
+				const isPosesLengthPresent = message.frame.poses.length !== 0;
 				setStatus(
-					message.frame.poses.length ? "Detection ready" : "No person detected",
+					isPosesLengthPresent ? "Detection ready" : "No person detected",
 				);
 			}
-			if (now - windowStart >= 1000) {
+
+			const isFpsWindowElapsed = now - windowStart >= 1000;
+			if (isFpsWindowElapsed) {
 				const seconds = (now - windowStart) / 1000;
 				setCadence({
 					inference: inferenceCount / seconds,
@@ -190,31 +230,47 @@ export function useInference(options: Options) {
 		async function start() {
 			try {
 				setStatus("Loading model…");
-				if (mode === "camera") {
-					if (!navigator.mediaDevices?.getUserMedia)
+
+				const isModeCamera = mode === "camera";
+				if (isModeCamera) {
+					const isNavigatorMediaDevicesGetUserMediaMissing =
+						!navigator.mediaDevices?.getUserMedia;
+					if (isNavigatorMediaDevicesGetUserMediaMissing)
 						throw new Error(
 							"Camera access requires HTTPS and a browser with camera support.",
 						);
+
 					const camera: MediaTrackConstraints = {
 						frameRate: { ideal: config.timing.previewFps },
 					};
+
 					if (device) camera.deviceId = { exact: device };
 					else camera.facingMode = "user";
+
 					stream = await navigator.mediaDevices.getUserMedia({
 						video: camera,
 						audio: false,
 					});
-					if (disposed || failed) {
+
+					const isDisposedOrFailed = disposed || failed;
+					if (isDisposedOrFailed) {
 						stream.getTracks().forEach((track) => {
 							track.stop();
 						});
 						return;
 					}
+
 					const element = previewVideo;
-					if (!element) throw new Error("Camera preview unavailable.");
+
+					const isElementMissing = !element;
+					if (isElementMissing) throw new Error("Camera preview unavailable.");
+
 					element.srcObject = stream;
 					await element.play();
-					if (disposed || failed) return;
+
+					const isDisposedOrFailedAfterPlay = disposed || failed;
+					if (isDisposedOrFailedAfterPlay) return;
+
 					const settings = stream.getVideoTracks()[0]?.getSettings();
 					setActualCapture(
 						`${settings?.width ?? "?"} × ${settings?.height ?? "?"} · ${settings?.frameRate?.toFixed(1) ?? "?"} fps capture`,
@@ -225,7 +281,10 @@ export function useInference(options: Options) {
 						),
 					);
 				}
-				if (disposed || failed) return;
+
+				const isDisposedOrFailedAfterStart = disposed || failed;
+				if (isDisposedOrFailedAfterStart) return;
+
 				send({
 					type: "init",
 					base: new URL(import.meta.env.BASE_URL, location.origin).href,
@@ -235,7 +294,8 @@ export function useInference(options: Options) {
 				});
 				timer = requestAnimationFrame(() => void tick());
 			} catch (cause) {
-				fail(cause instanceof Error ? cause.message : String(cause));
+				const isCauseInstanceError = cause instanceof Error;
+				fail(isCauseInstanceError ? cause.message : String(cause));
 			}
 		}
 		void start();
@@ -245,14 +305,18 @@ export function useInference(options: Options) {
 			stream?.getTracks().forEach((track) => {
 				track.stop();
 			});
+
 			if (previewVideo) {
 				previewVideo.pause();
 				previewVideo.srcObject = null;
-				if (!previewVideo.isConnected) {
+
+				const isNotPreviewVideoIsConnected = !previewVideo.isConnected;
+				if (isNotPreviewVideoIsConnected) {
 					previewVideo.removeAttribute("src");
 					previewVideo.load();
 				}
 			}
+
 			// Finish any in-flight inference, close on the worker, then reclaim WASM memory.
 			send({ type: "close" });
 			setTimeout(() => worker.terminate(), 100);

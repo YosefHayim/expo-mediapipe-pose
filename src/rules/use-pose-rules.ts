@@ -56,10 +56,15 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 	);
 	const commit = React.useCallback(
 		(id: string, runtime: RuleRuntime, next: PoseRuleState) => {
-			if (runtimes.current.get(id) !== runtime) return;
+			const isRuntimeReplaced = runtimes.current.get(id) !== runtime;
+			if (isRuntimeReplaced) return;
+
 			const changed = runtime.state.status !== next.status;
 			runtime.state = next;
-			if (!changed) return;
+
+			const isChangedMissing = !changed;
+			if (isChangedMissing) return;
+
 			setStatuses((previous) => ({ ...previous, [id]: next.status }));
 			latest.current[id]?.onChange?.(next.status);
 		},
@@ -77,11 +82,15 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 	const reset = React.useCallback(
 		(id?: Id) => {
 			revision.current += 1;
-			if (id !== undefined) {
+
+			const hasId = id !== undefined;
+			if (hasId) {
 				const runtime = runtimes.current.get(id);
 				if (runtime) resetRuntime(id, runtime);
+
 				return;
 			}
+
 			for (const [key, runtime] of runtimes.current) resetRuntime(key, runtime);
 		},
 		[resetRuntime],
@@ -90,14 +99,18 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 		latest.current = rules;
 		let configurationChanged = false;
 		for (const [id, runtime] of runtimes.current) {
-			if (Object.hasOwn(rules, id)) continue;
+			const isRulesOwn = Object.hasOwn(rules, id);
+			if (isRulesOwn) continue;
+
 			clearTimeout(runtime.timer);
 			runtimes.current.delete(id);
 			configurationChanged = true;
 		}
 		for (const { id, identity } of configurations) {
 			const runtime = runtimes.current.get(id);
-			if (!runtime) {
+
+			const isRuntimeMissing = !runtime;
+			if (isRuntimeMissing) {
 				runtimes.current.set(id, {
 					identity,
 					state: initialPoseRuleState(),
@@ -107,11 +120,15 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 				configurationChanged = true;
 				continue;
 			}
-			if (runtime.identity === identity) continue;
+
+			const hasSameRuntimeIdentity = runtime.identity === identity;
+			if (hasSameRuntimeIdentity) continue;
+
 			runtime.identity = identity;
 			resetRuntime(id, runtime);
 			configurationChanged = true;
 		}
+
 		if (configurationChanged)
 			setStatuses(
 				Object.fromEntries(
@@ -137,18 +154,32 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 			const now = performance.now();
 			const updateRevision = revision.current;
 			for (const [id, runtime] of runtimes.current) {
-				if (revision.current !== updateRevision) break;
+				const isRevisionSuperseded = revision.current !== updateRevision;
+				if (isRevisionSuperseded) break;
+
 				const options = latest.current[id];
-				if (!options) continue;
-				if (options.isActive === false) {
+
+				const isRuleSettingsMissing = options == null;
+				if (isRuleSettingsMissing) continue;
+
+				const isRuleInactive = options.isActive === false;
+				if (isRuleInactive) {
 					resetRuntime(id, runtime);
 					continue;
 				}
+
 				const staleAfterMs = options.staleAfterMs ?? 500;
 				const restarted = frame.additionalData.frameNumber <= runtime.lastFrame;
+
 				const expired = now - runtime.state.updatedAt >= staleAfterMs;
-				if (restarted || expired) resetRuntime(id, runtime);
-				if (revision.current !== updateRevision) break;
+
+				const isRestartedOrExpired = restarted || expired;
+				if (isRestartedOrExpired) resetRuntime(id, runtime);
+
+				const isRevisionSupersededAfterReset =
+					revision.current !== updateRevision;
+				if (isRevisionSupersededAfterReset) break;
+
 				runtime.lastFrame = frame.additionalData.frameNumber;
 				const outcome = evaluatePoseRule(
 					frame,
@@ -173,7 +204,9 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 	);
 	const configuredStatuses = Object.fromEntries(
 		Object.keys(rules).map((id) => {
-			if (!Object.hasOwn(statuses, id)) return [id, "unknown"];
+			const isNotStatusesOwn = !Object.hasOwn(statuses, id);
+			if (isNotStatusesOwn) return [id, "unknown"];
+
 			return [id, statuses[id as Id]];
 		}),
 	) as Readonly<Record<Id, PoseRuleStatus>>;

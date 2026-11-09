@@ -54,6 +54,7 @@ export function parseRecording(serializedRecording: string): Recording {
 		throw new Error("Recording exceeds the playground's 16 MiB limit.");
 
 	const parsedRecording: unknown = JSON.parse(serializedRecording);
+
 	const isPlaygroundFormat =
 		typeof parsedRecording === "object" &&
 		parsedRecording !== null &&
@@ -98,7 +99,10 @@ export function parseRecording(serializedRecording: string): Recording {
 export function frameAt(recording: Recording, timestampMs: number) {
 	let index = 0;
 	for (let i = 1; i < recording.frames.length; i++) {
-		if ((recording.frames[i]?.timestampMs ?? Infinity) > timestampMs) break;
+		const isNextFrameAfterTimestamp =
+			(recording.frames[i]?.timestampMs ?? Infinity) > timestampMs;
+		if (isNextFrameAfterTimestamp) break;
+
 		index = i;
 	}
 	return recording.frames[index]?.frame ?? null;
@@ -119,8 +123,12 @@ function nativePoseResults(
 		poses?: readonly PoseLandmarks[];
 	},
 ): PoseLandmarks[] {
-	if (frame.poses !== undefined) return [...frame.poses];
-	if (frame.landmarks.length === 0) return [];
+	const hasFramePoses = frame.poses !== undefined;
+	if (hasFramePoses) return [...frame.poses];
+
+	const isFrameLandmarksEmpty = frame.landmarks.length === 0;
+	if (isFrameLandmarksEmpty) return [];
+
 	return [{ landmarks: frame.landmarks, worldLandmarks: frame.worldLandmarks }];
 }
 export const RECORDING_ENVELOPE_BYTES = JSON.stringify({

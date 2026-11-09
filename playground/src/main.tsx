@@ -3,5 +3,8 @@ import { App } from "./app";
 import "./style.css";
 
 const root = document.getElementById("root");
-if (!root) throw new Error("Missing application root");
+
+const isRootMissing = !root;
+if (isRootMissing) throw new Error("Missing application root");
+
 createRoot(root).render(<App />);

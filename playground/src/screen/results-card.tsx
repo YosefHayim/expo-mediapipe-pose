@@ -43,6 +43,11 @@ export const ResultsCard = ({
 	setRecording,
 	setResultTab,
 }: ResultsCardProps) => {
+	const isFeedbackTab = resultTab === "feedback";
+	const isLandmarksTab = resultTab === "landmarks";
+	const isRecordTab = resultTab === "record";
+	const isRuleListEmpty = config.rules.length === 0;
+
 	return (
 		<section className="results-card">
 			<div className="section-heading">
@@ -61,9 +66,9 @@ export const ResultsCard = ({
 					</button>
 				))}
 			</div>
-			{resultTab === "feedback" && (
+			{isFeedbackTab && (
 				<div className="result-body">
-					{config.rules.length === 0 ? (
+					{isRuleListEmpty ? (
 						<>
 							<h3>What does your app need to notice?</h3>
 							<p>
@@ -76,7 +81,8 @@ export const ResultsCard = ({
 						</>
 					) : (
 						config.rules.map((rule, index) => {
-							const measurement = selected
+							const isSelectedPresent = selected !== null;
+							const measurement = isSelectedPresent
 								? measureRule(selected, rule)
 								: { value: null, unit: "" };
 							const state = ruleStates[index]?.status ?? "unknown";
@@ -104,7 +110,7 @@ export const ResultsCard = ({
 					</small>
 				</div>
 			)}
-			{resultTab === "landmarks" && (
+			{isLandmarksTab && (
 				<div className="landmark-table">
 					<table>
 						<caption>
@@ -135,7 +141,7 @@ export const ResultsCard = ({
 					</table>
 				</div>
 			)}
-			{resultTab === "record" && (
+			{isRecordTab && (
 				<div className="result-body">
 					<h3>Save the landmarks. Leave the pixels.</h3>
 					<p>
@@ -151,6 +157,7 @@ export const ResultsCard = ({
 									finishRecording();
 									return;
 								}
+
 								recordRef.current = [];
 								recordSize.current = RECORDING_ENVELOPE_BYTES;
 								setRecordCount(0);

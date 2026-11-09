@@ -45,15 +45,18 @@ export const projectLandmark = (
 	image: Dimensions,
 	view: Dimensions,
 ) => {
-	if (
-		![image.width, image.height, view.width, view.height].every(
-			(value) => Number.isFinite(value) && value > 0,
-		)
-	) {
+	const isAnyDimensionInvalid = ![
+		image.width,
+		image.height,
+		view.width,
+		view.height,
+	].every((value) => Number.isFinite(value) && value > 0);
+	if (isAnyDimensionInvalid) {
 		throw new RangeError(
 			"Image and view dimensions must be finite and positive",
 		);
 	}
+
 	const scale = Math.max(view.width / image.width, view.height / image.height);
 	return {
 		x:
@@ -76,30 +79,49 @@ export const createDetectionSkeleton = (
 	view: Dimensions,
 	options: SkeletonOptions = {},
 ) => {
-	const selected =
-		options.poseIndex === undefined
-			? detection
-			: selectPose(detection, options.poseIndex);
+	const poseIndex = options.poseIndex;
+	const isPoseIndexMissing = poseIndex == null;
+	const selected = isPoseIndexMissing
+		? detection
+		: selectPose(detection, poseIndex);
 	const style = { ...defaultSkeletonStyle, ...options };
+
 	const visibilityInRange =
 		style.minVisibility >= 0 && style.minVisibility <= 1;
-	if (!Number.isFinite(style.minVisibility) || !visibilityInRange) {
+
+	const isMinVisibilityInvalid =
+		!Number.isFinite(style.minVisibility) || !visibilityInRange;
+	if (isMinVisibilityInvalid) {
 		throw new RangeError("minVisibility must be between 0 and 1");
 	}
+
 	let selectedNames: readonly LandmarkName[] = LANDMARK_NAMES;
+
 	if (options.bodyParts)
 		selectedNames = options.bodyParts.flatMap((part) => [...BODY_PARTS[part]]);
+
 	const selectedNamesSet = new Set(selectedNames);
 
 	const points = LANDMARK_NAMES.flatMap((name, index) => {
 		const joint = selected.landmarks[index];
-		if (!joint || !selectedNamesSet.has(name)) return [];
+
+		const isJointMissingOrNotNameInSelectedNamesSet =
+			!joint || !selectedNamesSet.has(name);
+		if (isJointMissingOrNotNameInSelectedNamesSet) return [];
+
 		const excludedBySelection =
 			options.landmarks && !options.landmarks.includes(name);
 		if (excludedBySelection) return [];
-		if (joint.visibility === undefined) return [];
-		if (!Number.isFinite(joint.visibility)) return [];
-		if (joint.visibility < style.minVisibility) return [];
+
+		const isJointVisibilityMissing = joint.visibility === undefined;
+		if (isJointVisibilityMissing) return [];
+
+		const isNotJointVisibilityFinite = !Number.isFinite(joint.visibility);
+		if (isNotJointVisibilityFinite) return [];
+
+		const isJointBelowMinVisibility = joint.visibility < style.minVisibility;
+		if (isJointBelowMinVisibility) return [];
+
 		const jointStyle = {
 			color: style.color,
 			radius: style.jointRadius,
@@ -117,8 +139,12 @@ export const createDetectionSkeleton = (
 	const byName = new Map(points.map((point) => [point.name, point]));
 	const lines = POSE_CONNECTIONS.flatMap(([from, to]) => {
 		const start = byName.get(from);
+
 		const end = byName.get(to);
-		if (!start || !end) return [];
+
+		const isStartMissingOrEndMissing = !start || !end;
+		if (isStartMissingOrEndMissing) return [];
+
 		const name = `${from}:${to}` as ConnectionName;
 		const connectionStyle = {
 			color: style.color,

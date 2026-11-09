@@ -8,7 +8,9 @@ import {
 } from "./recording";
 
 function copyPoseResults(frame: Pick<PoseFrame, "poses">) {
-	if (frame.poses === undefined) return {};
+	const isFramePosesMissing = frame.poses === undefined;
+	if (isFramePosesMissing) return {};
+
 	return {
 		poses: frame.poses.map((pose) => ({
 			landmarks: pose.landmarks.map((joint) => ({ ...joint })),
@@ -79,7 +81,9 @@ function createReplay<Frame>(
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let revision = 0;
 	const position = () => {
-		if (status !== "playing") return positionMs;
+		const isStatusNotPlaying = status !== "playing";
+		if (isStatusNotPlaying) return positionMs;
+
 		return Math.min(
 			durationMs,
 			positionMs + (performance.now() - anchorMs) * speed,
@@ -93,7 +97,10 @@ function createReplay<Frame>(
 	});
 	const stopAfterCallbackFailure = (error: unknown): never => {
 		positionMs = position();
-		if (status !== "disposed") status = "paused";
+
+		const isStatusNotDisposed = status !== "disposed";
+		if (isStatusNotDisposed) status = "paused";
+
 		cancel();
 		throw error;
 	};
@@ -110,21 +117,29 @@ function createReplay<Frame>(
 		revision += 1;
 	};
 	const requireOpen = () => {
-		if (status === "disposed") throw new Error("Replay has been disposed");
+		const isStatusDisposed = status === "disposed";
+		if (isStatusDisposed) throw new Error("Replay has been disposed");
 	};
 	const schedule = () => {
-		if (status !== "playing") return;
+		const isStatusNotPlaying = status !== "playing";
+		if (isStatusNotPlaying) return;
+
 		const entry = session.frames[nextFrame];
-		if (!entry) {
+
+		const isEntryMissing = entry == null;
+		if (isEntryMissing) {
 			positionMs = durationMs;
 			status = "ended";
 			notify();
 			return;
 		}
+
 		const scheduledRevision = revision;
 		const delay = Math.max(0, (entry.timestampMs - position()) / speed);
 		timer = setTimeout(() => {
-			if (scheduledRevision !== revision) return;
+			const isScheduleOutdated = scheduledRevision !== revision;
+			if (isScheduleOutdated) return;
+
 			timer = undefined;
 			nextFrame += 1;
 			try {
@@ -132,14 +147,22 @@ function createReplay<Frame>(
 			} catch (error) {
 				stopAfterCallbackFailure(error);
 			}
-			if (scheduledRevision !== revision) return;
+
+			const isScheduleOutdatedAfterFrame = scheduledRevision !== revision;
+			if (isScheduleOutdatedAfterFrame) return;
+
 			notify();
-			if (scheduledRevision === revision) schedule();
+
+			const isScheduleCurrent = scheduledRevision === revision;
+			if (isScheduleCurrent) schedule();
 		}, Math.ceil(delay));
 	};
 	const pause = () => {
 		requireOpen();
-		if (status !== "playing") return;
+
+		const isStatusNotPlaying = status !== "playing";
+		if (isStatusNotPlaying) return;
+
 		positionMs = position();
 		status = "paused";
 		cancel();
@@ -147,26 +170,41 @@ function createReplay<Frame>(
 	};
 	const seek = (timeMs: number) => {
 		requireOpen();
+
 		const withinRecording = timeMs >= 0 && timeMs <= durationMs;
-		if (!Number.isFinite(timeMs) || !withinRecording)
+
+		const isNotTimeMsFiniteOrWithinRecording =
+			!Number.isFinite(timeMs) || !withinRecording;
+		if (isNotTimeMsFiniteOrWithinRecording)
 			throw new RangeError("Seek position is outside this recording");
+
 		cancel();
 		positionMs = timeMs;
 		anchorMs = performance.now();
 		nextFrame = session.frames.findIndex(
 			(entry) => entry.timestampMs >= timeMs,
 		);
-		if (nextFrame === -1) nextFrame = session.frames.length;
-		if (status === "ended") status = "paused";
+
+		const isNextFrameEqualsMinus1 = nextFrame === -1;
+		if (isNextFrameEqualsMinus1) nextFrame = session.frames.length;
+
+		const isStatusEnded = status === "ended";
+		if (isStatusEnded) status = "paused";
+
 		const seekRevision = revision;
 		try {
 			callbacks.onReset?.();
 		} catch (error) {
 			stopAfterCallbackFailure(error);
 		}
-		if (revision !== seekRevision) return;
+
+		const isSeekOutdated = revision !== seekRevision;
+		if (isSeekOutdated) return;
+
 		notify();
-		if (revision === seekRevision) schedule();
+
+		const isRevisionEqualsSeekRevision = revision === seekRevision;
+		if (isRevisionEqualsSeekRevision) schedule();
 	};
 	return {
 		get state() {
@@ -174,12 +212,18 @@ function createReplay<Frame>(
 		},
 		play() {
 			requireOpen();
-			if (status === "playing" || status === "ended") return;
+
+			const isAlreadyPlayingOrEnded =
+				status === "playing" || status === "ended";
+			if (isAlreadyPlayingOrEnded) return;
+
 			status = "playing";
 			anchorMs = performance.now();
 			const playRevision = revision;
 			notify();
-			if (revision === playRevision) schedule();
+
+			const isRevisionEqualsPlayRevision = revision === playRevision;
+			if (isRevisionEqualsPlayRevision) schedule();
 		},
 		pause,
 		seek,
@@ -189,16 +233,24 @@ function createReplay<Frame>(
 		},
 		setSpeed(value: number) {
 			requireOpen();
-			if (!Number.isFinite(value) || value < 0.1 || value > 4)
+
+			const isRateOutOfRange =
+				!Number.isFinite(value) || value < 0.1 || value > 4;
+			if (isRateOutOfRange)
 				throw new RangeError("Replay speed must be between 0.1 and 4");
-			if (value === speed) return;
+
+			const isEqualsSpeed = value === speed;
+			if (isEqualsSpeed) return;
+
 			positionMs = position();
 			anchorMs = performance.now();
 			speed = value;
 			cancel();
 			const speedRevision = revision;
 			notify();
-			if (revision === speedRevision) schedule();
+
+			const isRevisionEqualsSpeedRevision = revision === speedRevision;
+			if (isRevisionEqualsSpeedRevision) schedule();
 		},
 		dispose() {
 			positionMs = position();

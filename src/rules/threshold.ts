@@ -13,15 +13,25 @@ export interface PoseThreshold {
 }
 const validateThreshold = (threshold: PoseThreshold) => {
 	const { direction, enterThreshold, exitThreshold } = threshold;
-	if (direction !== "above" && direction !== "below")
+
+	const isDirectionNotAboveAndBelow =
+		direction !== "above" && direction !== "below";
+	if (isDirectionNotAboveAndBelow)
 		throw new RangeError("Threshold direction must be above or below");
-	if (![enterThreshold, exitThreshold].every(Number.isFinite))
+
+	const isAnyThresholdNotFinite = ![enterThreshold, exitThreshold].every(
+		Number.isFinite,
+	);
+	if (isAnyThresholdNotFinite)
 		throw new RangeError("Thresholds must be finite");
-	const ordered =
-		direction === "above"
-			? enterThreshold > exitThreshold
-			: enterThreshold < exitThreshold;
-	if (!ordered)
+
+	const isDirectionAbove = direction === "above";
+	const ordered = isDirectionAbove
+		? enterThreshold > exitThreshold
+		: enterThreshold < exitThreshold;
+
+	const isOrderedMissing = !ordered;
+	if (isOrderedMissing)
 		throw new RangeError(
 			"Enter and exit thresholds must define a non-empty hysteresis band",
 		);
@@ -31,18 +41,24 @@ const compareThreshold = (
 	previous: PoseRuleStatus,
 	threshold: PoseThreshold,
 ): boolean | "unknown" => {
-	if (value === null || !Number.isFinite(value)) return "unknown";
-	const hasEntered =
-		threshold.direction === "above"
-			? value >= threshold.enterThreshold
-			: value <= threshold.enterThreshold;
-	const hasExited =
-		threshold.direction === "above"
-			? value <= threshold.exitThreshold
-			: value >= threshold.exitThreshold;
+	const isMissingOrNotFinite = value === null || !Number.isFinite(value);
+	if (isMissingOrNotFinite) return "unknown";
+
+	const isAboveDirection = threshold.direction === "above";
+	const hasEntered = isAboveDirection
+		? value >= threshold.enterThreshold
+		: value <= threshold.enterThreshold;
+	const hasExited = isAboveDirection
+		? value <= threshold.exitThreshold
+		: value >= threshold.exitThreshold;
+
 	if (hasEntered) return true;
+
 	if (hasExited) return false;
-	if (previous === "unknown") return "unknown";
+
+	const isPreviousUnknown = previous === "unknown";
+	if (isPreviousUnknown) return "unknown";
+
 	return previous === "pass";
 };
 export const evaluatePoseThreshold = (

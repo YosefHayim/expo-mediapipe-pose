@@ -7,7 +7,8 @@ import { runSegmentationChecks } from "./run-segmentation-checks";
 import { runVideoChecks } from "./run-video-checks";
 
 function verify(condition: boolean, message: string): asserts condition {
-	if (!condition) throw new Error(message);
+	const isConditionMissing = !condition;
+	if (isConditionMissing) throw new Error(message);
 }
 async function localAsset(module: number) {
 	const asset = await Asset.fromModule(module).downloadAsync();
@@ -34,11 +35,13 @@ export async function runNativeChecks() {
 				`${label}: expected native error code`,
 			);
 			const message = String(error);
+
 			if (expectedMessage)
 				verify(
 					message.includes(expectedMessage),
 					`${label}: unexpected error: ${message}`,
 				);
+
 			nativeFailures.push({ label, code: error.code, message });
 			return;
 		}
@@ -183,15 +186,15 @@ export async function runNativeChecks() {
 			nativeFailures,
 		});
 	} catch (error) {
+		const isErrorInstanceError = error instanceof Error;
 		return writeReport({
 			status: "failed",
 			platform: Platform.OS,
 			cases,
 			nativeFailures,
-			error:
-				error instanceof Error
-					? [error.message, error.stack].filter(Boolean).join("\n")
-					: String(error),
+			error: isErrorInstanceError
+				? [error.message, error.stack].filter(Boolean).join("\n")
+				: String(error),
 		});
 	}
 }

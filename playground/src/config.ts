@@ -44,11 +44,12 @@ export const RuleSchema = z
 		unknownColor: color,
 	})
 	.refine((rule) => rule.kind !== "height" || rule.space === "image")
-	.refine((rule) =>
-		rule.direction === "above"
+	.refine((rule) => {
+		const isRuleDirectionAbove = rule.direction === "above";
+		return isRuleDirectionAbove
 			? rule.enterThreshold > rule.exitThreshold
-			: rule.enterThreshold < rule.exitThreshold,
-	);
+			: rule.enterThreshold < rule.exitThreshold;
+	});
 export const ConfigSchema = z.strictObject({
 	version: z.literal(1),
 	detection: z.strictObject({
@@ -147,6 +148,7 @@ export function defaults(): Config {
 }
 export function parseConfig(serializedConfig: string): Config {
 	const maximumConfigCharacters = 40000;
+
 	const isTooLong = serializedConfig.length > maximumConfigCharacters;
 	if (isTooLong) throw new Error("Configuration exceeds 40,000 characters.");
 
@@ -155,7 +157,9 @@ export function parseConfig(serializedConfig: string): Config {
 }
 export function preset(name: string): Config {
 	const config = defaults();
-	if (name === "arms")
+
+	const isNameArms = name === "arms";
+	if (isNameArms)
 		return {
 			...config,
 			skeleton: {
@@ -164,13 +168,18 @@ export function preset(name: string): Config {
 			},
 			rules: [defaultRule],
 		};
-	if (name === "multiple")
+
+	const isNameMultiple = name === "multiple";
+	if (isNameMultiple)
 		return { ...config, detection: { ...config.detection, maxPoses: 2 } };
-	if (name === "mask")
+
+	const isNameMask = name === "mask";
+	if (isNameMask)
 		return {
 			...config,
 			detection: { ...config.detection, segmentationEnabled: true },
 		};
+
 	return config;
 }
 export function configurationLink(config: Config): string {

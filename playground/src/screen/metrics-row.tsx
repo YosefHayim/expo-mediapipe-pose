@@ -4,16 +4,16 @@ import type { PlaygroundScreen } from "./use-playground";
 type MetricsRowProps = Pick<PlaygroundScreen, "engine" | "frame">;
 
 export const MetricsRow = ({ engine, frame }: MetricsRowProps) => {
+	const hasFrame = frame != null;
+	const framePosesCountLabel = hasFrame ? String(frame.poses.length) : "—";
+	const frameDurationLabel = hasFrame
+		? `${frame.inferenceDurationMs.toFixed(0)} ms`
+		: "—";
+
 	return (
 		<div className="metrics">
-			<Metric
-				label="Poses detected"
-				value={frame ? String(frame.poses.length) : "—"}
-			/>
-			<Metric
-				label="Inference time"
-				value={frame ? `${frame.inferenceDurationMs.toFixed(0)} ms` : "—"}
-			/>
+			<Metric label="Poses detected" value={framePosesCountLabel} />
+			<Metric label="Inference time" value={frameDurationLabel} />
 			<Metric
 				label="Inference / result FPS"
 				value={

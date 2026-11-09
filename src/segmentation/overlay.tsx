@@ -22,16 +22,30 @@ export const PoseSegmentationOverlay = React.memo(
 		opacity = 0.5,
 		onError,
 	}: PoseSegmentationOverlayProps) => {
-		if (!Number.isInteger(poseIndex) || poseIndex < 0 || poseIndex > 5)
+		const isPoseIndexOutOfRange =
+			!Number.isInteger(poseIndex) || poseIndex < 0 || poseIndex > 5;
+		if (isPoseIndexOutOfRange)
 			throw new RangeError("poseIndex must be an integer from 0 to 5");
-		if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1)
+
+		const isOpacityOutOfRange =
+			!Number.isFinite(opacity) || opacity < 0 || opacity > 1;
+		if (isOpacityOutOfRange)
 			throw new RangeError("opacity must be between 0 and 1");
-		if (segmentation.status !== "available") return null;
-		if (width <= 0 || height <= 0) return null;
+
+		const isSegmentationStatusNotAvailable =
+			segmentation.status !== "available";
+		if (isSegmentationStatusNotAvailable) return null;
+
+		const isWidthAtMost0OrHeightAtMost0 = width <= 0 || height <= 0;
+		if (isWidthAtMost0OrHeightAtMost0) return null;
+
 		const mask = segmentation.masks.find(
 			(entry) => entry.poseIndex === poseIndex,
 		);
-		if (mask === undefined) return null;
+
+		const isMaskMissing = mask === undefined;
+		if (isMaskMissing) return null;
+
 		const origin = projectLandmark(
 			{ x: 0, y: 0, z: 0 },
 			segmentation.imageSize,

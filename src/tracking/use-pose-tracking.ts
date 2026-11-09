@@ -15,9 +15,10 @@ import {
 export const usePoseTracking = (options: PoseTrackingOptions) => {
 	validatePoseRuleOptions(options);
 	const latest = React.useRef(options);
-	const [state, setState] = React.useState(() =>
-		trackingState(options.isActive === false ? "inactive" : "searching"),
-	);
+	const [state, setState] = React.useState(() => {
+		const isIsActiveFalse = options.isActive === false;
+		return trackingState(isIsActiveFalse ? "inactive" : "searching");
+	});
 	const current = React.useRef(state);
 	const stability = React.useRef(initialPoseRuleState());
 	const lastFrame = React.useRef(0);
@@ -28,7 +29,10 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 		latest.current = options;
 	});
 	const commit = React.useCallback((next: PoseTrackingState) => {
-		if (JSON.stringify(next) === JSON.stringify(current.current)) return;
+		const isSameAsCurrent =
+			JSON.stringify(next) === JSON.stringify(current.current);
+		if (isSameAsCurrent) return;
+
 		current.current = next;
 		setState(next);
 		latest.current.onChange?.(next);
@@ -37,40 +41,45 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 		clearTimeout(timeout.current);
 		lastFrame.current = 0;
 		stability.current = initialPoseRuleState();
-		commit(
-			trackingState(
-				latest.current.isActive === false ? "inactive" : "searching",
-			),
-		);
+		const isCurrentIsActiveFalse = latest.current.isActive === false;
+		commit(trackingState(isCurrentIsActiveFalse ? "inactive" : "searching"));
 	}, [commit]);
 	const update = React.useCallback(
 		(frame: PoseFrame) => {
 			const settings = latest.current;
-			if (settings.isActive === false) {
+
+			const isSettingsIsActiveFalse = settings.isActive === false;
+			if (isSettingsIsActiveFalse) {
 				reset();
 				return;
 			}
+
 			const now = performance.now();
 			const staleAfterMs = settings.staleAfterMs ?? 500;
 			const restarted = frame.additionalData.frameNumber <= lastFrame.current;
+
 			const expired = now - stability.current.updatedAt >= staleAfterMs;
-			if (restarted || expired) stability.current = initialPoseRuleState();
+
+			const isRestartedOrExpired = restarted || expired;
+			if (isRestartedOrExpired) stability.current = initialPoseRuleState();
+
 			lastFrame.current = frame.additionalData.frameNumber;
 			const inspection = inspectPoseTracking(frame, settings);
+			const isInspectionStatusFound = inspection.status === "found";
 			stability.current = advancePoseRule(
 				stability.current,
-				inspection.status === "found" ? "pass" : "unknown",
+				isInspectionStatusFound ? "pass" : "unknown",
 				now,
 				settings.holdMs ?? 0,
 			);
-			const confirming =
+			const isConfirming =
 				inspection.status === "found" && stability.current.status !== "pass";
 			clearTimeout(timeout.current);
 			timeout.current = setTimeout(() => {
 				stability.current = initialPoseRuleState();
 				commit(trackingState("stale"));
 			}, staleAfterMs);
-			commit(confirming ? trackingState("acquiring") : inspection);
+			commit(isConfirming ? trackingState("acquiring") : inspection);
 		},
 		[commit, reset],
 	);
@@ -83,10 +92,12 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 	});
 	const previousIdentity = React.useRef(identity);
 	React.useLayoutEffect(() => {
-		if (previousIdentity.current !== identity) {
+		const isIdentityChanged = previousIdentity.current !== identity;
+		if (isIdentityChanged) {
 			previousIdentity.current = identity;
 			reset();
 		}
+
 		return () => clearTimeout(timeout.current);
 	}, [identity, reset]);
 	return { ...state, update, reset };

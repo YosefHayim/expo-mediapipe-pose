@@ -29,9 +29,12 @@ export function CameraControls({
 		setCapabilities(null);
 		try {
 			const result = await getCameraCapabilities();
-			if (request.current === token) setCapabilities(result);
+
+			const isRequestCurrentEqualsToken = request.current === token;
+			if (isRequestCurrentEqualsToken) setCapabilities(result);
 		} catch {
-			if (request.current === token) setError(true);
+			const isRequestStillCurrentInCatch = request.current === token;
+			if (isRequestStillCurrentInCatch) setError(true);
 		}
 	}, []);
 	React.useEffect(() => {
@@ -40,6 +43,7 @@ export function CameraControls({
 			request.current += 1;
 		};
 	}, [discover]);
+
 	if (error)
 		return (
 			<View>
@@ -47,13 +51,18 @@ export function CameraControls({
 				<Button title="Retry discovery" onPress={discover} />
 			</View>
 		);
-	if (!capabilities)
+
+	const isCapabilitiesMissing = !capabilities;
+	if (isCapabilitiesMissing)
 		return <Text style={{ color: "white" }}>Discovering cameras…</Text>;
-	if (capabilities.status !== "available") {
-		const message =
-			capabilities.status === "permissionRequired"
-				? "Allow camera access in settings, then retry discovery."
-				: "No selectable camera is currently available.";
+
+	const isCapabilitiesStatusNotAvailable = capabilities.status !== "available";
+	if (isCapabilitiesStatusNotAvailable) {
+		const isCapabilitiesStatusPermissionRequired =
+			capabilities.status === "permissionRequired";
+		const message = isCapabilitiesStatusPermissionRequired
+			? "Allow camera access in settings, then retry discovery."
+			: "No selectable camera is currently available.";
 		return (
 			<View>
 				<Text style={{ color: "white" }}>{message}</Text>
@@ -61,21 +70,23 @@ export function CameraControls({
 			</View>
 		);
 	}
-	const selectedCamera = selection
+
+	const isSelectionPresent = selection !== null;
+	const selectedCamera = isSelectionPresent
 		? findCameraCapability(capabilities, selection.facing, selection.lens)
 		: undefined;
 	return (
 		<View>
 			{capabilities.cameras.map((camera) => {
-				const initialMode = camera.modes.reduce((nearest, mode) =>
-					Math.abs(mode.previewFps - 30) < Math.abs(nearest.previewFps - 30)
-						? mode
-						: nearest,
-				);
-				const displayedFps =
-					selectedCamera === camera && selection
-						? selection.previewFps
-						: initialMode.previewFps;
+				const initialMode = camera.modes.reduce((nearest, mode) => {
+					const isModeCloserToThirtyFps =
+						Math.abs(mode.previewFps - 30) < Math.abs(nearest.previewFps - 30);
+					return isModeCloserToThirtyFps ? mode : nearest;
+				});
+				const isCameraSelectionActive = selectedCamera === camera && selection;
+				const displayedFps = isCameraSelectionActive
+					? selection.previewFps
+					: initialMode.previewFps;
 				return (
 					<Button
 						key={`${camera.facing}-${camera.lens}`}

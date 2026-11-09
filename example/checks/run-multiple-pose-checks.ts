@@ -1,7 +1,8 @@
 import { analyzePoseImage, selectPose } from "expo-mediapipe-pose";
 
 function verify(condition: boolean, message: string): asserts condition {
-	if (!condition) throw new Error(message);
+	const isConditionMissing = !condition;
+	if (isConditionMissing) throw new Error(message);
 }
 export async function runMultiplePoseChecks(location: string, cases: string[]) {
 	const detection = await analyzePoseImage(location, { maxPoses: 2 });

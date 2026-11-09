@@ -16,7 +16,10 @@ const mergeStyles = <Key extends string, Style extends object>(
 	const merged = { ...base };
 	for (const key of Object.keys(overrides) as Key[]) {
 		const style = overrides[key];
-		if (!style) continue;
+
+		const isStyleMissing = !style;
+		if (isStyleMissing) continue;
+
 		merged[key] = { ...base[key], ...style };
 	}
 	return merged;
@@ -28,7 +31,10 @@ export const composeSkeletonFeedback = (
 	let result = { ...base };
 	for (const entry of feedback) {
 		const appearance = entry.styles[entry.status];
-		if (!appearance) continue;
+
+		const isAppearanceMissing = !appearance;
+		if (isAppearanceMissing) continue;
+
 		result = {
 			...result,
 			...appearance,

@@ -49,15 +49,27 @@ export const PoseDetection = z.object({
 export type PoseDetection = z.infer<typeof PoseDetection>;
 
 export function validateLocalFileLocation(location: string): void {
-	if (location.includes("\0"))
+	const isEmptyInLocation = location.includes("\0");
+	if (isEmptyInLocation)
 		throw new TypeError("File location contains a null character");
-	if (location.startsWith("/")) return;
+
+	const isLocationStartsWithEmpty = location.startsWith("/");
+	if (isLocationStartsWithEmpty) return;
+
 	const url = new URL(location);
-	if (url.protocol !== "file:")
+
+	const isUrlProtocolNotFile = url.protocol !== "file:";
+	if (isUrlProtocolNotFile)
 		throw new TypeError("Expected an absolute path or local file URI");
-	if (url.hostname !== "" && url.hostname !== "localhost")
+
+	const isUrlHostnameNotEmptyAndLocalhost =
+		url.hostname !== "" && url.hostname !== "localhost";
+	if (isUrlHostnameNotEmptyAndLocalhost)
 		throw new TypeError("Remote file authorities are unsupported");
-	if (url.search !== "" || url.hash !== "")
+
+	const isUrlSearchNotEmptyOrHashNotEmpty =
+		url.search !== "" || url.hash !== "";
+	if (isUrlSearchNotEmptyOrHashNotEmpty)
 		throw new TypeError(
 			"File URIs must not contain query or fragment components",
 		);
@@ -65,6 +77,7 @@ export function validateLocalFileLocation(location: string): void {
 export function resolvePoseImageOptions(imageOptions: PoseImageOptions = {}) {
 	const checkedOptions = PoseImageOptions.parse(imageOptions);
 	const { modelPath } = checkedOptions;
+
 	const isModelPathGiven = modelPath != null;
 	if (isModelPathGiven) validateLocalFileLocation(modelPath);
 
@@ -74,5 +87,6 @@ export function resolvePoseImageOptions(imageOptions: PoseImageOptions = {}) {
 		throw new TypeError(
 			"A local modelPath is required for lite or heavy models",
 		);
+
 	return checkedOptions;
 }

@@ -11,13 +11,21 @@ export function selectPose<Frame extends SelectablePose>(
 	frame: Frame,
 	poseIndex: number,
 ): Frame {
-	if (!Number.isInteger(poseIndex) || poseIndex < 0 || poseIndex > 5)
+	const isPoseIndexOutOfRange =
+		!Number.isInteger(poseIndex) || poseIndex < 0 || poseIndex > 5;
+	if (isPoseIndexOutOfRange)
 		throw new RangeError("poseIndex must be an integer from 0 to 5");
+
 	// Version-one recordings made before multi-pose support only contain the first pose fields.
-	if (frame.poses === undefined && poseIndex === 0) return frame;
+	const isFramePosesMissingAndPoseIndex0 =
+		frame.poses === undefined && poseIndex === 0;
+	if (isFramePosesMissingAndPoseIndex0) return frame;
+
 	const selected = frame.poses?.[poseIndex];
-	if (selected === undefined)
-		return { ...frame, landmarks: [], worldLandmarks: [] };
+
+	const isSelectedMissing = selected === undefined;
+	if (isSelectedMissing) return { ...frame, landmarks: [], worldLandmarks: [] };
+
 	return {
 		...frame,
 		landmarks: selected.landmarks,
