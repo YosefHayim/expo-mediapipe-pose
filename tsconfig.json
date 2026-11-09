@@ -7,7 +7,8 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noImplicitReturns": true,
-		"noEmit": true
+		"noEmit": true,
+		"types": ["node"]
 	},
 	"include": ["src"]
 }
