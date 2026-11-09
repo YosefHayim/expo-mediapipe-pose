@@ -1,6 +1,6 @@
 export const requireNativeModule = (moduleName: string) => {
-	const isModuleNameNotExpoMediaPipePose = moduleName !== "ExpoMediaPipePose";
-	if (isModuleNameNotExpoMediaPipePose) {
+	const isOtherModule = moduleName !== "ExpoMediaPipePose";
+	if (isOtherModule) {
 		throw new Error("Unexpected native module");
 	}
 

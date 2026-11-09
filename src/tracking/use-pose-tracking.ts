@@ -16,8 +16,8 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 	validatePoseRuleOptions(options);
 	const latest = React.useRef(options);
 	const [state, setState] = React.useState(() => {
-		const isIsActiveFalse = options.isActive === false;
-		return trackingState(isIsActiveFalse ? "inactive" : "searching");
+		const isInactive = options.isActive === false;
+		return trackingState(isInactive ? "inactive" : "searching");
 	});
 	const current = React.useRef(state);
 	const stability = React.useRef(initialPoseRuleState());
@@ -41,15 +41,15 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 		clearTimeout(timeout.current);
 		lastFrame.current = 0;
 		stability.current = initialPoseRuleState();
-		const isCurrentIsActiveFalse = latest.current.isActive === false;
-		commit(trackingState(isCurrentIsActiveFalse ? "inactive" : "searching"));
+		const isInactive = latest.current.isActive === false;
+		commit(trackingState(isInactive ? "inactive" : "searching"));
 	}, [commit]);
 	const update = React.useCallback(
 		(frame: PoseFrame) => {
 			const settings = latest.current;
 
-			const isSettingsIsActiveFalse = settings.isActive === false;
-			if (isSettingsIsActiveFalse) {
+			const isInactive = settings.isActive === false;
+			if (isInactive) {
 				reset();
 				return;
 			}
@@ -65,10 +65,10 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 
 			lastFrame.current = frame.additionalData.frameNumber;
 			const inspection = inspectPoseTracking(frame, settings);
-			const isInspectionStatusFound = inspection.status === "found";
+			const isInspectionFound = inspection.status === "found";
 			stability.current = advancePoseRule(
 				stability.current,
-				isInspectionStatusFound ? "pass" : "unknown",
+				isInspectionFound ? "pass" : "unknown",
 				now,
 				settings.holdMs ?? 0,
 			);

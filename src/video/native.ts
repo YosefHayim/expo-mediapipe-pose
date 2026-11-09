@@ -39,29 +39,27 @@ function throwVideoFailures(failures: unknown[]) {
 
 	const primary = failures[0];
 
-	const isFailuresLength1 = failures.length === 1;
-	if (isFailuresLength1) throw primary;
+	const hasOneFailure = failures.length === 1;
+	if (hasOneFailure) throw primary;
 
-	const isPrimaryInstanceError = primary instanceof Error;
-	const message = isPrimaryInstanceError ? primary.message : String(primary);
+	const isPrimaryError = primary instanceof Error;
+	const message = isPrimaryError ? primary.message : String(primary);
 	const combined = new AggregateError(
 		failures,
 		`${message} (video cleanup also failed)`,
 		{ cause: primary },
 	);
 
-	const isPrimaryError = primary instanceof Error;
 	if (isPrimaryError) combined.name = primary.name;
 
 	throw combined;
 }
 function videoDetection(frame: unknown): unknown {
-	const isFrameTypeNotObjectOrMissing =
-		typeof frame !== "object" || frame === null;
-	if (isFrameTypeNotObjectOrMissing) return undefined;
+	const isFrameNotObject = typeof frame !== "object" || frame === null;
+	if (isFrameNotObject) return undefined;
 
-	const isDetectionMissing = !("detection" in frame);
-	if (isDetectionMissing) return undefined;
+	const isFrameWithoutDetection = !("detection" in frame);
+	if (isFrameWithoutDetection) return undefined;
 
 	return frame.detection;
 }

@@ -38,8 +38,8 @@ export const inspectPoseTracking = (
 ): PoseTrackingState => {
 	validatePoseRuleOptions(options);
 
-	const isIsActiveFalse = options.isActive === false;
-	if (isIsActiveFalse) return trackingState("inactive");
+	const isInactive = options.isActive === false;
+	if (isInactive) return trackingState("inactive");
 
 	const isFrameLandmarksEmpty = frame.landmarks.length === 0;
 	if (isFrameLandmarksEmpty) return trackingState("lost");
@@ -50,7 +50,7 @@ export const inspectPoseTracking = (
 	for (const name of new Set(options.landmarks)) {
 		const joint = frame.landmarks[LANDMARK_NAMES.indexOf(name)];
 
-		const isJointMissing = !joint;
+		const isJointMissing = joint == null;
 		if (isJointMissing) {
 			missingLandmarks.push(name);
 			continue;
@@ -65,8 +65,8 @@ export const inspectPoseTracking = (
 			options.minVisibility ?? 0.6,
 		);
 
-		const isNotFiniteCoordinatesOrConfident = !finiteCoordinates || !confident;
-		if (isNotFiniteCoordinatesOrConfident) {
+		const isUnusableLandmark = !finiteCoordinates || !confident;
+		if (isUnusableLandmark) {
 			uncertainLandmarks.push(name);
 			continue;
 		}
@@ -75,16 +75,16 @@ export const inspectPoseTracking = (
 			(value) => value >= 0 && value <= 1,
 		);
 
-		const isInsideImageMissing = !insideImage;
-		if (isInsideImageMissing) outsideImageLandmarks.push(name);
+		const isOutsideImage = !insideImage;
+		if (isOutsideImage) outsideImageLandmarks.push(name);
 	}
 	const unavailableLandmarkCount =
 		missingLandmarks.length +
 		uncertainLandmarks.length +
 		outsideImageLandmarks.length;
-	const isUnavailableLandmarkCount0 = unavailableLandmarkCount === 0;
+	const hasNoUnavailableLandmarks = unavailableLandmarkCount === 0;
 	return {
-		status: isUnavailableLandmarkCount0 ? "found" : "incomplete",
+		status: hasNoUnavailableLandmarks ? "found" : "incomplete",
 		missingLandmarks,
 		uncertainLandmarks,
 		outsideImageLandmarks,

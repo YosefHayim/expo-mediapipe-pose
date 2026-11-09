@@ -20,8 +20,8 @@ export const usePoseOverlayFrame = (staleAfterMs: number) => {
 
 		const remainingMs = receivedAt.current + staleAfterMs - performance.now();
 
-		const isRemainingMsAtMost0 = remainingMs <= 0;
-		if (isRemainingMsAtMost0) {
+		const isTimeUp = remainingMs <= 0;
+		if (isTimeUp) {
 			clear();
 			return;
 		}

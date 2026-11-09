@@ -4,7 +4,7 @@ import "./style.css";
 
 const root = document.getElementById("root");
 
-const isRootMissing = !root;
+const isRootMissing = root == null;
 if (isRootMissing) throw new Error("Missing application root");
 
 createRoot(root).render(<App />);

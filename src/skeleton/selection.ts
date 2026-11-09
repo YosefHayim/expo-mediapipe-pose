@@ -17,9 +17,8 @@ export function selectPose<Frame extends SelectablePose>(
 		throw new RangeError("poseIndex must be an integer from 0 to 5");
 
 	// Version-one recordings made before multi-pose support only contain the first pose fields.
-	const isFramePosesMissingAndPoseIndex0 =
-		frame.poses === undefined && poseIndex === 0;
-	if (isFramePosesMissingAndPoseIndex0) return frame;
+	const isNoPosesAtFirstIndex = frame.poses === undefined && poseIndex === 0;
+	if (isNoPosesAtFirstIndex) return frame;
 
 	const selected = frame.poses?.[poseIndex];
 

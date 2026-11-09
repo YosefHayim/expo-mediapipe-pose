@@ -48,9 +48,9 @@ async function handle(message: WorkerRequest) {
 	try {
 		const loadedDetector = detector;
 
-		const isDetectorMissingOrStale =
+		const isDetectorUnusable =
 			loadedDetector == null || message.generation !== generation;
-		if (isDetectorMissingOrStale) return;
+		if (isDetectorUnusable) return;
 
 		const isVideoMessage = message.video === true;
 		const mode = isVideoMessage ? "VIDEO" : "IMAGE";

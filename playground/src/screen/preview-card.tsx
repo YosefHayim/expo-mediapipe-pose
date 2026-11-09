@@ -388,8 +388,8 @@ export const PreviewCard = ({
 						type="button"
 						disabled={replay.frames.length === 0}
 						onClick={() => {
-							const isPositionAtLeastDuration = position >= duration;
-							if (isPositionAtLeastDuration) setPosition(0);
+							const isPositionPastDuration = position >= duration;
+							if (isPositionPastDuration) setPosition(0);
 
 							setPlaying((value) => !value);
 						}}

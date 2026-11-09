@@ -81,8 +81,8 @@ function createReplay<Frame>(
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let revision = 0;
 	const position = () => {
-		const isStatusNotPlaying = status !== "playing";
-		if (isStatusNotPlaying) return positionMs;
+		const isNotPlaying = status !== "playing";
+		if (isNotPlaying) return positionMs;
 
 		return Math.min(
 			durationMs,
@@ -98,8 +98,8 @@ function createReplay<Frame>(
 	const stopAfterCallbackFailure = (error: unknown): never => {
 		positionMs = position();
 
-		const isStatusNotDisposed = status !== "disposed";
-		if (isStatusNotDisposed) status = "paused";
+		const isNotDisposed = status !== "disposed";
+		if (isNotDisposed) status = "paused";
 
 		cancel();
 		throw error;
@@ -117,12 +117,12 @@ function createReplay<Frame>(
 		revision += 1;
 	};
 	const requireOpen = () => {
-		const isStatusDisposed = status === "disposed";
-		if (isStatusDisposed) throw new Error("Replay has been disposed");
+		const isDisposed = status === "disposed";
+		if (isDisposed) throw new Error("Replay has been disposed");
 	};
 	const schedule = () => {
-		const isStatusNotPlaying = status !== "playing";
-		if (isStatusNotPlaying) return;
+		const isNotPlaying = status !== "playing";
+		if (isNotPlaying) return;
 
 		const entry = session.frames[nextFrame];
 
@@ -160,8 +160,8 @@ function createReplay<Frame>(
 	const pause = () => {
 		requireOpen();
 
-		const isStatusNotPlaying = status !== "playing";
-		if (isStatusNotPlaying) return;
+		const isNotPlaying = status !== "playing";
+		if (isNotPlaying) return;
 
 		positionMs = position();
 		status = "paused";
@@ -173,9 +173,8 @@ function createReplay<Frame>(
 
 		const withinRecording = timeMs >= 0 && timeMs <= durationMs;
 
-		const isNotTimeMsFiniteOrWithinRecording =
-			!Number.isFinite(timeMs) || !withinRecording;
-		if (isNotTimeMsFiniteOrWithinRecording)
+		const hasInvalidTimeMs = !Number.isFinite(timeMs) || !withinRecording;
+		if (hasInvalidTimeMs)
 			throw new RangeError("Seek position is outside this recording");
 
 		cancel();
@@ -185,11 +184,11 @@ function createReplay<Frame>(
 			(entry) => entry.timestampMs >= timeMs,
 		);
 
-		const isNextFrameEqualsMinus1 = nextFrame === -1;
-		if (isNextFrameEqualsMinus1) nextFrame = session.frames.length;
+		const hasNoNextFrame = nextFrame === -1;
+		if (hasNoNextFrame) nextFrame = session.frames.length;
 
-		const isStatusEnded = status === "ended";
-		if (isStatusEnded) status = "paused";
+		const isEnded = status === "ended";
+		if (isEnded) status = "paused";
 
 		const seekRevision = revision;
 		try {
@@ -203,8 +202,8 @@ function createReplay<Frame>(
 
 		notify();
 
-		const isRevisionEqualsSeekRevision = revision === seekRevision;
-		if (isRevisionEqualsSeekRevision) schedule();
+		const isSeekCurrent = revision === seekRevision;
+		if (isSeekCurrent) schedule();
 	};
 	return {
 		get state() {
@@ -222,8 +221,8 @@ function createReplay<Frame>(
 			const playRevision = revision;
 			notify();
 
-			const isRevisionEqualsPlayRevision = revision === playRevision;
-			if (isRevisionEqualsPlayRevision) schedule();
+			const isPlayCurrent = revision === playRevision;
+			if (isPlayCurrent) schedule();
 		},
 		pause,
 		seek,
@@ -239,8 +238,8 @@ function createReplay<Frame>(
 			if (isRateOutOfRange)
 				throw new RangeError("Replay speed must be between 0.1 and 4");
 
-			const isEqualsSpeed = value === speed;
-			if (isEqualsSpeed) return;
+			const isSameSpeed = value === speed;
+			if (isSameSpeed) return;
 
 			positionMs = position();
 			anchorMs = performance.now();
@@ -249,8 +248,8 @@ function createReplay<Frame>(
 			const speedRevision = revision;
 			notify();
 
-			const isRevisionEqualsSpeedRevision = revision === speedRevision;
-			if (isRevisionEqualsSpeedRevision) schedule();
+			const isSpeedCurrent = revision === speedRevision;
+			if (isSpeedCurrent) schedule();
 		},
 		dispose() {
 			positionMs = position();

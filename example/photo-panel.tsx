@@ -10,9 +10,9 @@ import * as React from "react";
 import { Button, Image, Text, TextInput, View } from "react-native";
 
 async function releaseMasks(detection: PoseDetection | undefined) {
-	const isDetectionSegmentationStatusNotAvailable =
+	const isDetectionSegmentationUnavailable =
 		detection?.segmentation?.status !== "available";
-	if (isDetectionSegmentationStatusNotAvailable) return;
+	if (isDetectionSegmentationUnavailable) return;
 
 	await releasePoseSegmentation(detection.segmentation.leaseId);
 }
@@ -57,8 +57,8 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 				maxPoses,
 				segmentationEnabled,
 			});
-			const isLocationStartsWithEmpty = location.startsWith("/");
-			const imageUri = isLocationStartsWithEmpty
+			const isAbsoluteLocation = location.startsWith("/");
+			const imageUri = isAbsoluteLocation
 				? `file://${location.split("/").map(encodeURIComponent).join("/")}`
 				: location;
 
@@ -126,8 +126,8 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 			<Button
 				title={`Maximum poses: ${maxPoses}`}
 				onPress={() => {
-					const isMaxPoses1 = maxPoses === 1;
-					return setMaxPoses(isMaxPoses1 ? 2 : 1);
+					const isSinglePose = maxPoses === 1;
+					return setMaxPoses(isSinglePose ? 2 : 1);
 				}}
 				disabled={busy}
 			/>

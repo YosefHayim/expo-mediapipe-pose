@@ -52,15 +52,14 @@ export function CameraControls({
 			</View>
 		);
 
-	const isCapabilitiesMissing = !capabilities;
+	const isCapabilitiesMissing = capabilities == null;
 	if (isCapabilitiesMissing)
 		return <Text style={{ color: "white" }}>Discovering cameras…</Text>;
 
-	const isCapabilitiesStatusNotAvailable = capabilities.status !== "available";
-	if (isCapabilitiesStatusNotAvailable) {
-		const isCapabilitiesStatusPermissionRequired =
-			capabilities.status === "permissionRequired";
-		const message = isCapabilitiesStatusPermissionRequired
+	const isCapabilitiesUnavailable = capabilities.status !== "available";
+	if (isCapabilitiesUnavailable) {
+		const isPermissionRequired = capabilities.status === "permissionRequired";
+		const message = isPermissionRequired
 			? "Allow camera access in settings, then retry discovery."
 			: "No selectable camera is currently available.";
 		return (
@@ -79,9 +78,9 @@ export function CameraControls({
 		<View>
 			{capabilities.cameras.map((camera) => {
 				const initialMode = camera.modes.reduce((nearest, mode) => {
-					const isModeCloserToThirtyFps =
+					const isCloserToThirtyFps =
 						Math.abs(mode.previewFps - 30) < Math.abs(nearest.previewFps - 30);
-					return isModeCloserToThirtyFps ? mode : nearest;
+					return isCloserToThirtyFps ? mode : nearest;
 				});
 				const isCameraSelectionActive = selectedCamera === camera && selection;
 				const displayedFps = isCameraSelectionActive

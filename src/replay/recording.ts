@@ -15,10 +15,10 @@ const hasWithinLandmarkLimit = (frame: {
 	landmarks: unknown[];
 	worldLandmarks: unknown[];
 }) => {
-	const hasWithinLandmarks = frame.landmarks.length <= MAXIMUM_LANDMARKS;
-	const hasWithinWorldLandmarks =
+	const hasLandmarkCountInLimit = frame.landmarks.length <= MAXIMUM_LANDMARKS;
+	const hasWorldLandmarkCountInLimit =
 		frame.worldLandmarks.length <= MAXIMUM_LANDMARKS;
-	return hasWithinLandmarks && hasWithinWorldLandmarks;
+	return hasLandmarkCountInLimit && hasWorldLandmarkCountInLimit;
 };
 
 const hasIncreasingTimestamps = (recording: {
@@ -27,8 +27,8 @@ const hasIncreasingTimestamps = (recording: {
 	const hasNoFrames = recording.frames.length === 0;
 	if (hasNoFrames) return true;
 
-	const isNotFirstFrameAtZero = recording.frames[0]?.timestampMs !== 0;
-	if (isNotFirstFrameAtZero) return false;
+	const hasNonZeroFirstTimestamp = recording.frames[0]?.timestampMs !== 0;
+	if (hasNonZeroFirstTimestamp) return false;
 
 	return recording.frames.every((recordedFrame, index) => {
 		const isFirstFrame = index === 0;
@@ -155,11 +155,11 @@ const createRecorder = <Frame, Recording>(
 	const defaultFrameCapacity = 1800;
 	const frameCapacity = recorderSettings.maxFrames ?? defaultFrameCapacity;
 
-	const isNotCapacityValid =
+	const isCapacityInvalid =
 		!Number.isInteger(frameCapacity) ||
 		frameCapacity < 1 ||
 		frameCapacity > MAXIMUM_FRAMES;
-	if (isNotCapacityValid)
+	if (isCapacityInvalid)
 		throw new RangeError("maxFrames must be an integer from 1 to 10000");
 
 	const emptyRecordingCharacters = JSON.stringify({
@@ -188,8 +188,8 @@ const createRecorder = <Frame, Recording>(
 		append(frame: Frame, now = performance.now()): boolean {
 			const isRecording = status === "recording";
 
-			const isIsRecordingMissing = !isRecording;
-			if (isIsRecordingMissing) return false;
+			const isNotRecording = !isRecording;
+			if (isNotRecording) return false;
 
 			const isTimeInvalid = !Number.isFinite(now) || now < 0;
 			if (isTimeInvalid)

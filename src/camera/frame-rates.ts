@@ -8,8 +8,8 @@ export const validateFrameRates = (rates: FrameRates) => {
 	for (const [name, value] of Object.entries(rates)) {
 		const withinRange = value >= 1 && value <= 60;
 
-		const isNotIntegerOrWithinRange = !Number.isInteger(value) || !withinRange;
-		if (isNotIntegerOrWithinRange) {
+		const isInvalidFrameRate = !Number.isInteger(value) || !withinRange;
+		if (isInvalidFrameRate) {
 			throw new RangeError(`${name} must be an integer between 1 and 60`);
 		}
 	}

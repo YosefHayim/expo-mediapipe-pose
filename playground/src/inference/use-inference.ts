@@ -48,9 +48,9 @@ export function useInference(options: Options) {
 			return;
 		}
 
-		const isDetectionModelVariantNotFullAndModelMissing =
+		const isCustomModelMissing =
 			config.detection.modelVariant !== "full" && !model;
-		if (isDetectionModelVariantNotFullAndModelMissing) {
+		if (isCustomModelMissing) {
 			setStatus("Choose a local model");
 			return;
 		}
@@ -124,9 +124,9 @@ export function useInference(options: Options) {
 					source.currentTime === lastVideoTime;
 				if (isVideoFrameSkipped) return;
 			} else {
-				const isNotCompleteOrNaturalWidth0OrStillSent =
+				const isImageNotReady =
 					!source.complete || source.naturalWidth === 0 || stillSent;
-				if (isNotCompleteOrNaturalWidth0OrStillSent) return;
+				if (isImageNotReady) return;
 
 				const isSourceUrlChanged =
 					source.currentSrc !== new URL(url, location.href).href;
@@ -145,8 +145,8 @@ export function useInference(options: Options) {
 					resizeHeight: Math.max(1, Math.round(height * scale)),
 				});
 
-				const isDisposedOrFailedAfterDecode = disposed || failed;
-				if (isDisposedOrFailedAfterDecode) {
+				const isDisposedOrFailed = disposed || failed;
+				if (isDisposedOrFailed) {
 					bitmap.close();
 					return;
 				}
@@ -204,10 +204,8 @@ export function useInference(options: Options) {
 				lastDelivery = now;
 				resultCount++;
 				latest.current.onFrame(message.frame, message.masks);
-				const isPosesLengthPresent = message.frame.poses.length !== 0;
-				setStatus(
-					isPosesLengthPresent ? "Detection ready" : "No person detected",
-				);
+				const hasPoses = message.frame.poses.length !== 0;
+				setStatus(hasPoses ? "Detection ready" : "No person detected");
 			}
 
 			const isFpsWindowElapsed = now - windowStart >= 1000;
@@ -233,9 +231,8 @@ export function useInference(options: Options) {
 
 				const isModeCamera = mode === "camera";
 				if (isModeCamera) {
-					const isNavigatorMediaDevicesGetUserMediaMissing =
-						!navigator.mediaDevices?.getUserMedia;
-					if (isNavigatorMediaDevicesGetUserMediaMissing)
+					const isCameraUnsupported = !navigator.mediaDevices?.getUserMedia;
+					if (isCameraUnsupported)
 						throw new Error(
 							"Camera access requires HTTPS and a browser with camera support.",
 						);
@@ -262,7 +259,7 @@ export function useInference(options: Options) {
 
 					const element = previewVideo;
 
-					const isElementMissing = !element;
+					const isElementMissing = element == null;
 					if (isElementMissing) throw new Error("Camera preview unavailable.");
 
 					element.srcObject = stream;
@@ -282,8 +279,8 @@ export function useInference(options: Options) {
 					);
 				}
 
-				const isDisposedOrFailedAfterStart = disposed || failed;
-				if (isDisposedOrFailedAfterStart) return;
+				const isDisposedOrFailed = disposed || failed;
+				if (isDisposedOrFailed) return;
 
 				send({
 					type: "init",
@@ -294,8 +291,8 @@ export function useInference(options: Options) {
 				});
 				timer = requestAnimationFrame(() => void tick());
 			} catch (cause) {
-				const isCauseInstanceError = cause instanceof Error;
-				fail(isCauseInstanceError ? cause.message : String(cause));
+				const isCauseError = cause instanceof Error;
+				fail(isCauseError ? cause.message : String(cause));
 			}
 		}
 		void start();
@@ -310,8 +307,8 @@ export function useInference(options: Options) {
 				previewVideo.pause();
 				previewVideo.srcObject = null;
 
-				const isNotPreviewVideoIsConnected = !previewVideo.isConnected;
-				if (isNotPreviewVideoIsConnected) {
+				const isPreviewVideoDisconnected = !previewVideo.isConnected;
+				if (isPreviewVideoDisconnected) {
 					previewVideo.removeAttribute("src");
 					previewVideo.load();
 				}

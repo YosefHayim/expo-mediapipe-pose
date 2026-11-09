@@ -47,8 +47,8 @@ export const RuleEditor = ({
 			(number) => Number.isFinite(number) && Math.abs(number) <= 10000,
 		);
 
-		const isNotBothOrBounded = !hasBoth || !bounded;
-		if (isNotBothOrBounded) {
+		const isRangeIncomplete = !hasBoth || !bounded;
+		if (isRangeIncomplete) {
 			setThresholdError(
 				"Enter thresholds between −10,000 and 10,000. The last valid values remain active.",
 			);
@@ -60,8 +60,8 @@ export const RuleEditor = ({
 			? enterThreshold > exitThreshold
 			: enterThreshold < exitThreshold;
 
-		const isOrderedMissing = !ordered;
-		if (isOrderedMissing) {
+		const isUnordered = !ordered;
+		if (isUnordered) {
 			setThresholdError(
 				"Entry and exit must leave a non-empty hysteresis band. The last valid values remain active.",
 			);

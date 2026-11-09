@@ -51,9 +51,9 @@ export const validatePoseRuleOptions = (
 
 	const visibilityInRange = visibility >= 0 && visibility <= 1;
 
-	const isNotVisibilityFiniteOrInRange =
+	const hasInvalidVisibility =
 		!Number.isFinite(visibility) || !visibilityInRange;
-	if (isNotVisibilityFiniteOrInRange) {
+	if (hasInvalidVisibility) {
 		throw new RangeError("minVisibility must be between 0 and 1");
 	}
 
@@ -63,8 +63,8 @@ export const validatePoseRuleOptions = (
 			throw new RangeError("Rule durations must be finite and non-negative");
 	}
 
-	const isStaleAfterMs0 = options.staleAfterMs === 0;
-	if (isStaleAfterMs0) throw new RangeError("staleAfterMs must be positive");
+	const isStaleAfterZero = options.staleAfterMs === 0;
+	if (isStaleAfterZero) throw new RangeError("staleAfterMs must be positive");
 };
 
 /** Confidence is a prerequisite for evaluating a condition, not its pass/fail result. */
@@ -82,15 +82,15 @@ export const evaluatePoseRule = <Name extends LandmarkName>(
 	const hasUncertainLandmark = options.landmarks.some((name) => {
 		const joint = pose[name];
 
-		const isJointMissing = !joint;
+		const isJointMissing = joint == null;
 		if (isJointMissing) return true;
 
 		const coordinatesAreFinite = [joint.x, joint.y, joint.z].every(
 			Number.isFinite,
 		);
 
-		const isCoordinatesAreFiniteMissing = !coordinatesAreFinite;
-		if (isCoordinatesAreFiniteMissing) return true;
+		const hasNonFiniteCoordinates = !coordinatesAreFinite;
+		if (hasNonFiniteCoordinates) return true;
 
 		return !hasLandmarkConfidence(joint, minimumConfidence);
 	});
@@ -120,8 +120,8 @@ export const advancePoseRule = (
 
 	const holdIsValid = Number.isFinite(holdMs) && holdMs >= 0;
 
-	const isNotTimeIsValidOrHoldIsValid = !timeIsValid || !holdIsValid;
-	if (isNotTimeIsValidOrHoldIsValid) {
+	const hasInvalidTimeOrHold = !timeIsValid || !holdIsValid;
+	if (hasInvalidTimeOrHold) {
 		throw new RangeError(
 			"Rule time and hold duration must be finite and non-negative",
 		);

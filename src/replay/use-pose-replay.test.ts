@@ -31,8 +31,8 @@ const ReplayHarness = ({ session, label, reports }: ReplayHarnessProps) => {
 				rule.update(frame);
 			},
 			onReset: () => {
-				const isLabelNotResetFailure = label !== "reset failure";
-				if (isLabelNotResetFailure) {
+				const isNotResetFailureLabel = label !== "reset failure";
+				if (isNotResetFailureLabel) {
 					rule.reset();
 					return;
 				}

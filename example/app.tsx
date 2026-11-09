@@ -65,8 +65,8 @@ export default function App() {
 	const isActive = cameraInForeground && !paused;
 	const displayedMetrics = isActive ? metrics : null;
 	React.useEffect(() => {
-		const isIsActiveMissing = !isActive;
-		if (isIsActiveMissing) setMetrics(null);
+		const isInactive = !isActive;
+		if (isInactive) setMetrics(null);
 	}, [isActive]);
 	const feedback = usePoseRules({
 		raisedArm: {
@@ -158,7 +158,7 @@ export default function App() {
 			</View>
 		);
 
-	const isPermissionMissing = !permission;
+	const isPermissionMissing = permission == null;
 	if (isPermissionMissing)
 		return (
 			<View style={styles.screen}>
@@ -166,8 +166,8 @@ export default function App() {
 			</View>
 		);
 
-	const isPermissionGrantedMissing = !permission.granted;
-	if (isPermissionGrantedMissing) {
+	const isPermissionDenied = !permission.granted;
+	if (isPermissionDenied) {
 		const permissionAction = permission.canAskAgain
 			? requestPermission
 			: Linking.openSettings;
@@ -302,8 +302,8 @@ export default function App() {
 				title={`Inference limit: ${frameLimit} fps`}
 				onPress={() =>
 					setFrameLimit((previous) => {
-						const isPrevious15 = previous === 15;
-						return isPrevious15 ? 30 : 15;
+						const isPreviousSkipFifteen = previous === 15;
+						return isPreviousSkipFifteen ? 30 : 15;
 					})
 				}
 			/>

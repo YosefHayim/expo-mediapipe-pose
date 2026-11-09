@@ -10,12 +10,11 @@ import * as React from "react";
 import { Button, Text, TextInput, View } from "react-native";
 
 function videoFailureMessage(error: unknown): string {
-	const isErrorInstanceAggregateError = error instanceof AggregateError;
-	if (isErrorInstanceAggregateError) return String(error);
+	const isAggregateError = error instanceof AggregateError;
+	if (isAggregateError) return String(error);
 
-	const isErrorInstanceErrorAndNameAbortError =
-		error instanceof Error && error.name === "AbortError";
-	if (isErrorInstanceErrorAndNameAbortError) return "Cancelled.";
+	const isAbortError = error instanceof Error && error.name === "AbortError";
+	if (isAbortError) return "Cancelled.";
 
 	return String(error);
 }

@@ -364,8 +364,8 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								setConfig({
 									...c,
 									rules: c.rules.map((r, i) => {
-										const isIEqualsIndex = i === index;
-										return isIEqualsIndex ? next : r;
+										const isSameIndex = i === index;
+										return isSameIndex ? next : r;
 									}),
 								})
 							}

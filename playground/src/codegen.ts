@@ -49,9 +49,9 @@ export function generateCode(
 	const d = config.detection;
 	const needsModelPath = hasLocalModel || d.modelVariant !== "full";
 
-	const isModePhotoOrVideoOrSample =
+	const isPhotoVideoOrSampleMode =
 		mode === "photo" || mode === "video" || mode === "sample";
-	if (isModePhotoOrVideoOrSample) {
+	if (isPhotoVideoOrSampleMode) {
 		const options = {
 			minPoseDetectionConfidence: d.minPoseDetectionConfidence,
 			minPosePresenceConfidence: d.minPosePresenceConfidence,
@@ -108,7 +108,7 @@ export async function analyzePhoto(localUri: string, consume: (result: PoseDetec
     } }`,
 		)
 		.join(",\n    ");
-	const isSkeletonEnabledAndNotDSegmentationEnabled =
+	const isSkeletonWithoutSegmentation =
 		config.skeleton.enabled && !d.segmentationEnabled;
 	return `import * as React from "react";
 import { AppState, Button, Linking, Text, View } from "react-native";
@@ -149,7 +149,7 @@ export function PoseScreen({ focused = true }: { focused?: boolean }) {
     poseModelVariant="${d.modelVariant}"${needsModelPath ? '\n    poseModelAssetPath="/absolute/path/to/your-model.task"' : ""}
     minPoseDetectionConfidence={${d.minPoseDetectionConfidence}} minPosePresenceConfidence={${d.minPosePresenceConfidence}} minTrackingConfidence={${d.minTrackingConfidence}}
     maxPoses={${d.maxPoses}} segmentationEnabled={${d.segmentationEnabled}} maskMaxDimension={${d.maskMaxDimension}}
-    skeleton={${isSkeletonEnabledAndNotDSegmentationEnabled ? "skeleton" : "false"}}
+    skeleton={${isSkeletonWithoutSegmentation ? "skeleton" : "false"}}
     ${d.segmentationEnabled ? "onLayout={event => setSize(event.nativeEvent.layout)}" : ""}
     onCameraConfigured={() => { feedback.reset(); ${d.segmentationEnabled ? "setOverlayFrame(null);" : ""} }}
     onInferenceError={event => { feedback.reset(); setError(event.code); }}

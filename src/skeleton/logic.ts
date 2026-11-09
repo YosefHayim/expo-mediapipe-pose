@@ -45,13 +45,13 @@ export const projectLandmark = (
 	image: Dimensions,
 	view: Dimensions,
 ) => {
-	const isAnyDimensionInvalid = ![
+	const hasInvalidDimension = ![
 		image.width,
 		image.height,
 		view.width,
 		view.height,
 	].every((value) => Number.isFinite(value) && value > 0);
-	if (isAnyDimensionInvalid) {
+	if (hasInvalidDimension) {
 		throw new RangeError(
 			"Image and view dimensions must be finite and positive",
 		);
@@ -105,9 +105,8 @@ export const createDetectionSkeleton = (
 	const points = LANDMARK_NAMES.flatMap((name, index) => {
 		const joint = selected.landmarks[index];
 
-		const isJointMissingOrNotNameInSelectedNamesSet =
-			!joint || !selectedNamesSet.has(name);
-		if (isJointMissingOrNotNameInSelectedNamesSet) return [];
+		const isJointNotSelected = !joint || !selectedNamesSet.has(name);
+		if (isJointNotSelected) return [];
 
 		const excludedBySelection =
 			options.landmarks && !options.landmarks.includes(name);
@@ -116,8 +115,8 @@ export const createDetectionSkeleton = (
 		const isJointVisibilityMissing = joint.visibility === undefined;
 		if (isJointVisibilityMissing) return [];
 
-		const isNotJointVisibilityFinite = !Number.isFinite(joint.visibility);
-		if (isNotJointVisibilityFinite) return [];
+		const hasNonFiniteVisibility = !Number.isFinite(joint.visibility);
+		if (hasNonFiniteVisibility) return [];
 
 		const isJointBelowMinVisibility = joint.visibility < style.minVisibility;
 		if (isJointBelowMinVisibility) return [];
@@ -142,8 +141,8 @@ export const createDetectionSkeleton = (
 
 		const end = byName.get(to);
 
-		const isStartMissingOrEndMissing = !start || !end;
-		if (isStartMissingOrEndMissing) return [];
+		const isStartOrEndMissing = start == null || end == null;
+		if (isStartOrEndMissing) return [];
 
 		const name = `${from}:${to}` as ConnectionName;
 		const connectionStyle = {

@@ -7,8 +7,8 @@ import { runSegmentationChecks } from "./run-segmentation-checks";
 import { runVideoChecks } from "./run-video-checks";
 
 function verify(condition: boolean, message: string): asserts condition {
-	const isConditionMissing = !condition;
-	if (isConditionMissing) throw new Error(message);
+	const isCheckFailed = !condition;
+	if (isCheckFailed) throw new Error(message);
 }
 async function localAsset(module: number) {
 	const asset = await Asset.fromModule(module).downloadAsync();

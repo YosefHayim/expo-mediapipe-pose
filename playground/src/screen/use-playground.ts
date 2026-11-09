@@ -105,16 +105,16 @@ export const usePlayground = () => {
 		setFrame(next);
 		setMasks(nextMasks);
 
-		const isRecordingMissing = !recording;
+		const isRecordingMissing = recording == null;
 		if (isRecordingMissing) return;
 
 		const now = performance.now();
 
-		const isRefCurrentEmpty = recordRef.current.length === 0;
-		if (isRefCurrentEmpty) recordStart.current = now;
+		const isRecordEmpty = recordRef.current.length === 0;
+		if (isRecordEmpty) recordStart.current = now;
 
 		const entry = { timestampMs: now - recordStart.current, frame: next };
-		const separatorBytes = isRefCurrentEmpty ? 0 : 1;
+		const separatorBytes = isRecordEmpty ? 0 : 1;
 
 		const size = JSON.stringify(entry).length + separatorBytes;
 
@@ -169,8 +169,8 @@ export const usePlayground = () => {
 	}, []);
 	useEffect(
 		() => () => {
-			const isUploadStartsWithBlob = upload.startsWith("blob:");
-			if (isUploadStartsWithBlob) URL.revokeObjectURL(upload);
+			const isBlobUpload = upload.startsWith("blob:");
+			if (isBlobUpload) URL.revokeObjectURL(upload);
 		},
 		[upload],
 	);
@@ -202,7 +202,7 @@ export const usePlayground = () => {
 		playing,
 	]);
 	useEffect(() => {
-		const isFrameMissing = !frame;
+		const isFrameMissing = frame == null;
 		if (isFrameMissing) return;
 
 		const now = performance.now();
@@ -245,9 +245,8 @@ export const usePlayground = () => {
 							Math.min(config.timing.frameLimit, config.timing.callbackFps),
 					);
 
-				const isStaleOverlayAndModeNotReplay =
-					staleOverlay && mode !== "replay";
-				if (isStaleOverlayAndModeNotReplay) {
+				const isOverlayStaleOutsideReplay = staleOverlay && mode !== "replay";
+				if (isOverlayStaleOutsideReplay) {
 					setFrame(null);
 					setMasks([]);
 				}
@@ -266,8 +265,8 @@ export const usePlayground = () => {
 		config.timing,
 	]);
 	useEffect(() => {
-		const isNotPlayingOrReplayMissingOrHidden = !playing || !replay || hidden;
-		if (isNotPlayingOrReplayMissingOrHidden) return;
+		const isReplayStopped = !playing || !replay || hidden;
+		if (isReplayStopped) return;
 
 		const started = performance.now();
 		const initialPosition = positionRef.current;
@@ -282,8 +281,8 @@ export const usePlayground = () => {
 			setFrame(frameAt(replay, nextPosition));
 			receivedAt.current = performance.now();
 
-			const isNextPositionAtLeastDuration = nextPosition >= duration;
-			if (isNextPositionAtLeastDuration) {
+			const isNextPositionPastDuration = nextPosition >= duration;
+			if (isNextPositionPastDuration) {
 				setPlaying(false);
 				return;
 			}
@@ -314,8 +313,8 @@ export const usePlayground = () => {
 		try {
 			const isKindConfig = kind === "config";
 			if (isKindConfig) {
-				const isFileSizeAbove40000 = file.size > 40000;
-				if (isFileSizeAbove40000)
+				const isConfigOverLimit = file.size > 40000;
+				if (isConfigOverLimit)
 					throw new Error("Configuration exceeds 40,000 bytes.");
 
 				setConfig(parseConfig(await file.text()));

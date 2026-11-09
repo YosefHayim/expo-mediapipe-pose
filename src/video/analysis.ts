@@ -72,8 +72,8 @@ export function createVideoSamplePlan(
 			"Video range exceeds its duration or the 24-hour limit",
 		);
 
-	const isSamplingStartMsAtLeastEndMs = sampling.startMs >= endMs;
-	if (isSamplingStartMsAtLeastEndMs)
+	const isSamplingStartAfterEnd = sampling.startMs >= endMs;
+	if (isSamplingStartAfterEnd)
 		throw new RangeError("Video start must precede its end");
 
 	const frameCount = Math.ceil(

@@ -44,8 +44,8 @@ export function findCameraCapability(
 	facing: CameraFacing,
 	lens: CameraLens = "auto",
 ): CameraCapability | undefined {
-	const isCapabilitiesStatusNotAvailable = capabilities.status !== "available";
-	if (isCapabilitiesStatusNotAvailable) return undefined;
+	const isCapabilitiesUnavailable = capabilities.status !== "available";
+	if (isCapabilitiesUnavailable) return undefined;
 
 	const isLensAuto = lens === "auto";
 	const effectiveLens = isLensAuto ? "wide" : lens;

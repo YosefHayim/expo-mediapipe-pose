@@ -14,24 +14,22 @@ export interface PoseThreshold {
 const validateThreshold = (threshold: PoseThreshold) => {
 	const { direction, enterThreshold, exitThreshold } = threshold;
 
-	const isDirectionNotAboveAndBelow =
-		direction !== "above" && direction !== "below";
-	if (isDirectionNotAboveAndBelow)
+	const isDirectionInvalid = direction !== "above" && direction !== "below";
+	if (isDirectionInvalid)
 		throw new RangeError("Threshold direction must be above or below");
 
-	const isAnyThresholdNotFinite = ![enterThreshold, exitThreshold].every(
+	const hasNonFiniteThreshold = ![enterThreshold, exitThreshold].every(
 		Number.isFinite,
 	);
-	if (isAnyThresholdNotFinite)
-		throw new RangeError("Thresholds must be finite");
+	if (hasNonFiniteThreshold) throw new RangeError("Thresholds must be finite");
 
 	const isDirectionAbove = direction === "above";
 	const ordered = isDirectionAbove
 		? enterThreshold > exitThreshold
 		: enterThreshold < exitThreshold;
 
-	const isOrderedMissing = !ordered;
-	if (isOrderedMissing)
+	const isUnordered = !ordered;
+	if (isUnordered)
 		throw new RangeError(
 			"Enter and exit thresholds must define a non-empty hysteresis band",
 		);

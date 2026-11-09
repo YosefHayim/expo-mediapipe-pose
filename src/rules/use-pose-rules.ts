@@ -62,8 +62,8 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 			const changed = runtime.state.status !== next.status;
 			runtime.state = next;
 
-			const isChangedMissing = !changed;
-			if (isChangedMissing) return;
+			const isUnchanged = !changed;
+			if (isUnchanged) return;
 
 			setStatuses((previous) => ({ ...previous, [id]: next.status }));
 			latest.current[id]?.onChange?.(next.status);
@@ -99,8 +99,8 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 		latest.current = rules;
 		let configurationChanged = false;
 		for (const [id, runtime] of runtimes.current) {
-			const isRulesOwn = Object.hasOwn(rules, id);
-			if (isRulesOwn) continue;
+			const hasRuleForId = Object.hasOwn(rules, id);
+			if (hasRuleForId) continue;
 
 			clearTimeout(runtime.timer);
 			runtimes.current.delete(id);
@@ -109,7 +109,7 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 		for (const { id, identity } of configurations) {
 			const runtime = runtimes.current.get(id);
 
-			const isRuntimeMissing = !runtime;
+			const isRuntimeMissing = runtime == null;
 			if (isRuntimeMissing) {
 				runtimes.current.set(id, {
 					identity,
@@ -204,8 +204,8 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 	);
 	const configuredStatuses = Object.fromEntries(
 		Object.keys(rules).map((id) => {
-			const isNotStatusesOwn = !Object.hasOwn(statuses, id);
-			if (isNotStatusesOwn) return [id, "unknown"];
+			const hasNoStatusForId = !Object.hasOwn(statuses, id);
+			if (hasNoStatusForId) return [id, "unknown"];
 
 			return [id, statuses[id as Id]];
 		}),

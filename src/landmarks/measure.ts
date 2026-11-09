@@ -34,8 +34,8 @@ const validateConfidence = (options: GeometryOptions) => {
 
 	const inRange = minimum >= 0 && minimum <= 1;
 
-	const isNotMinimumFiniteOrInRange = !Number.isFinite(minimum) || !inRange;
-	if (isNotMinimumFiniteOrInRange)
+	const isMinimumInvalid = !Number.isFinite(minimum) || !inRange;
+	if (isMinimumInvalid)
 		throw new RangeError("minVisibility must be between 0 and 1");
 
 	return minimum;
@@ -51,18 +51,18 @@ const readPoints = (
 	for (const name of names) {
 		const joint = landmarks[LANDMARK_NAMES.indexOf(name)];
 
-		const isJointMissing = !joint;
+		const isJointMissing = joint == null;
 		if (isJointMissing)
 			return { status: "unavailable", reason: "missing-landmark" };
 
-		const isNotLandmarkConfidenceJoint = !hasLandmarkConfidence(joint, minimum);
-		if (isNotLandmarkConfidenceJoint)
+		const isLowConfidence = !hasLandmarkConfidence(joint, minimum);
+		if (isLowConfidence)
 			return { status: "unavailable", reason: "uncertain-landmark" };
 
 		const point = project(joint);
 
-		const isNotPointEvery = !point.every(Number.isFinite);
-		if (isNotPointEvery)
+		const hasNonFinitePoint = !point.every(Number.isFinite);
+		if (hasNonFinitePoint)
 			return { status: "unavailable", reason: "invalid-coordinates" };
 
 		points.push(point);
@@ -80,8 +80,8 @@ const imagePoints = (
 		(value) => Number.isFinite(value) && value > 0,
 	);
 
-	const isDimensionsValidMissing = !dimensionsValid;
-	if (isDimensionsValidMissing)
+	const areDimensionsInvalid = !dimensionsValid;
+	if (areDimensionsInvalid)
 		throw new RangeError("Image width and height must be finite and positive");
 
 	return readPoints(
@@ -114,9 +114,8 @@ const angle = (result: PointsResult): PoseMeasurement<"degrees"> => {
 
 	const [start, vertex, end] = result.points;
 
-	const isStartMissingOrVertexMissingOrEndMissing = !start || !vertex || !end;
-	if (isStartMissingOrVertexMissingOrEndMissing)
-		throw new Error("An angle requires three points");
+	const isAnyLandmarkMissing = start == null || vertex == null || end == null;
+	if (isAnyLandmarkMissing) throw new Error("An angle requires three points");
 
 	const first = subtract(start, vertex);
 	const second = subtract(end, vertex);
@@ -124,14 +123,14 @@ const angle = (result: PointsResult): PoseMeasurement<"degrees"> => {
 
 	const secondLength = Math.hypot(...second);
 
-	const isAnyLengthNotFinite = ![firstLength, secondLength].every(
+	const hasNonFiniteLength = ![firstLength, secondLength].every(
 		Number.isFinite,
 	);
-	if (isAnyLengthNotFinite)
+	if (hasNonFiniteLength)
 		return { status: "unavailable", reason: "invalid-coordinates" };
 
-	const isFirstLength0OrSecondLength0 = firstLength === 0 || secondLength === 0;
-	if (isFirstLength0OrSecondLength0)
+	const hasZeroLength = firstLength === 0 || secondLength === 0;
+	if (hasZeroLength)
 		return { status: "unavailable", reason: "degenerate-angle" };
 
 	const firstDirectionX = first[0] / firstLength;
@@ -164,14 +163,13 @@ const distance = <Unit extends "pixels" | "meters">(
 
 	const [start, end] = result.points;
 
-	const isStartMissingOrEndMissing = !start || !end;
-	if (isStartMissingOrEndMissing)
-		throw new Error("A distance requires two points");
+	const isStartOrEndMissing = start == null || end == null;
+	if (isStartOrEndMissing) throw new Error("A distance requires two points");
 
 	const value = Math.hypot(...subtract(start, end));
 
-	const isNotFinite = !Number.isFinite(value);
-	if (isNotFinite)
+	const isNonFinite = !Number.isFinite(value);
+	if (isNonFinite)
 		return { status: "unavailable", reason: "invalid-coordinates" };
 
 	return { status: "available", value, unit };

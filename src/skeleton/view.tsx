@@ -22,8 +22,8 @@ export type PoseSkeletonProps = SkeletonOptions &
 export const PoseSkeleton = React.memo((props: PoseSkeletonProps) => {
 	const { width, height } = props;
 
-	const isWidthAtMost0OrHeightAtMost0 = width <= 0 || height <= 0;
-	if (isWidthAtMost0OrHeightAtMost0) return null;
+	const isSizeEmpty = width <= 0 || height <= 0;
+	if (isSizeEmpty) return null;
 
 	const hasFrameProp = "frame" in props;
 	const skeleton = hasFrameProp

@@ -101,9 +101,8 @@ export const PoseCameraView = ({
 	MaxPoses.parse(maxPoses);
 	MaskMaxDimension.parse(maskMaxDimension);
 
-	const isSegmentationEnabledAndOnLandmarkMissing =
-		segmentationEnabled && !onLandmark;
-	if (isSegmentationEnabledAndOnLandmarkMissing)
+	const isMaskWithoutLandmarkHandler = segmentationEnabled && !onLandmark;
+	if (isMaskWithoutLandmarkHandler)
 		throw new Error(
 			"Segmentation requires an onLandmark consumer to release mask handles",
 		);
@@ -147,11 +146,11 @@ export const PoseCameraView = ({
 
 	const skeletonEnabled = skeleton !== false;
 	React.useLayoutEffect(() => {
-		const isSkeletonEnabledMissing = !skeletonEnabled;
-		if (isSkeletonEnabledMissing) clear();
+		const isSkeletonOff = !skeletonEnabled;
+		if (isSkeletonOff) clear();
 	}, [skeletonEnabled, clear]);
-	const isActiveAndSkeletonEnabled = isActive && skeletonEnabled;
-	const skeletonFrame = isActiveAndSkeletonEnabled ? frame : null;
+	const isSkeletonVisible = isActive && skeletonEnabled;
+	const skeletonFrame = isSkeletonVisible ? frame : null;
 	const isSkeletonTypeObject = typeof skeleton === "object";
 	const skeletonOptions = isSkeletonTypeObject ? skeleton : {};
 
@@ -163,16 +162,16 @@ export const PoseCameraView = ({
 				);
 			};
 
-			const isIsActiveMissing = !isActive;
-			if (isIsActiveMissing) {
+			const isInactive = !isActive;
+			if (isInactive) {
 				discard();
 				return;
 			}
 
 			const decoded = decodeFrame(event.nativeEvent);
 
-			const isDecodeInvalid = !decoded.success;
-			if (isDecodeInvalid) {
+			const isDecodeFailed = !decoded.success;
+			if (isDecodeFailed) {
 				clear();
 				discard();
 				onInferenceError?.({ code: "invalidNativeEvent" });
@@ -183,7 +182,7 @@ export const PoseCameraView = ({
 				updateOverlay(decoded.data);
 			}
 
-			const isOnLandmarkMissing = !onLandmark;
+			const isOnLandmarkMissing = onLandmark == null;
 			if (isOnLandmarkMissing) {
 				discard();
 				return;
@@ -207,13 +206,13 @@ export const PoseCameraView = ({
 	);
 	const handleMetrics = React.useCallback(
 		(event: { nativeEvent: unknown }) => {
-			const isIsActiveMissing = !isActive;
-			if (isIsActiveMissing) return;
+			const isInactive = !isActive;
+			if (isInactive) return;
 
 			const decoded = decodeMetrics(event.nativeEvent);
 
-			const isDecodeInvalid = !decoded.success;
-			if (isDecodeInvalid) {
+			const isDecodeFailed = !decoded.success;
+			if (isDecodeFailed) {
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
@@ -228,8 +227,8 @@ export const PoseCameraView = ({
 			clear();
 			const decoded = decodeConfiguration(event.nativeEvent);
 
-			const isDecodeInvalid = !decoded.success;
-			if (isDecodeInvalid) {
+			const isDecodeFailed = !decoded.success;
+			if (isDecodeFailed) {
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
@@ -244,8 +243,8 @@ export const PoseCameraView = ({
 			clear();
 			const decodedFailure = decodeFailure(event.nativeEvent);
 
-			const isFailureInvalid = !decodedFailure.success;
-			if (isFailureInvalid) {
+			const isFailureUnreadable = !decodedFailure.success;
+			if (isFailureUnreadable) {
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}

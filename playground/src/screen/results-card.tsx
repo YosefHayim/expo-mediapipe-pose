@@ -81,8 +81,8 @@ export const ResultsCard = ({
 						</>
 					) : (
 						config.rules.map((rule, index) => {
-							const isSelectedPresent = selected !== null;
-							const measurement = isSelectedPresent
+							const hasSelection = selected !== null;
+							const measurement = hasSelection
 								? measureRule(selected, rule)
 								: { value: null, unit: "" };
 							const state = ruleStates[index]?.status ?? "unknown";

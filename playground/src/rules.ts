@@ -24,16 +24,15 @@ export function measureRule(
 	if (isRuleKindHeight) {
 		const confidence = getImageDistance(frame, rule.start, rule.end, options);
 
-		const isConfidenceStatusNotAvailable = confidence.status !== "available";
-		if (isConfidenceStatusNotAvailable) return { value: null, unit: "px Δy" };
+		const isConfidenceUnavailable = confidence.status !== "available";
+		if (isConfidenceUnavailable) return { value: null, unit: "px Δy" };
 
 		const start = frame.landmarks[LANDMARK_NAMES.indexOf(rule.start)];
 		const end = frame.landmarks[LANDMARK_NAMES.indexOf(rule.end)];
-		const isStartPresentAndEndPresent = start && end;
-		const isStartPresentAndEndPresentPresent =
-			isStartPresentAndEndPresent !== undefined;
+		const hasStartAndEnd = start && end;
+		const isStartAndEndSet = hasStartAndEnd !== undefined;
 		return {
-			value: isStartPresentAndEndPresentPresent
+			value: isStartAndEndSet
 				? (start.y - end.y) * frame.imageSize.height
 				: null,
 			unit: "px Δy",

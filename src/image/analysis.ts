@@ -49,27 +49,25 @@ export const PoseDetection = z.object({
 export type PoseDetection = z.infer<typeof PoseDetection>;
 
 export function validateLocalFileLocation(location: string): void {
-	const isEmptyInLocation = location.includes("\0");
-	if (isEmptyInLocation)
+	const hasNullByte = location.includes("\0");
+	if (hasNullByte)
 		throw new TypeError("File location contains a null character");
 
-	const isLocationStartsWithEmpty = location.startsWith("/");
-	if (isLocationStartsWithEmpty) return;
+	const isAbsoluteLocation = location.startsWith("/");
+	if (isAbsoluteLocation) return;
 
 	const url = new URL(location);
 
-	const isUrlProtocolNotFile = url.protocol !== "file:";
-	if (isUrlProtocolNotFile)
+	const isNonFileUrl = url.protocol !== "file:";
+	if (isNonFileUrl)
 		throw new TypeError("Expected an absolute path or local file URI");
 
-	const isUrlHostnameNotEmptyAndLocalhost =
-		url.hostname !== "" && url.hostname !== "localhost";
-	if (isUrlHostnameNotEmptyAndLocalhost)
+	const isRemoteHost = url.hostname !== "" && url.hostname !== "localhost";
+	if (isRemoteHost)
 		throw new TypeError("Remote file authorities are unsupported");
 
-	const isUrlSearchNotEmptyOrHashNotEmpty =
-		url.search !== "" || url.hash !== "";
-	if (isUrlSearchNotEmptyOrHashNotEmpty)
+	const hasQueryOrHash = url.search !== "" || url.hash !== "";
+	if (hasQueryOrHash)
 		throw new TypeError(
 			"File URIs must not contain query or fragment components",
 		);

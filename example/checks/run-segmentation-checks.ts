@@ -8,8 +8,8 @@ import {
 } from "expo-mediapipe-pose";
 
 function verify(condition: boolean, message: string): asserts condition {
-	const isConditionMissing = !condition;
-	if (isConditionMissing) throw new Error(message);
+	const isCheckFailed = !condition;
+	if (isCheckFailed) throw new Error(message);
 }
 function available(detection: PoseDetection) {
 	const segmentation = detection.segmentation;
@@ -175,10 +175,10 @@ export async function runSegmentationChecks(
 		}
 	}
 
-	const isFailuresLength1 = failures.length === 1;
-	if (isFailuresLength1) throw failures[0];
+	const hasOneFailure = failures.length === 1;
+	if (hasOneFailure) throw failures[0];
 
-	const isFailuresLengthAbove1 = failures.length > 1;
-	if (isFailuresLengthAbove1)
+	const hasMultipleFailures = failures.length > 1;
+	if (hasMultipleFailures)
 		throw new AggregateError(failures, "Mask fixture and cleanup failures");
 }

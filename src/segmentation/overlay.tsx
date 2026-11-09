@@ -32,12 +32,11 @@ export const PoseSegmentationOverlay = React.memo(
 		if (isOpacityOutOfRange)
 			throw new RangeError("opacity must be between 0 and 1");
 
-		const isSegmentationStatusNotAvailable =
-			segmentation.status !== "available";
-		if (isSegmentationStatusNotAvailable) return null;
+		const isSegmentationUnavailable = segmentation.status !== "available";
+		if (isSegmentationUnavailable) return null;
 
-		const isWidthAtMost0OrHeightAtMost0 = width <= 0 || height <= 0;
-		if (isWidthAtMost0OrHeightAtMost0) return null;
+		const isSizeEmpty = width <= 0 || height <= 0;
+		if (isSizeEmpty) return null;
 
 		const mask = segmentation.masks.find(
 			(entry) => entry.poseIndex === poseIndex,
