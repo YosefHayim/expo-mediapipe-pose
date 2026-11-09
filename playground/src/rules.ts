@@ -29,10 +29,9 @@ export function measureRule(
 
 		const start = frame.landmarks[LANDMARK_NAMES.indexOf(rule.start)];
 		const end = frame.landmarks[LANDMARK_NAMES.indexOf(rule.end)];
-		const hasStartAndEnd = start && end;
-		const isStartAndEndSet = hasStartAndEnd !== undefined;
+		const hasBothLandmarks = start != null && end != null;
 		return {
-			value: isStartAndEndSet
+			value: hasBothLandmarks
 				? (start.y - end.y) * frame.imageSize.height
 				: null,
 			unit: "px Δy",
