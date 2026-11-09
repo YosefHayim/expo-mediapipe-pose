@@ -1,32 +1,33 @@
-import { Schema } from "effect";
+import { z } from "zod";
 
-const Dimension = Schema.Number.pipe(Schema.int(), Schema.positive());
-export const MaskMaxDimension = Schema.Number.pipe(
-	Schema.int(),
-	Schema.between(64, 512),
-);
-export const PoseSegmentationMask = Schema.Struct({
-	poseIndex: Schema.Number.pipe(Schema.int(), Schema.between(0, 5)),
-	uri: Schema.String.pipe(Schema.pattern(/^file:\//)),
-	width: Dimension.pipe(Schema.lessThanOrEqualTo(512)),
-	height: Dimension.pipe(Schema.lessThanOrEqualTo(512)),
+const Dimension = z.number().int().positive();
+export const MaskMaxDimension = z.number().int().min(64).max(512);
+// The same UUID rule Effect used: 8-4-4-4-12 hex digits, either case.
+export const SegmentationLeaseId = z
+	.string()
+	.regex(
+		/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+	);
+export const PoseSegmentationMask = z.object({
+	poseIndex: z.number().int().min(0).max(5),
+	uri: z.string().regex(/^file:\//),
+	width: Dimension.max(512),
+	height: Dimension.max(512),
 });
-export type PoseSegmentationMask = Schema.Schema.Type<
-	typeof PoseSegmentationMask
->;
-export const PoseSegmentation = Schema.Union(
-	Schema.Struct({ status: Schema.Literal("empty", "backpressure") }),
-	Schema.Struct({
-		status: Schema.Literal("available"),
-		leaseId: Schema.UUID,
-		imageSize: Schema.Struct({ width: Dimension, height: Dimension }),
-		masks: Schema.Array(PoseSegmentationMask).pipe(
-			Schema.minItems(1),
-			Schema.maxItems(6),
-			Schema.filter((masks) =>
+export type PoseSegmentationMask = z.infer<typeof PoseSegmentationMask>;
+export const PoseSegmentation = z.union([
+	z.object({ status: z.enum(["empty", "backpressure"]) }),
+	z.object({
+		status: z.literal("available"),
+		leaseId: SegmentationLeaseId,
+		imageSize: z.object({ width: Dimension, height: Dimension }),
+		masks: z
+			.array(PoseSegmentationMask)
+			.min(1)
+			.max(6)
+			.refine((masks) =>
 				masks.every((mask, index) => mask.poseIndex === index),
 			),
-		),
 	}),
-);
-export type PoseSegmentation = Schema.Schema.Type<typeof PoseSegmentation>;
+]);
+export type PoseSegmentation = z.infer<typeof PoseSegmentation>;

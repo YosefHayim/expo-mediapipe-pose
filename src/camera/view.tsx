@@ -1,4 +1,3 @@
-import { Either, Schema } from "effect";
 import { requireNativeView } from "expo";
 import * as React from "react";
 import {
@@ -7,6 +6,7 @@ import {
 	View,
 	type ViewProps,
 } from "react-native";
+import type { z } from "zod";
 import {
 	CameraConfiguration,
 	type CameraFacing,
@@ -26,14 +26,14 @@ import { usePoseOverlayFrame } from "./use-overlay-frame";
 
 interface CameraOptions {
 	isActive?: boolean;
-	cameraFacing?: Schema.Schema.Type<typeof CameraFacing>;
-	cameraLens?: Schema.Schema.Type<typeof CameraLens>;
+	cameraFacing?: z.infer<typeof CameraFacing>;
+	cameraLens?: z.infer<typeof CameraLens>;
 	cameraZoomFactor?: number;
 	frameLimit?: number;
 	previewFps?: number;
 	callbackFps?: number;
 	poseModelAssetPath?: string | null;
-	poseModelVariant?: Schema.Schema.Type<typeof ModelVariant>;
+	poseModelVariant?: z.infer<typeof ModelVariant>;
 	minPoseDetectionConfidence?: number;
 	minPosePresenceConfidence?: number;
 	minTrackingConfidence?: number;
@@ -59,10 +59,14 @@ interface NativeCameraProps extends ViewProps, CameraOptions {
 }
 
 const NativeCamera = requireNativeView<NativeCameraProps>("ExpoMediaPipePose");
-const decodeFrame = Schema.decodeUnknownEither(PoseFrame);
-const decodeConfiguration = Schema.decodeUnknownEither(CameraConfiguration);
-const decodeFailure = Schema.decodeUnknownEither(InferenceError);
-const decodeMetrics = Schema.decodeUnknownEither(PosePerformanceMetrics);
+const decodeFrame = (candidateNativeEvent: unknown) =>
+	PoseFrame.safeParse(candidateNativeEvent);
+const decodeConfiguration = (candidateNativeEvent: unknown) =>
+	CameraConfiguration.safeParse(candidateNativeEvent);
+const decodeFailure = (candidateNativeEvent: unknown) =>
+	InferenceError.safeParse(candidateNativeEvent);
+const decodeMetrics = (candidateNativeEvent: unknown) =>
+	PosePerformanceMetrics.safeParse(candidateNativeEvent);
 const styles = StyleSheet.create({
 	container: { overflow: "hidden" },
 	overlay: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
@@ -94,8 +98,8 @@ export const PoseCameraView = ({
 	children,
 	...viewProps
 }: PoseCameraViewProps) => {
-	Schema.decodeUnknownSync(MaxPoses)(maxPoses);
-	Schema.decodeUnknownSync(MaskMaxDimension)(maskMaxDimension);
+	MaxPoses.parse(maxPoses);
+	MaskMaxDimension.parse(maskMaxDimension);
 	if (segmentationEnabled && !onLandmark)
 		throw new Error(
 			"Segmentation requires an onLandmark consumer to release mask handles",
@@ -154,21 +158,24 @@ export const PoseCameraView = ({
 				return;
 			}
 			const decoded = decodeFrame(event.nativeEvent);
-			if (Either.isLeft(decoded)) {
+
+			const isDecodeInvalid = !decoded.success;
+			if (isDecodeInvalid) {
 				clear();
 				discard();
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
+
 			if (skeletonEnabled) {
-				updateOverlay(decoded.right);
+				updateOverlay(decoded.data);
 			}
 			if (!onLandmark) {
 				discard();
 				return;
 			}
 			try {
-				onLandmark(decoded.right);
+				onLandmark(decoded.data);
 			} catch (error) {
 				discard();
 				throw error;
@@ -187,11 +194,14 @@ export const PoseCameraView = ({
 		(event: { nativeEvent: unknown }) => {
 			if (!isActive) return;
 			const decoded = decodeMetrics(event.nativeEvent);
-			if (Either.isLeft(decoded)) {
+
+			const isDecodeInvalid = !decoded.success;
+			if (isDecodeInvalid) {
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
-			onPerformanceMetrics?.(decoded.right);
+
+			onPerformanceMetrics?.(decoded.data);
 		},
 		[isActive, onInferenceError, onPerformanceMetrics],
 	);
@@ -200,11 +210,14 @@ export const PoseCameraView = ({
 		(event: { nativeEvent: unknown }) => {
 			clear();
 			const decoded = decodeConfiguration(event.nativeEvent);
-			if (Either.isLeft(decoded)) {
+
+			const isDecodeInvalid = !decoded.success;
+			if (isDecodeInvalid) {
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
-			onCameraConfigured?.(decoded.right);
+
+			onCameraConfigured?.(decoded.data);
 		},
 		[clear, onCameraConfigured, onInferenceError],
 	);
@@ -212,12 +225,15 @@ export const PoseCameraView = ({
 	const handleFailure = React.useCallback(
 		(event: { nativeEvent: unknown }) => {
 			clear();
-			const decoded = decodeFailure(event.nativeEvent);
-			onInferenceError?.(
-				Either.isRight(decoded)
-					? decoded.right
-					: { code: "invalidNativeEvent" },
-			);
+			const decodedFailure = decodeFailure(event.nativeEvent);
+
+			const isFailureInvalid = !decodedFailure.success;
+			if (isFailureInvalid) {
+				onInferenceError?.({ code: "invalidNativeEvent" });
+				return;
+			}
+
+			onInferenceError?.(decodedFailure.data);
 		},
 		[clear, onInferenceError],
 	);
