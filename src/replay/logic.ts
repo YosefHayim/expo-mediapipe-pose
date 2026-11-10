@@ -8,11 +8,12 @@ import {
 } from "./recording";
 
 function copyPoseResults(frame: Pick<PoseFrame, "poses">) {
-	const isFramePosesMissing = frame.poses === undefined;
+	const poses = frame.poses;
+	const isFramePosesMissing = poses == null;
 	if (isFramePosesMissing) return {};
 
 	return {
-		poses: frame.poses.map((pose) => ({
+		poses: poses.map((pose) => ({
 			landmarks: pose.landmarks.map((joint) => ({ ...joint })),
 			worldLandmarks: pose.worldLandmarks.map((joint) => ({ ...joint })),
 		})),
