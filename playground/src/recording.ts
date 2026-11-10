@@ -123,8 +123,9 @@ const listNativePoses = (
 		poses?: readonly PoseLandmarks[];
 	},
 ): PoseLandmarks[] => {
-	const hasFramePoses = frame.poses != null;
-	if (hasFramePoses) return [...frame.poses];
+	const framePoses = frame.poses;
+	const hasFramePoses = framePoses != null;
+	if (hasFramePoses) return [...framePoses];
 
 	const isFrameLandmarksEmpty = frame.landmarks.length === 0;
 	if (isFrameLandmarksEmpty) return [];
