@@ -69,7 +69,7 @@ export const generateCode = (
 			return `import { analyzePoseVideo, releasePoseSegmentation, type PoseDetection } from "expo-mediapipe-pose";
 
 // Pass an AbortSignal to cancel; delivered masks still belong to this consumer.
-export async function analyzeVideo(localUri: string, consume: (result: PoseDetection) => Promise<void>, signal: AbortSignal) {
+export const analyzeVideo = async (localUri: string, consume: (result: PoseDetection) => Promise<void>, signal: AbortSignal) => {
   for await (const sample of analyzePoseVideo(localUri, { ...${JSON.stringify(options, null, 2)}, samplingFps: ${config.timing.frameLimit}, minTrackingConfidence: ${d.minTrackingConfidence}, signal })) {
     try { await consume(sample.detection); }
     finally {
@@ -77,7 +77,7 @@ export async function analyzeVideo(localUri: string, consume: (result: PoseDetec
       if (masks?.status === "available") await releasePoseSegmentation(masks.leaseId);
     }
   }
-}
+};
 `;
 
 		return `import { analyzePoseImage, releasePoseSegmentation, type PoseDetection, type SkeletonOptions } from "expo-mediapipe-pose";
@@ -85,14 +85,14 @@ export async function analyzeVideo(localUri: string, consume: (result: PoseDetec
 export const skeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(config), null, 2)};
 
 // A local file URI on the phone, not the browser upload URL.
-export async function analyzePhoto(localUri: string, consume: (result: PoseDetection) => Promise<void>) {
+export const analyzePhoto = async (localUri: string, consume: (result: PoseDetection) => Promise<void>) => {
   const result = await analyzePoseImage(localUri, ${JSON.stringify(options, null, 2)});
   try { await consume(result); }
   finally {
     const masks = result.segmentation;
     if (masks?.status === "available") await releasePoseSegmentation(masks.leaseId);
   }
-}
+};
 `;
 	}
 
@@ -123,7 +123,7 @@ import {
 const baseSkeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(config), null, 2)};
 
 // Supply screen focus from your navigation library. Requires a native development build.
-export function PoseScreen({ focused = true }: { focused?: boolean }) {
+export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [foreground, setForeground] = React.useState(AppState.currentState === "active");
   const [error, setError] = React.useState<string | null>(null);
@@ -177,7 +177,7 @@ export function PoseScreen({ focused = true }: { focused?: boolean }) {
   </PoseCameraView>`
 			: "/>"
 	};
-}
+};
 `;
 };
 
