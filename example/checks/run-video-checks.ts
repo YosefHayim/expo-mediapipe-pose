@@ -38,7 +38,7 @@ export const runVideoChecks = async ({
 			);
 			for (const [index, landmark] of frame.detection.landmarks.entries()) {
 				const joint = reference.landmarks[index];
-				verify(joint !== undefined, "Reference landmark must exist");
+				verify(joint != null, "Reference landmark must exist");
 				verify(
 					Math.abs(landmark.x - joint.x) < 0.06,
 					`${label} video x must align with reference`,

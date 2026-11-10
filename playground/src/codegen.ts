@@ -1,9 +1,9 @@
 import type { SkeletonOptions } from "expo-mediapipe-pose/core";
-import type { Config, Rule } from "./config";
-import type { SourceMode } from "./types";
-export const createSkeletonSettings = (config: Config): SkeletonOptions => {
-	const { enabled: _enabled, ...options } = config.skeleton;
-	return options;
+import type { Rule, Settings } from "./config";
+import type { MediaMode } from "./types";
+export const createSkeletonSettings = (settings: Settings): SkeletonOptions => {
+	const { enabled: _enabled, ...restSettings } = settings.skeleton;
+	return restSettings;
 };
 const createRuleCode = (rule: Rule) => {
 	const isRuleKindAngle = rule.kind === "angle";
@@ -26,11 +26,11 @@ const createRuleCode = (rule: Rule) => {
 	} else {
 		const isRuleSpaceImage = rule.space === "image";
 		const helper = `get${isRuleSpaceImage ? "Image" : "World"}${isRuleKindAngle ? "JointAngle" : "Distance"}`;
-		const input = isRuleSpaceImage
+		const details = isRuleSpaceImage
 			? "{ landmarks: frame.landmarks, imageSize: frame.additionalData }"
 			: "frame";
-		const args = isRuleKindAngle ? `${a}, ${b}, ${c}` : `${a}, ${c}`;
-		measure = `const result = ${helper}(${input}, ${args}, { minVisibility: ${rule.minVisibility} });
+		const argumentList = isRuleKindAngle ? `${a}, ${b}, ${c}` : `${a}, ${c}`;
+		measure = `const result = ${helper}(${details}, ${argumentList}, { minVisibility: ${rule.minVisibility} });
         return result.status === "available" ? result.value : null;`;
 	}
 
@@ -42,17 +42,17 @@ const createRuleCode = (rule: Rule) => {
     })`;
 };
 export const generateCode = (
-	config: Config,
-	mode: SourceMode,
+	settings: Settings,
+	mode: MediaMode,
 	hasLocalModel = false,
 ): string => {
-	const d = config.detection;
+	const d = settings.detection;
 	const needsModelPath = hasLocalModel || d.modelVariant !== "full";
 
 	const isPhotoVideoOrSampleMode =
 		mode === "photo" || mode === "video" || mode === "sample";
 	if (isPhotoVideoOrSampleMode) {
-		const options = {
+		const codeSettings = {
 			minPoseDetectionConfidence: d.minPoseDetectionConfidence,
 			minPosePresenceConfidence: d.minPosePresenceConfidence,
 			maxPoses: d.maxPoses,
@@ -70,7 +70,7 @@ export const generateCode = (
 
 // Pass an AbortSignal to cancel; delivered masks still belong to this consumer.
 export const analyzeVideo = async (localUri: string, consume: (result: PoseDetection) => Promise<void>, signal: AbortSignal) => {
-  for await (const sample of analyzePoseVideo(localUri, { ...${JSON.stringify(options, null, 2)}, samplingFps: ${config.timing.frameLimit}, minTrackingConfidence: ${d.minTrackingConfidence}, signal })) {
+  for await (const sample of analyzePoseVideo(localUri, { ...${JSON.stringify(codeSettings, null, 2)}, samplingFps: ${settings.timing.frameLimit}, minTrackingConfidence: ${d.minTrackingConfidence}, signal })) {
     try { await consume(sample.detection); }
     finally {
       const masks = sample.detection.segmentation;
@@ -82,11 +82,11 @@ export const analyzeVideo = async (localUri: string, consume: (result: PoseDetec
 
 		return `import { analyzePoseImage, releasePoseSegmentation, type PoseDetection, type SkeletonOptions } from "expo-mediapipe-pose";
 
-export const skeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(config), null, 2)};
+export const skeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(settings), null, 2)};
 
 // A local file URI on the phone, not the browser upload URL.
 export const analyzePhoto = async (localUri: string, consume: (result: PoseDetection) => Promise<void>) => {
-  const result = await analyzePoseImage(localUri, ${JSON.stringify(options, null, 2)});
+  const result = await analyzePoseImage(localUri, ${JSON.stringify(codeSettings, null, 2)});
   try { await consume(result); }
   finally {
     const masks = result.segmentation;
@@ -96,10 +96,10 @@ export const analyzePhoto = async (localUri: string, consume: (result: PoseDetec
 `;
 	}
 
-	const rules = config.rules
+	const rules = settings.rules
 		.map((rule, i) => `rule${i}: ${createRuleCode(rule)}`)
 		.join(",\n    ");
-	const styles = config.rules
+	const styles = settings.rules
 		.map(
 			(rule, i) => `{ status: feedback.statuses.rule${i}, styles: {
       pass: { joints: { ${rule.vertex}: { color: "${rule.passColor}" } } },
@@ -109,7 +109,7 @@ export const analyzePhoto = async (localUri: string, consume: (result: PoseDetec
 		)
 		.join(",\n    ");
 	const isSkeletonWithoutSegmentation =
-		config.skeleton.enabled && !d.segmentationEnabled;
+		settings.skeleton.enabled && !d.segmentationEnabled;
 	return `import * as React from "react";
 import { AppState, Button, Linking, Text, View } from "react-native";
 import { useCameraPermissions } from "expo-camera";
@@ -120,7 +120,7 @@ import {
   ${d.segmentationEnabled ? "PoseSegmentationOverlay, PoseSkeleton, type PoseFrame," : ""}
 } from "expo-mediapipe-pose";
 
-const baseSkeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(config), null, 2)};
+const baseSkeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(settings), null, 2)};
 
 // Supply screen focus from your navigation library. Requires a native development build.
 export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
@@ -132,7 +132,7 @@ export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
     return () => subscription.remove();
   }, []);
   const active = focused && foreground && error === null;
-  ${d.segmentationEnabled ? maskStateCode(config) : ""}
+  ${d.segmentationEnabled ? maskStatusCode(settings) : ""}
   const feedback = usePoseRules({
     ${rules}
   });
@@ -144,8 +144,8 @@ export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
   if (error) return <View><Text>{error}</Text><Button title="Retry" onPress={() => setError(null)} /></View>;
   return <PoseCameraView
     style={{ flex: 1 }} isActive={active}
-    cameraFacing="${config.native.cameraFacing}" cameraLens="${config.native.cameraLens}" cameraZoomFactor={${config.native.cameraZoomFactor}}
-    previewFps={${config.timing.previewFps}} frameLimit={${config.timing.frameLimit}} callbackFps={${config.timing.callbackFps}}
+    cameraFacing="${settings.native.cameraFacing}" cameraLens="${settings.native.cameraLens}" cameraZoomFactor={${settings.native.cameraZoomFactor}}
+    previewFps={${settings.timing.previewFps}} frameLimit={${settings.timing.frameLimit}} callbackFps={${settings.timing.callbackFps}}
     poseModelVariant="${d.modelVariant}"${needsModelPath ? '\n    poseModelAssetPath="/absolute/path/to/your-model.task"' : ""}
     minPoseDetectionConfidence={${d.minPoseDetectionConfidence}} minPosePresenceConfidence={${d.minPosePresenceConfidence}} minTrackingConfidence={${d.minTrackingConfidence}}
     maxPoses={${d.maxPoses}} segmentationEnabled={${d.segmentationEnabled}} maskMaxDimension={${d.maskMaxDimension}}
@@ -158,8 +158,8 @@ export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
 				d.segmentationEnabled
 					? `if (frame.segmentation?.status === "available") leases.current.add(frame.segmentation.leaseId);
       setOverlayFrame(frame);
-      feedback.update(selectPose(frame, ${config.skeleton.poseIndex}));`
-					: `try { feedback.update(selectPose(frame, ${config.skeleton.poseIndex})); }
+      feedback.update(selectPose(frame, ${settings.skeleton.poseIndex}));`
+					: `try { feedback.update(selectPose(frame, ${settings.skeleton.poseIndex})); }
       finally {
         // This example consumes landmarks only. If rendering a mask, keep its lease
         // until the overlay is replaced/unmounted, then release it.
@@ -172,8 +172,8 @@ export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
   ${
 		d.segmentationEnabled
 			? `>
-    {overlayFrame?.segmentation && <PoseSegmentationOverlay segmentation={overlayFrame.segmentation} {...size} poseIndex={${config.skeleton.poseIndex}} color="${config.mask.color}" opacity={${config.mask.opacity}} onError={() => setError("Mask image unavailable")} />}
-    ${config.skeleton.enabled ? "{overlayFrame && <PoseSkeleton frame={overlayFrame} {...size} {...skeleton} />}" : ""}
+    {overlayFrame?.segmentation && <PoseSegmentationOverlay segmentation={overlayFrame.segmentation} {...size} poseIndex={${settings.skeleton.poseIndex}} color="${settings.mask.color}" opacity={${settings.mask.opacity}} onError={() => setError("Mask image unavailable")} />}
+    ${settings.skeleton.enabled ? "{overlayFrame && <PoseSkeleton frame={overlayFrame} {...size} {...skeleton} />}" : ""}
   </PoseCameraView>`
 			: "/>"
 	};
@@ -181,14 +181,14 @@ export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
 `;
 };
 
-const maskStateCode = (config: Config): string => {
+const maskStatusCode = (settings: Settings): string => {
 	const staleMs = Math.max(
 		500,
 		2000 /
 			Math.min(
-				config.timing.previewFps,
-				config.timing.frameLimit,
-				config.timing.callbackFps,
+				settings.timing.previewFps,
+				settings.timing.frameLimit,
+				settings.timing.callbackFps,
 			),
 	);
 	return `const [overlayFrame, setOverlayFrame] = React.useState<PoseFrame | null>(null);

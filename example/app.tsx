@@ -135,8 +135,8 @@ const App = () => {
 	);
 
 	React.useEffect(() => {
-		const subscription = AppState.addEventListener("change", (state) =>
-			setForeground(state === "active"),
+		const subscription = AppState.addEventListener("change", (appStatus) =>
+			setForeground(appStatus === "active"),
 		);
 		setForeground(AppState.currentState === "active");
 		return () => subscription.remove();
@@ -206,8 +206,8 @@ const App = () => {
 			</View>
 		);
 
-	const cameraReadyToRecord = cameraSelection !== null && isActive;
-	const canToggleRecording = recordingActive || cameraReadyToRecord;
+	const isCameraReady = cameraSelection !== null && isActive;
+	const canToggleRecording = recordingActive || isCameraReady;
 	const toggleRecording = () => {
 		if (recordingActive) {
 			setRecordingActive(false);
@@ -326,7 +326,7 @@ const App = () => {
 			<View style={styles.actions}>
 				<Button
 					title={pauseButtonLabel}
-					onPress={() => setPaused((value) => !value)}
+					onPress={() => setPaused((isPaused) => !isPaused)}
 				/>
 			</View>
 		</View>

@@ -22,7 +22,7 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 	const [maxPoses, setMaxPoses] = React.useState(1);
 	const [segmentationEnabled, setSegmentationEnabled] = React.useState(false);
 	const [poseIndex, setPoseIndex] = React.useState(0);
-	const [result, setResult] = React.useState<{
+	const [report, setReport] = React.useState<{
 		location: string;
 		detection: PoseDetection;
 	} | null>(null);
@@ -40,17 +40,17 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 	);
 	React.useEffect(
 		() => () => {
-			void releaseMasks(result?.detection).catch((error) =>
+			void releaseMasks(report?.detection).catch((error) =>
 				console.error("Mask cleanup failed", error),
 			);
 		},
-		[result],
+		[report],
 	);
 	const analyze = async () => {
 		const token = ++request.current;
 		setBusy(true);
 		setError(null);
-		setResult(null);
+		setReport(null);
 		setPoseIndex(0);
 		try {
 			const detection = await analyzePoseImage(location, {
@@ -68,7 +68,7 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 				return;
 			}
 
-			setResult({ location: imageUri, detection });
+			setReport({ location: imageUri, detection });
 		} catch (failure) {
 			const isTokenEqualsRequestCurrent = token === request.current;
 			if (isTokenEqualsRequestCurrent) setError(String(failure));
@@ -104,18 +104,18 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 		}
 	};
 	const poseIndices = Array.from(
-		{ length: result?.detection.poses?.length ?? 0 },
+		{ length: report?.detection.poses?.length ?? 0 },
 		(_, index) => index,
 	);
-	const segmentationStateLabel = segmentationEnabled ? "on" : "off";
+	const segmentationStatusLabel = segmentationEnabled ? "on" : "off";
 	const analyzeButtonLabel = busy ? "Analyzing…" : "Analyze";
 
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
 			<Text style={{ color: "white" }}>Analyze a local photo</Text>
 			<Button
-				title={`Segmentation: ${segmentationStateLabel}`}
-				onPress={() => setSegmentationEnabled((value) => !value)}
+				title={`Segmentation: ${segmentationStatusLabel}`}
+				onPress={() => setSegmentationEnabled((isEnabled) => !isEnabled)}
 				disabled={busy}
 			/>
 			<Button
@@ -159,22 +159,22 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 				disabled={!canAnalyze}
 			/>
 			{error && <Text style={{ color: "#fca5a5" }}>{error}</Text>}
-			{result && (
+			{report && (
 				<Text style={{ color: "white" }}>
-					{result.detection.segmentation &&
-						`Masks: ${result.detection.segmentation.status} · `}
-					{result.detection.landmarks.length} landmarks ·{" "}
-					{result.detection.inferenceDurationMs.toFixed(1)} ms inference
+					{report.detection.segmentation &&
+						`Masks: ${report.detection.segmentation.status} · `}
+					{report.detection.landmarks.length} landmarks ·{" "}
+					{report.detection.inferenceDurationMs.toFixed(1)} ms inference
 				</Text>
 			)}
 			<View
 				style={{ flex: 1 }}
 				onLayout={(event) => setSize(event.nativeEvent.layout)}
 			>
-				{result && (
+				{report && (
 					<>
 						<Image
-							source={{ uri: result.location }}
+							source={{ uri: report.location }}
 							resizeMode="cover"
 							style={{
 								position: "absolute",
@@ -182,16 +182,16 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 								height: size.height,
 							}}
 						/>
-						{result.detection.segmentation && (
+						{report.detection.segmentation && (
 							<PoseSegmentationOverlay
-								segmentation={result.detection.segmentation}
+								segmentation={report.detection.segmentation}
 								poseIndex={poseIndex}
 								{...size}
 							/>
 						)}
 						<PoseSkeleton
 							poseIndex={poseIndex}
-							detection={result.detection}
+							detection={report.detection}
 							{...size}
 						/>
 					</>

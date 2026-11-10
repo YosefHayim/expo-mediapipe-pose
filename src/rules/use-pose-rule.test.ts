@@ -11,8 +11,8 @@ type RuleHarnessProps = PoseRuleOptions<"leftWrist"> & {
 	onRule: (rule: ReturnType<typeof usePoseRule>) => void;
 };
 
-const RuleHarness = ({ onRule, ...options }: RuleHarnessProps) => {
-	onRule(usePoseRule(options));
+const RuleHarness = ({ onRule, ...settings }: RuleHarnessProps) => {
+	onRule(usePoseRule(settings));
 	return null;
 };
 
@@ -44,7 +44,7 @@ describe("usePoseRule", () => {
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
 		const transitions: PoseRuleStatus[] = [];
 		const updatedTransitions: PoseRuleStatus[] = [];
-		let activeRule: ReturnType<typeof usePoseRule> | undefined;
+		let activeRule: ReturnType<typeof usePoseRule> | null = null;
 		const getRule = () => {
 			assert.ok(activeRule);
 			return activeRule;
@@ -52,7 +52,7 @@ describe("usePoseRule", () => {
 		const captureRule = (captured: ReturnType<typeof usePoseRule>) => {
 			activeRule = captured;
 		};
-		const options: PoseRuleOptions<"leftWrist"> = {
+		const settings: PoseRuleOptions<"leftWrist"> = {
 			landmarks: ["leftWrist"],
 			evaluate: () => true,
 			holdMs: 100,
@@ -79,7 +79,7 @@ describe("usePoseRule", () => {
 		try {
 			await act(() =>
 				root.render(
-					createElement(RuleHarness, { onRule: captureRule, ...options }),
+					createElement(RuleHarness, { onRule: captureRule, ...settings }),
 				),
 			);
 			await sendFrame(0);
@@ -92,7 +92,7 @@ describe("usePoseRule", () => {
 				root.render(
 					createElement(RuleHarness, {
 						onRule: captureRule,
-						...options,
+						...settings,
 						onChange: (status) => updatedTransitions.push(status),
 					}),
 				),
@@ -109,7 +109,7 @@ describe("usePoseRule", () => {
 				root.render(
 					createElement(RuleHarness, {
 						onRule: captureRule,
-						...options,
+						...settings,
 						isActive: false,
 					}),
 				),

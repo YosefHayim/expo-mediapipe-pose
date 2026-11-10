@@ -1,7 +1,7 @@
 import { requireNativeModule } from "expo";
 import { z } from "zod";
 import { validateLocalFileLocation } from "../image/analysis";
-import { discardResultSegmentation } from "../segmentation/native";
+import { discardReportSegmentation } from "../segmentation/native";
 import {
 	createVideoSamplePlan,
 	PoseVideoFrame,
@@ -18,7 +18,7 @@ const VideoSession = VideoHandle.extend({
 interface NativeVideoAnalysis {
 	openPoseVideo(
 		location: string,
-		options: ReturnType<typeof resolvePoseVideoOptions>["image"],
+		settings: ReturnType<typeof resolvePoseVideoOptions>["image"],
 		trackingConfidence: number,
 	): Promise<unknown>;
 	readPoseVideoFrame(id: string, timestampMs: number): Promise<unknown>;
@@ -56,30 +56,30 @@ const throwVideoFailures = (failures: unknown[]) => {
 };
 const readVideoDetection = (frame: unknown): unknown => {
 	const isFrameNotObject = typeof frame !== "object" || frame === null;
-	if (isFrameNotObject) return undefined;
+	if (isFrameNotObject) return null;
 
 	const isFrameWithoutDetection = !("detection" in frame);
-	if (isFrameWithoutDetection) return undefined;
+	if (isFrameWithoutDetection) return null;
 
 	return frame.detection;
 };
 // An arrow cannot be a generator, so this stays a const function expression.
 export const analyzePoseVideo = async function* (
 	location: string,
-	options: PoseVideoOptions = {},
+	videoSettings: PoseVideoOptions = {},
 ): AsyncGenerator<PoseVideoFrame, void, void> {
 	validateLocalFileLocation(location);
 	const { image, sampling, signal, onProgress } =
-		resolvePoseVideoOptions(options);
+		resolvePoseVideoOptions(videoSettings);
 	throwIfAborted(signal);
 	const native = requireNativeModule<NativeVideoAnalysis>("ExpoMediaPipePose");
-	const rawSession = await native.openPoseVideo(
+	const unparsedSession = await native.openPoseVideo(
 		location,
 		image,
 		sampling.minTrackingConfidence,
 	);
-	const handle = VideoHandle.parse(rawSession);
-	let closing: Promise<void> | undefined;
+	const handle = VideoHandle.parse(unparsedSession);
+	let closing: Promise<void> | null = null;
 	const close = () => {
 		closing ??= native.closePoseVideo(handle.id);
 		return closing;
@@ -90,17 +90,20 @@ export const analyzePoseVideo = async function* (
 	};
 	signal?.addEventListener("abort", closeOnAbort, { once: true });
 	const failures: unknown[] = [];
-	let undelivered: unknown;
+	let undelivered: unknown = null;
 	try {
-		const session = VideoSession.parse(rawSession);
+		const session = VideoSession.parse(unparsedSession);
 		throwIfAborted(signal);
 		const plan = createVideoSamplePlan(session.durationMs, sampling);
 		for (let index = 0; index < plan.frameCount; index += 1) {
 			throwIfAborted(signal);
-			const timestampMs = plan.timestampAt(index);
-			const rawFrame = await native.readPoseVideoFrame(session.id, timestampMs);
-			undelivered = readVideoDetection(rawFrame);
-			const frame = PoseVideoFrame.parse(rawFrame);
+			const timestampMs = plan.timestampMsAt(index);
+			const unparsedFrame = await native.readPoseVideoFrame(
+				session.id,
+				timestampMs,
+			);
+			undelivered = readVideoDetection(unparsedFrame);
+			const frame = PoseVideoFrame.parse(unparsedFrame);
 			throwIfAborted(signal);
 
 			const isTimestampMismatched = frame.timestampMs !== timestampMs;
@@ -115,7 +118,7 @@ export const analyzePoseVideo = async function* (
 				timestampMs,
 			});
 			throwIfAborted(signal);
-			undelivered = undefined;
+			undelivered = null;
 			yield frame;
 		}
 	} catch (error) {
@@ -124,7 +127,7 @@ export const analyzePoseVideo = async function* (
 	} finally {
 		signal?.removeEventListener("abort", closeOnAbort);
 		try {
-			await discardResultSegmentation(undelivered);
+			await discardReportSegmentation(undelivered);
 		} catch (error) {
 			failures.push(error);
 		}

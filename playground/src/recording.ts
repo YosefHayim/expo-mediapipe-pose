@@ -16,10 +16,10 @@ const strictPoseLandmarks = z.strictObject({
 	landmarks: z.array(strictLandmark).max(MAXIMUM_LANDMARKS),
 	worldLandmarks: z.array(strictLandmark).max(MAXIMUM_LANDMARKS),
 });
-const strictPoseResults = z.array(strictPoseLandmarks).max(MAXIMUM_POSES);
+const strictPoseReports = z.array(strictPoseLandmarks).max(MAXIMUM_POSES);
 const frameSchema = z.strictObject({
 	...strictPoseLandmarks.shape,
-	poses: strictPoseResults,
+	poses: strictPoseReports,
 	imageSize: z.strictObject({ width: positive, height: positive }),
 	inferenceDurationMs: z.number().nonnegative(),
 });
@@ -107,9 +107,9 @@ export const readFrameAt = (recording: Recording, timestampMs: number) => {
 	}
 	return recording.frames[index]?.frame ?? null;
 };
-export const download = (name: string, contents: string) => {
+export const download = (name: string, fileString: string) => {
 	const url = URL.createObjectURL(
-		new Blob([contents], { type: "application/json" }),
+		new Blob([fileString], { type: "application/json" }),
 	);
 	const link = document.createElement("a");
 	link.href = url;
@@ -123,7 +123,7 @@ const listNativePoses = (
 		poses?: readonly PoseLandmarks[];
 	},
 ): PoseLandmarks[] => {
-	const hasFramePoses = frame.poses !== undefined;
+	const hasFramePoses = frame.poses != null;
 	if (hasFramePoses) return [...frame.poses];
 
 	const isFrameLandmarksEmpty = frame.landmarks.length === 0;

@@ -7,10 +7,10 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createSkeletonSettings, generateCode } from "@/codegen";
 import {
-	type Config,
 	createDefaultSettings,
-	parseConfig,
+	parseSettings,
 	readPresetSettings,
+	type Settings,
 } from "@/config";
 import { useInference } from "@/inference/use-inference";
 import {
@@ -22,19 +22,20 @@ import {
 } from "@/recording";
 import { updateRules } from "@/rules";
 import { base } from "@/site";
-import type { BrowserFrame, BrowserMask, SourceMode } from "@/types";
+import type { BrowserFrame, BrowserMask, MediaMode } from "@/types";
 
 const readInitialConfiguration = (): {
-	config: Config;
+	config: Settings;
 	error: string | null;
 } => {
 	try {
 		const hash = new URLSearchParams(location.hash.slice(1));
-		const value = hash.get("config");
-		const isSharedSetupInHash = value !== null && value !== "";
+		const encodedSettings = hash.get("config");
+		const isSharedSetupInHash =
+			encodedSettings !== null && encodedSettings !== "";
 		return {
 			config: isSharedSetupInHash
-				? parseConfig(value)
+				? parseSettings(encodedSettings)
 				: createDefaultSettings(),
 			error: null,
 		};
@@ -49,9 +50,9 @@ const readInitialConfiguration = (): {
 
 export const usePlayground = () => {
 	const [initial] = useState(readInitialConfiguration);
-	const [config, setConfigState] = useState(initial.config);
+	const [settings, setSettingsStatus] = useState(initial.config);
 	const [message, setMessage] = useState<string | null>(initial.error);
-	const [mode, setMode] = useState<SourceMode>("sample");
+	const [mode, setMode] = useState<MediaMode>("sample");
 	const [sample, setSample] = useState("pose.jpg");
 	const [upload, setUpload] = useState("");
 	const [device, setDevice] = useState("");
@@ -62,19 +63,19 @@ export const usePlayground = () => {
 	const [masks, setMasks] = useState<BrowserMask[]>([]);
 	const [model, setModel] = useState<ArrayBuffer | null>(null);
 	const [modelName, setModelName] = useState("");
-	const [ruleStates, setRuleStates] = useState<PoseRuleState[]>([]);
+	const [ruleStatuses, setRuleStatuses] = useState<PoseRuleState[]>([]);
 	const ruleRef = useRef<PoseRuleState[]>([]);
 	const receivedAt = useRef(0);
 	const image = useRef<HTMLImageElement>(null);
 	const video = useRef<HTMLVideoElement>(null);
 	const [recording, setRecording] = useState(false);
 	const [recorded, setRecorded] = useState<Recording | null>(null);
-	const recordRef = useRef<Array<{ timestampMs: number; frame: BrowserFrame }>>(
-		[],
-	);
-	const recordStart = useRef(0);
-	const recordSize = useRef(RECORDING_ENVELOPE_BYTES);
-	const [recordCount, setRecordCount] = useState(0);
+	const recordingRef = useRef<
+		Array<{ timestampMs: number; frame: BrowserFrame }>
+	>([]);
+	const recordingStart = useRef(0);
+	const recordingSize = useRef(RECORDING_ENVELOPE_BYTES);
+	const [recordingCount, setRecordingCount] = useState(0);
 	const [replay, setReplay] = useState<Recording | null>(null);
 	const [position, setPosition] = useState(0);
 	const positionRef = useRef(position);
@@ -85,29 +86,29 @@ export const usePlayground = () => {
 		position: 0,
 		duration: 0,
 	});
-	const [resultTab, setResultTab] = useState("feedback");
-	const [codeMode, setCodeMode] = useState<SourceMode>("camera");
+	const [reportTab, setReportTab] = useState("feedback");
+	const [codeMode, setCodeMode] = useState<MediaMode>("camera");
 	const isModeSample = mode === "sample";
-	const sourceUrl = isModeSample ? `${base}${sample}` : upload;
-	const setConfig = (next: Config) => {
+	const mediaUrl = isModeSample ? `${base}${sample}` : upload;
+	const setSettings = (next: Settings) => {
 		const isModelVariantChanged =
-			next.detection.modelVariant !== config.detection.modelVariant;
+			next.detection.modelVariant !== settings.detection.modelVariant;
 		if (isModelVariantChanged) {
 			setModel(null);
 			setModelName("");
 		}
 
-		setConfigState(next);
+		setSettingsStatus(next);
 	};
 	const finishRecording = useCallback(() => {
 		setRecording(false);
 
-		const hasRecordedFrames = recordRef.current.length > 0;
+		const hasRecordedFrames = recordingRef.current.length > 0;
 		if (hasRecordedFrames)
 			setRecorded({
 				format: "pose-playground",
 				version: 1,
-				frames: [...recordRef.current],
+				frames: [...recordingRef.current],
 			});
 	}, []);
 	const acceptFrame = (next: BrowserFrame, nextMasks: BrowserMask[]) => {
@@ -120,35 +121,35 @@ export const usePlayground = () => {
 
 		const now = performance.now();
 
-		const isRecordEmpty = recordRef.current.length === 0;
-		if (isRecordEmpty) recordStart.current = now;
+		const isRecordingEmpty = recordingRef.current.length === 0;
+		if (isRecordingEmpty) recordingStart.current = now;
 
-		const entry = { timestampMs: now - recordStart.current, frame: next };
-		const separatorBytes = isRecordEmpty ? 0 : 1;
+		const line = { timestampMs: now - recordingStart.current, frame: next };
+		const separatorBytes = isRecordingEmpty ? 0 : 1;
 
-		const size = JSON.stringify(entry).length + separatorBytes;
+		const size = JSON.stringify(line).length + separatorBytes;
 
-		const isRecordingTooLarge = recordSize.current + size > 15 * 1024 * 1024;
+		const isRecordingTooLarge = recordingSize.current + size > 15 * 1024 * 1024;
 		if (isRecordingTooLarge) {
 			finishRecording();
 			setMessage("Recording stopped at the 15 MiB limit.");
 			return;
 		}
 
-		recordSize.current += size;
-		recordRef.current.push(entry);
-		setRecordCount(recordRef.current.length);
+		recordingSize.current += size;
+		recordingRef.current.push(line);
+		setRecordingCount(recordingRef.current.length);
 
-		const isRecordingFull = recordRef.current.length >= MAX_RECORDING_FRAMES;
+		const isRecordingFull = recordingRef.current.length >= MAX_RECORDING_FRAMES;
 		if (isRecordingFull) {
 			finishRecording();
 			setMessage("Recording complete: 1,800-frame limit reached.");
 		}
 	};
 	const engine = useInference({
-		config,
+		config: settings,
 		mode,
-		url: sourceUrl,
+		url: mediaUrl,
 		device,
 		paused: paused || hidden,
 		model,
@@ -156,7 +157,7 @@ export const usePlayground = () => {
 		video,
 		onFrame: acceptFrame,
 	});
-	const detectionKey = JSON.stringify(config.detection);
+	const detectionKey = JSON.stringify(settings.detection);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: A recording belongs to one uninterrupted input generation.
 	useEffect(() => {
 		finishRecording();
@@ -166,11 +167,11 @@ export const usePlayground = () => {
 		hidden,
 		paused,
 		mode,
-		sourceUrl,
+		mediaUrl,
 		device,
 		detectionKey,
 		model,
-		config.timing.previewFps,
+		settings.timing.previewFps,
 	]);
 	useEffect(() => {
 		const updateHiddenFromDocument = () => setHidden(document.hidden);
@@ -195,7 +196,7 @@ export const usePlayground = () => {
 		receivedAt.current = 0;
 	}, [
 		mode,
-		sourceUrl,
+		mediaUrl,
 		device,
 		detectionKey,
 		paused,
@@ -205,13 +206,13 @@ export const usePlayground = () => {
 	]);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Selection and source transitions reset temporal history.
 	useEffect(() => {
-		ruleRef.current = config.rules.map(() => initialPoseRuleState());
-		setRuleStates(ruleRef.current);
+		ruleRef.current = settings.rules.map(() => initialPoseRuleState());
+		setRuleStatuses(ruleRef.current);
 	}, [
-		config.rules,
-		config.skeleton.poseIndex,
+		settings.rules,
+		settings.skeleton.poseIndex,
 		mode,
-		sourceUrl,
+		mediaUrl,
 		paused,
 		playing,
 	]);
@@ -222,13 +223,13 @@ export const usePlayground = () => {
 		const now = performance.now();
 		ruleRef.current = updateRules({
 			frame,
-			poseIndex: config.skeleton.poseIndex,
-			rules: config.rules,
+			poseIndex: settings.skeleton.poseIndex,
+			rules: settings.rules,
 			previous: ruleRef.current,
 			now,
 		});
-		setRuleStates(ruleRef.current);
-	}, [frame, config.rules, config.skeleton.poseIndex]);
+		setRuleStatuses(ruleRef.current);
+	}, [frame, settings.rules, settings.skeleton.poseIndex]);
 	useEffect(() => {
 		const timer = setInterval(() => {
 			const now = performance.now();
@@ -239,16 +240,17 @@ export const usePlayground = () => {
 			if (canUpdateRulesFromFrame) {
 				ruleRef.current = updateRules({
 					frame,
-					poseIndex: config.skeleton.poseIndex,
-					rules: config.rules,
+					poseIndex: settings.skeleton.poseIndex,
+					rules: settings.rules,
 					previous: ruleRef.current,
 					now,
 				});
 			} else {
-				ruleRef.current = ruleRef.current.map((state, index) => {
+				ruleRef.current = ruleRef.current.map((ruleStatus, index) => {
 					const isRuleStale =
-						now - state.updatedAt > (config.rules[index]?.staleAfterMs ?? 500);
-					return isRuleStale ? initialPoseRuleState() : state;
+						now - ruleStatus.updatedAt >
+						(settings.rules[index]?.staleAfterMs ?? 500);
+					return isRuleStale ? initialPoseRuleState() : ruleStatus;
 				});
 
 				const staleOverlay =
@@ -256,7 +258,7 @@ export const usePlayground = () => {
 					Math.max(
 						500,
 						2000 /
-							Math.min(config.timing.frameLimit, config.timing.callbackFps),
+							Math.min(settings.timing.frameLimit, settings.timing.callbackFps),
 					);
 
 				const isOverlayStaleOutsideReplay = staleOverlay && mode !== "replay";
@@ -266,17 +268,17 @@ export const usePlayground = () => {
 				}
 			}
 
-			setRuleStates([...ruleRef.current]);
+			setRuleStatuses([...ruleRef.current]);
 		}, 100);
 		return () => clearInterval(timer);
 	}, [
 		frame,
-		config.rules,
+		settings.rules,
 		mode,
 		paused,
 		hidden,
-		config.skeleton.poseIndex,
-		config.timing,
+		settings.skeleton.poseIndex,
+		settings.timing,
 	]);
 	useEffect(() => {
 		const isReplayStopped = !playing || !replay || hidden;
@@ -306,7 +308,7 @@ export const usePlayground = () => {
 		timer = requestAnimationFrame(tick);
 		return () => cancelAnimationFrame(timer);
 	}, [playing, replay, speed, hidden]);
-	const changeMode = (next: SourceMode) => {
+	const changeMode = (next: MediaMode) => {
 		finishRecording();
 		setMode(next);
 		setUpload("");
@@ -314,8 +316,8 @@ export const usePlayground = () => {
 		setPlaying(false);
 		setMessage(null);
 
-		const isNextReplayAndReplayPresent = next === "replay" && replay;
-		if (isNextReplayAndReplayPresent) {
+		const isNextReplayReady = next === "replay" && replay != null;
+		if (isNextReplayReady) {
 			setPosition(0);
 			setTimeout(() => setFrame(readFrameAt(replay, 0)), 0);
 		}
@@ -325,13 +327,13 @@ export const usePlayground = () => {
 		kind: "media" | "recording" | "config" | "model",
 	) => {
 		try {
-			const isKindConfig = kind === "config";
-			if (isKindConfig) {
-				const isConfigOverLimit = file.size > 40000;
-				if (isConfigOverLimit)
+			const isKindSettings = kind === "config";
+			if (isKindSettings) {
+				const isSettingsOverLimit = file.size > 40000;
+				if (isSettingsOverLimit)
 					throw new Error("Configuration exceeds 40,000 bytes.");
 
-				setConfig(parseConfig(await file.text()));
+				setSettings(parseSettings(await file.text()));
 				setMessage("Configuration imported.");
 				return;
 			}
@@ -380,9 +382,9 @@ export const usePlayground = () => {
 			setMessage(isErrorInstanceError ? error.message : String(error));
 		}
 	};
-	const copy = async (text: string, success: string) => {
+	const copy = async (stringToCopy: string, success: string) => {
 		try {
-			await navigator.clipboard.writeText(text);
+			await navigator.clipboard.writeText(stringToCopy);
 			setMessage(success);
 		} catch {
 			setMessage(
@@ -391,7 +393,7 @@ export const usePlayground = () => {
 		}
 	};
 	const choosePreset = (name: string) => {
-		setConfig(readPresetSettings(name));
+		setSettings(readPresetSettings(name));
 		const isNameMultiple = name === "multiple";
 		setSample(isNameMultiple ? "man-woman-okay.jpg" : "pose.jpg");
 		setMode("sample");
@@ -399,14 +401,14 @@ export const usePlayground = () => {
 		setPlaying(false);
 		finishRecording();
 	};
-	const isFramePresent = frame !== null;
-	const selected = isFramePresent
-		? selectPose(frame, config.skeleton.poseIndex)
+	const hasFrame = frame !== null;
+	const selected = hasFrame
+		? selectPose(frame, settings.skeleton.poseIndex)
 		: null;
-	const options = createSkeletonSettings(config);
-	const joints = { ...options.joints };
-	config.rules.forEach((rule, index) => {
-		const status = ruleStates[index]?.status ?? "unknown";
+	const appliedSettings = createSkeletonSettings(settings);
+	const joints = { ...appliedSettings.joints };
+	settings.rules.forEach((rule, index) => {
+		const status = ruleStatuses[index]?.status ?? "unknown";
 		const color = {
 			pass: rule.passColor,
 			fail: rule.failColor,
@@ -414,19 +416,21 @@ export const usePlayground = () => {
 		}[status];
 		joints[rule.vertex] = { ...joints[rule.vertex], color };
 	});
-	const skeleton = isFramePresent
-		? createDetectionSkeleton(frame, frame.imageSize, { ...options, joints })
+	const skeleton = hasFrame
+		? createDetectionSkeleton(frame, frame.imageSize, {
+				...appliedSettings,
+				joints,
+			})
 		: { points: [], lines: [] };
-	const code = generateCode(config, codeMode, model !== null);
+	const code = generateCode(settings, codeMode, model !== null);
 	const duration = replay?.frames.at(-1)?.timestampMs ?? 0;
-	const sourceHasMedia =
-		mode === "sample" || mode === "camera" || Boolean(upload);
+	const hasMedia = mode === "sample" || mode === "camera" || Boolean(upload);
 	return {
 		changeMode,
 		choosePreset,
 		code,
 		codeMode,
-		config,
+		config: settings,
 		copy,
 		device,
 		duration,
@@ -443,19 +447,19 @@ export const usePlayground = () => {
 		paused,
 		playing,
 		position,
-		recordCount,
-		recordRef,
-		recordSize,
+		recordCount: recordingCount,
+		recordRef: recordingRef,
+		recordSize: recordingSize,
 		recorded,
 		recording,
 		replay,
-		resultTab,
+		resultTab: reportTab,
 		ruleRef,
-		ruleStates,
+		ruleStates: ruleStatuses,
 		sample,
 		selected,
 		setCodeMode,
-		setConfig,
+		setConfig: setSettings,
 		setDevice,
 		setFrame,
 		setMasks,
@@ -466,17 +470,17 @@ export const usePlayground = () => {
 		setPaused,
 		setPlaying,
 		setPosition,
-		setRecordCount,
+		setRecordCount: setRecordingCount,
 		setRecording,
 		setReplay,
-		setResultTab,
+		setResultTab: setReportTab,
 		setSample,
 		setSpeed,
 		setUpload,
 		setVideoProgress,
 		skeleton,
-		sourceHasMedia,
-		sourceUrl,
+		sourceHasMedia: hasMedia,
+		sourceUrl: mediaUrl,
 		speed,
 		upload,
 		video,

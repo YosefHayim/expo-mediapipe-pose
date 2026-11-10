@@ -1,5 +1,5 @@
 import { requireNativeModule } from "expo";
-import { discardResultSegmentation } from "../segmentation/native";
+import { discardReportSegmentation } from "../segmentation/native";
 import {
 	PoseDetection,
 	type PoseImageOptions,
@@ -9,22 +9,22 @@ import {
 
 export const analyzePoseImage = async (
 	location: string,
-	imageOptions: PoseImageOptions = {},
+	imageSettings: PoseImageOptions = {},
 ): Promise<PoseDetection> => {
 	validateLocalFileLocation(location);
-	const checkedOptions = resolvePoseImageOptions(imageOptions);
+	const checkedSettings = resolvePoseImageOptions(imageSettings);
 	const native = requireNativeModule<{
 		analyzePoseImage(
 			location: string,
-			checkedOptions: ReturnType<typeof resolvePoseImageOptions>,
+			checkedSettings: ReturnType<typeof resolvePoseImageOptions>,
 		): Promise<unknown>;
 	}>("ExpoMediaPipePose");
-	const analysis = await native.analyzePoseImage(location, checkedOptions);
+	const analysis = await native.analyzePoseImage(location, checkedSettings);
 	try {
 		return PoseDetection.parse(analysis);
 	} catch (error) {
 		try {
-			await discardResultSegmentation(analysis);
+			await discardReportSegmentation(analysis);
 		} catch (cleanupError) {
 			throw new AggregateError(
 				[error, cleanupError],

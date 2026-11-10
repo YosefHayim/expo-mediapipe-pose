@@ -1,17 +1,17 @@
 import { type RefObject, useEffect, useRef, useState } from "react";
-import type { Config } from "@/config";
+import type { Settings } from "@/config";
 import type {
 	BrowserFrame,
 	BrowserMask,
-	SourceMode,
+	MediaMode,
+	WorkerReply,
 	WorkerRequest,
-	WorkerResponse,
 } from "@/types";
 import InferenceWorker from "./inference.worker?worker&inline";
 
-interface Options {
-	config: Config;
-	mode: SourceMode;
+interface UseInferenceSettings {
+	config: Settings;
+	mode: MediaMode;
 	url: string;
 	device: string;
 	paused: boolean;
@@ -20,17 +20,26 @@ interface Options {
 	video: RefObject<HTMLVideoElement | null>;
 	onFrame: (frame: BrowserFrame, masks: BrowserMask[]) => void;
 }
-export const useInference = (options: Options) => {
-	const { config, mode, url, device, paused, model, image, video } = options;
+export const useInference = (hookSettings: UseInferenceSettings) => {
+	const {
+		config: settings,
+		mode,
+		url,
+		device,
+		paused,
+		model,
+		image,
+		video,
+	} = hookSettings;
 	const [status, setStatus] = useState("Loading model…");
 	const [error, setError] = useState<string | null>(null);
 	const [retry, setRetry] = useState(0);
 	const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
 	const [actualCapture, setActualCapture] = useState<string | null>(null);
 	const [cadence, setCadence] = useState({ inference: 0, results: 0 });
-	const latest = useRef(options);
-	latest.current = options;
-	const detectionKey = JSON.stringify(config.detection);
+	const latest = useRef(hookSettings);
+	latest.current = hookSettings;
+	const detectionKey = JSON.stringify(settings.detection);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: The serialized detection options and explicit retry key define a detector generation; styling and rate caps must not restart it.
 	useEffect(() => {
 		setError(null);
@@ -49,22 +58,21 @@ export const useInference = (options: Options) => {
 		}
 
 		const isCustomModelMissing =
-			config.detection.modelVariant !== "full" && !model;
+			settings.detection.modelVariant !== "full" && !model;
 		if (isCustomModelMissing) {
 			setStatus("Choose a local model");
 			return;
 		}
 
-		const isModePhotoOrVideoAndUrlMissing =
-			(mode === "photo" || mode === "video") && !url;
-		if (isModePhotoOrVideoAndUrlMissing) {
+		const isFileModeWithoutUrl = (mode === "photo" || mode === "video") && !url;
+		if (isFileModeWithoutUrl) {
 			setStatus("Choose a file to begin");
 			return;
 		}
 
 		let disposed = false;
 		let failed = false;
-		let stream: MediaStream | undefined;
+		let stream: MediaStream | null = null;
 		const previewVideo = video.current;
 		let timer = 0;
 		let ready = false;
@@ -75,7 +83,7 @@ export const useInference = (options: Options) => {
 		let lastVideoTime = -1;
 		let windowStart = performance.now();
 		let inferenceCount = 0;
-		let resultCount = 0;
+		let reportCount = 0;
 		// Inline blob workers inherit the document CSP, including same-origin-only networking.
 		const worker = new InferenceWorker();
 		const send = (message: WorkerRequest, transfer: Transferable[] = []) =>
@@ -111,36 +119,34 @@ export const useInference = (options: Options) => {
 
 			const isMoving = mode === "camera" || mode === "video";
 
-			const source = isMoving ? video.current : image.current;
+			const media = isMoving ? video.current : image.current;
 
-			const isSourceMissing = source == null;
-			if (isSourceMissing) return;
+			const isMediaMissing = media == null;
+			if (isMediaMissing) return;
 
-			const isVideoSource = source instanceof HTMLVideoElement;
-			if (isVideoSource) {
+			const isVideoMedia = media instanceof HTMLVideoElement;
+			if (isVideoMedia) {
 				const isVideoFrameSkipped =
-					source.readyState < 2 ||
-					source.paused ||
-					source.currentTime === lastVideoTime;
+					media.readyState < 2 ||
+					media.paused ||
+					media.currentTime === lastVideoTime;
 				if (isVideoFrameSkipped) return;
 			} else {
 				const isImageNotReady =
-					!source.complete || source.naturalWidth === 0 || stillSent;
+					!media.complete || media.naturalWidth === 0 || stillSent;
 				if (isImageNotReady) return;
 
-				const isSourceUrlChanged =
-					source.currentSrc !== new URL(url, location.href).href;
-				if (isSourceUrlChanged) return;
+				const isMediaUrlChanged =
+					media.currentSrc !== new URL(url, location.href).href;
+				if (isMediaUrlChanged) return;
 			}
 
 			busy = true;
 			try {
-				const width = isVideoSource ? source.videoWidth : source.naturalWidth;
-				const height = isVideoSource
-					? source.videoHeight
-					: source.naturalHeight;
+				const width = isVideoMedia ? media.videoWidth : media.naturalWidth;
+				const height = isVideoMedia ? media.videoHeight : media.naturalHeight;
 				const scale = Math.min(1, 1280 / Math.max(width, height));
-				const bitmap = await createImageBitmap(source, {
+				const bitmap = await createImageBitmap(media, {
 					resizeWidth: Math.max(1, Math.round(width * scale)),
 					resizeHeight: Math.max(1, Math.round(height * scale)),
 				});
@@ -153,7 +159,7 @@ export const useInference = (options: Options) => {
 
 				lastTimestamp = performance.now();
 
-				if (isVideoSource) lastVideoTime = source.currentTime;
+				if (isVideoMedia) lastVideoTime = media.currentTime;
 
 				stillSent = true;
 				send(
@@ -171,7 +177,7 @@ export const useInference = (options: Options) => {
 				fail(String(cause));
 			}
 		};
-		worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+		worker.onmessage = (event: MessageEvent<WorkerReply>) => {
 			const isDisposedOrFailed = disposed || failed;
 			if (isDisposedOrFailed) return;
 
@@ -202,7 +208,7 @@ export const useInference = (options: Options) => {
 				now - lastDelivery >= 1000 / latest.current.config.timing.callbackFps;
 			if (isDeliveryDue) {
 				lastDelivery = now;
-				resultCount++;
+				reportCount++;
 				latest.current.onFrame(message.frame, message.masks);
 				const hasPoses = message.frame.poses.length !== 0;
 				setStatus(hasPoses ? "Detection ready" : "No person detected");
@@ -213,10 +219,10 @@ export const useInference = (options: Options) => {
 				const seconds = (now - windowStart) / 1000;
 				setCadence({
 					inference: inferenceCount / seconds,
-					results: resultCount / seconds,
+					results: reportCount / seconds,
 				});
 				inferenceCount = 0;
-				resultCount = 0;
+				reportCount = 0;
 				windowStart = now;
 			}
 		};
@@ -238,7 +244,7 @@ export const useInference = (options: Options) => {
 						);
 
 					const camera: MediaTrackConstraints = {
-						frameRate: { ideal: config.timing.previewFps },
+						frameRate: { ideal: settings.timing.previewFps },
 					};
 
 					if (device) camera.deviceId = { exact: device };
@@ -268,13 +274,13 @@ export const useInference = (options: Options) => {
 					const isDisposedOrFailedAfterPlay = disposed || failed;
 					if (isDisposedOrFailedAfterPlay) return;
 
-					const settings = stream.getVideoTracks()[0]?.getSettings();
+					const trackSettings = stream.getVideoTracks()[0]?.getSettings();
 					setActualCapture(
-						`${settings?.width ?? "?"} × ${settings?.height ?? "?"} · ${settings?.frameRate?.toFixed(1) ?? "?"} fps capture`,
+						`${trackSettings?.width ?? "?"} × ${trackSettings?.height ?? "?"} · ${trackSettings?.frameRate?.toFixed(1) ?? "?"} fps capture`,
 					);
 					setDevices(
 						(await navigator.mediaDevices.enumerateDevices()).filter(
-							(item) => item.kind === "videoinput",
+							(mediaDevice) => mediaDevice.kind === "videoinput",
 						),
 					);
 				}
@@ -285,7 +291,7 @@ export const useInference = (options: Options) => {
 				send({
 					type: "init",
 					base: new URL(import.meta.env.BASE_URL, location.origin).href,
-					detection: config.detection,
+					detection: settings.detection,
 					model,
 					generation: 1,
 				});
@@ -326,14 +332,14 @@ export const useInference = (options: Options) => {
 		paused,
 		model,
 		retry,
-		config.timing.previewFps,
+		settings.timing.previewFps,
 		image,
 		video,
 	]);
 	return {
 		status,
 		error,
-		retry: () => setRetry((value) => value + 1),
+		retry: () => setRetry((attempt) => attempt + 1),
 		devices,
 		actualCapture,
 		cadence,

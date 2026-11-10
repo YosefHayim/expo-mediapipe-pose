@@ -39,10 +39,10 @@ export const PoseSegmentationOverlay = React.memo(
 		if (isSizeEmpty) return null;
 
 		const mask = segmentation.masks.find(
-			(entry) => entry.poseIndex === poseIndex,
+			(overlay) => overlay.poseIndex === poseIndex,
 		);
 
-		const isMaskMissing = mask === undefined;
+		const isMaskMissing = mask == null;
 		if (isMaskMissing) return null;
 
 		const origin = projectLandmark(

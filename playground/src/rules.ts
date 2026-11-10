@@ -18,11 +18,11 @@ export const measureRule = (
 	frame: BrowserFrame,
 	rule: Rule,
 ): { value: number | null; unit: string } => {
-	const options = { minVisibility: rule.minVisibility };
+	const settings = { minVisibility: rule.minVisibility };
 
 	const isRuleKindHeight = rule.kind === "height";
 	if (isRuleKindHeight) {
-		const confidence = getImageDistance(frame, rule.start, rule.end, options);
+		const confidence = getImageDistance(frame, rule.start, rule.end, settings);
 
 		const isConfidenceUnavailable = confidence.status !== "available";
 		if (isConfidenceUnavailable) return { value: null, unit: "px Δy" };
@@ -45,12 +45,12 @@ export const measureRule = (
 
 	if (isRuleKindAngle) {
 		measurement = isRuleSpaceImage
-			? getImageJointAngle(frame, rule.start, rule.vertex, rule.end, options)
-			: getWorldJointAngle(frame, rule.start, rule.vertex, rule.end, options);
+			? getImageJointAngle(frame, rule.start, rule.vertex, rule.end, settings)
+			: getWorldJointAngle(frame, rule.start, rule.vertex, rule.end, settings);
 	} else {
 		measurement = isRuleSpaceImage
-			? getImageDistance(frame, rule.start, rule.end, options)
-			: getWorldDistance(frame, rule.start, rule.end, options);
+			? getImageDistance(frame, rule.start, rule.end, settings)
+			: getWorldDistance(frame, rule.start, rule.end, settings);
 	}
 
 	const jointMeasurement = measurement;
@@ -78,21 +78,21 @@ export const updateRules = ({
 }: UpdateRulesDetails) => {
 	const selected = selectPose(frame, poseIndex);
 	return rules.map((rule, index) => {
-		const state = previous[index] ?? initialPoseRuleState();
+		const status = previous[index] ?? initialPoseRuleState();
 		const measurement = measureRule(selected, rule);
-		const result = evaluatePoseThreshold(
+		const report = evaluatePoseThreshold(
 			measurement.value,
-			state.candidate,
+			status.candidate,
 			rule,
 		);
-		let outcome: "pass" | "fail" | "unknown" = "unknown";
+		let verdict: "pass" | "fail" | "unknown" = "unknown";
 
-		const isResultPass = result === true;
-		if (isResultPass) outcome = "pass";
+		const isReportPass = report === true;
+		if (isReportPass) verdict = "pass";
 
-		const isResultFail = result === false;
-		if (isResultFail) outcome = "fail";
+		const isReportFail = report === false;
+		if (isReportFail) verdict = "fail";
 
-		return advancePoseRule(state, outcome, now, rule.holdMs);
+		return advancePoseRule(status, verdict, now, rule.holdMs);
 	});
 };

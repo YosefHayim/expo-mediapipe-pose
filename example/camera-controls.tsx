@@ -28,10 +28,10 @@ export const CameraControls = ({
 		setError(false);
 		setCapabilities(null);
 		try {
-			const result = await getCameraCapabilities();
+			const report = await getCameraCapabilities();
 
 			const isRequestCurrentEqualsToken = request.current === token;
-			if (isRequestCurrentEqualsToken) setCapabilities(result);
+			if (isRequestCurrentEqualsToken) setCapabilities(report);
 		} catch {
 			const isRequestStillCurrentInCatch = request.current === token;
 			if (isRequestStillCurrentInCatch) setError(true);
@@ -70,8 +70,8 @@ export const CameraControls = ({
 		);
 	}
 
-	const isSelectionPresent = selection !== null;
-	const selectedCamera = isSelectionPresent
+	const hasSelection = selection !== null;
+	const selectedCamera = hasSelection
 		? findCameraCapability(capabilities, selection.facing, selection.lens)
 		: undefined;
 	return (

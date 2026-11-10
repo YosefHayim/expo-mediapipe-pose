@@ -27,7 +27,7 @@ describe("PoseSegmentation", () => {
 		for (const maskMaxDimension of [0, 63, 513, 255.5, NaN])
 			assert.throws(() => resolvePoseImageOptions({ maskMaxDimension }));
 
-		const decode = (value: unknown) => PoseSegmentation.parse(value);
+		const decode = (candidate: unknown) => PoseSegmentation.parse(candidate);
 		assert.deepEqual(decode(segmentation), segmentation);
 		assert.deepEqual(decode({ status: "backpressure" }), {
 			status: "backpressure",
@@ -100,10 +100,10 @@ describe("createPoseRecorder", () => {
 describe("releasePoseSegmentation", () => {
 	test("native mask cleanup validates handles and reclaims malformed or undelivered results", async () => {
 		const calls: string[] = [];
-		let releaseFailure: Error | undefined;
-		let closeFailure: Error | undefined;
+		let releaseFailure: Error | null = null;
+		let closeFailure: Error | null = null;
 		const nativeKey = Symbol.for("pose.nativeVideoTest");
-		const response = {
+		const reply = {
 			landmarks: [],
 			worldLandmarks: [],
 			imageSize: { width: 1000, height: 667 },
@@ -120,7 +120,7 @@ describe("releasePoseSegmentation", () => {
 					if (releaseFailure) throw releaseFailure;
 				},
 				async analyzePoseImage() {
-					return { ...response, imageSize: { width: -1, height: 1 } };
+					return { ...reply, imageSize: { width: -1, height: 1 } };
 				},
 				async openPoseVideo() {
 					return { id: "session", durationMs: 1000 };
@@ -134,19 +134,19 @@ describe("releasePoseSegmentation", () => {
 					return {
 						timestampMs: 0,
 						decodedTimestampMs: null,
-						detection: response,
+						detection: reply,
 					};
 				},
 			},
 		});
 
 		try {
-			const { releasePoseSegmentation, discardResultSegmentation } =
+			const { releasePoseSegmentation, discardReportSegmentation } =
 				await import("./native");
 			await assert.rejects(releasePoseSegmentation("../../file"));
 			assert.deepEqual(calls, []);
 
-			await discardResultSegmentation({ segmentation: { leaseId: "invalid" } });
+			await discardReportSegmentation({ segmentation: { leaseId: "invalid" } });
 			assert.deepEqual(calls, []);
 
 			const { analyzePoseImage } = await import("../image/native");
@@ -165,7 +165,7 @@ describe("releasePoseSegmentation", () => {
 			});
 			assert.deepEqual(calls, [leaseId]);
 
-			releaseFailure = undefined;
+			releaseFailure = null;
 			calls.length = 0;
 			const { analyzePoseVideo } = await import("../video/native");
 			const controller = new AbortController();

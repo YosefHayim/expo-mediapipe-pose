@@ -6,31 +6,31 @@ import { createPoseFrame } from "../testing/fixtures";
 describe("inspectPoseTracking", () => {
 	test("distinguishes no pose, absent joints, uncertain joints and complete tracking", () => {
 		const frame = createPoseFrame();
-		const options = { landmarks: ["leftWrist", "rightWrist"] as const };
+		const settings = { landmarks: ["leftWrist", "rightWrist"] as const };
 
-		assert.equal(inspectPoseTracking(frame, options).status, "found");
+		assert.equal(inspectPoseTracking(frame, settings).status, "found");
 		assert.equal(
-			inspectPoseTracking({ ...frame, landmarks: [] }, options).status,
+			inspectPoseTracking({ ...frame, landmarks: [] }, settings).status,
 			"lost",
 		);
 		assert.deepEqual(
 			inspectPoseTracking(
 				{ ...frame, landmarks: frame.landmarks.slice(0, 16) },
-				options,
+				settings,
 			).missingLandmarks,
 			["rightWrist"],
 		);
 
 		frame.landmarks[15] = { x: 0, y: 0, z: 0 };
 		frame.landmarks[16] = { x: 0, y: 0, z: 0, visibility: 0.9, presence: 0.2 };
-		assert.deepEqual(inspectPoseTracking(frame, options), {
+		assert.deepEqual(inspectPoseTracking(frame, settings), {
 			status: "incomplete",
 			missingLandmarks: [],
 			uncertainLandmarks: ["leftWrist", "rightWrist"],
 			outsideImageLandmarks: [],
 		});
 		assert.equal(
-			inspectPoseTracking(frame, { ...options, isActive: false }).status,
+			inspectPoseTracking(frame, { ...settings, isActive: false }).status,
 			"inactive",
 		);
 		assert.throws(

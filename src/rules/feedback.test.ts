@@ -33,8 +33,8 @@ describe("evaluatePoseThreshold", () => {
 		assert.equal(evaluatePoseThreshold(6, "pass", above), true);
 		assert.equal(evaluatePoseThreshold(5, "pass", above), false);
 
-		for (const value of [null, NaN, Infinity])
-			assert.equal(evaluatePoseThreshold(value, "pass", above), "unknown");
+		for (const amount of [null, NaN, Infinity])
+			assert.equal(evaluatePoseThreshold(amount, "pass", above), "unknown");
 		assert.throws(
 			() => evaluatePoseThreshold(10, "pass", { ...above, exitThreshold: 10 }),
 			RangeError,
@@ -44,28 +44,28 @@ describe("evaluatePoseThreshold", () => {
 
 describe("createThresholdRule", () => {
 	test("builds stateless typed threshold rules with configuration reset keys", () => {
-		const options = {
+		const settings = {
 			landmarks: ["leftWrist"] as const,
 			direction: "above" as const,
 			enterThreshold: 0.6,
 			exitThreshold: 0.4,
 			measure: (pose: { leftWrist: { y: number } }) => pose.leftWrist.y,
 		};
-		const rule = createThresholdRule(options);
+		const rule = createThresholdRule(settings);
 
 		assert.throws(
-			() => createThresholdRule({ ...options, resetKey: NaN }),
+			() => createThresholdRule({ ...settings, resetKey: NaN }),
 			RangeError,
 		);
 		assert.equal(evaluatePoseRule(createPoseFrame(), rule), "unknown");
 		assert.equal(evaluatePoseRule(createPoseFrame(), rule, "pass"), "pass");
 		assert.equal(evaluatePoseRule(createPoseFrame(), rule, "fail"), "fail");
 		assert.notEqual(
-			createThresholdRule({ ...options, enterThreshold: 0.7 }).resetKey,
+			createThresholdRule({ ...settings, enterThreshold: 0.7 }).resetKey,
 			rule.resetKey,
 		);
 		assert.equal(
-			createThresholdRule({ ...options, measure: () => 1 }).resetKey,
+			createThresholdRule({ ...settings, measure: () => 1 }).resetKey,
 			rule.resetKey,
 		);
 	});
@@ -81,7 +81,7 @@ describe("composeSkeletonFeedback", () => {
 		};
 		const before = structuredClone(base);
 
-		const result = composeSkeletonFeedback(base, [
+		const report = composeSkeletonFeedback(base, [
 			{
 				status: "pass",
 				styles: {
@@ -103,13 +103,13 @@ describe("composeSkeletonFeedback", () => {
 			{ status: "unknown", styles: { pass: { color: "yellow" } } },
 		]);
 
-		assert.deepEqual(result.joints?.leftWrist, { radius: 8, color: "red" });
-		assert.deepEqual(result.connections?.["leftElbow:leftWrist"], {
+		assert.deepEqual(report.joints?.leftWrist, { radius: 8, color: "red" });
+		assert.deepEqual(report.connections?.["leftElbow:leftWrist"], {
 			width: 4,
 			color: "red",
 		});
-		assert.equal(result.color, "gray");
-		assert.deepEqual(result.bodyParts, ["leftArm"]);
+		assert.equal(report.color, "gray");
+		assert.deepEqual(report.bodyParts, ["leftArm"]);
 		assert.deepEqual(base, before);
 	});
 });

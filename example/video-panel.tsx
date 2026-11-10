@@ -21,7 +21,7 @@ const createVideoFailureMessage = (error: unknown): string => {
 
 export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 	const [location, setLocation] = React.useState("");
-	const [result, setResult] = React.useState<PoseVideoFrame | null>(null);
+	const [report, setReport] = React.useState<PoseVideoFrame | null>(null);
 	const [progress, setProgress] = React.useState<PoseVideoProgress | null>(
 		null,
 	);
@@ -46,7 +46,7 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 		const recorder = createPoseDetectionRecorder({ maxFrames: 300 });
 		recorder.start();
 		setRunning(true);
-		setResult(null);
+		setReport(null);
 		setProgress(null);
 		setStatus("Analyzing at 5 samples per second…");
 		try {
@@ -54,15 +54,15 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 				samplingFps: 5,
 				maxFrames: 300,
 				signal: request.signal,
-				onProgress: (value) => {
+				onProgress: (videoProgress) => {
 					const isRequestStillCurrent = controller.current === request;
-					if (isRequestStillCurrent) setProgress(value);
+					if (isRequestStillCurrent) setProgress(videoProgress);
 				},
 			})) {
 				recorder.append(frame.detection, frame.timestampMs);
 
 				const isRequestStillCurrentAfterFrame = controller.current === request;
-				if (isRequestStillCurrentAfterFrame) setResult(frame);
+				if (isRequestStillCurrentAfterFrame) setReport(frame);
 			}
 
 			const isRequestStillCurrentAfterLoop = controller.current === request;
@@ -138,7 +138,7 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 				style={{ flex: 1 }}
 				onLayout={(event) => setSize(event.nativeEvent.layout)}
 			>
-				{result && <PoseSkeleton detection={result.detection} {...size} />}
+				{report && <PoseSkeleton detection={report.detection} {...size} />}
 			</View>
 			<Button title="Return to camera" onPress={onClose} />
 		</View>

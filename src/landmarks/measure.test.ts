@@ -27,39 +27,42 @@ const elbow = ["leftShoulder", "leftElbow", "leftWrist"] as const;
 
 describe("getImageJointAngle", () => {
 	test("uses image aspect ratio, pixel units and anatomical names without mutating input", () => {
-		const input = readGeometry();
-		const before = structuredClone(input);
+		const details = readGeometry();
+		const before = structuredClone(details);
 
 		assert.ok(
 			Math.abs(
-				readMeasuredNumber(getImageJointAngle(input, ...elbow)) -
+				readMeasuredNumber(getImageJointAngle(details, ...elbow)) -
 					63.43494882292201,
 			) < 1e-10,
 		);
 		assert.equal(
 			readMeasuredNumber(
 				getImageJointAngle(
-					{ ...input, imageSize: { width: 100, height: 100 } },
+					{ ...details, imageSize: { width: 100, height: 100 } },
 					...elbow,
 				),
 			),
 			45,
 		);
-		assert.deepEqual(getImageDistance(input, "leftShoulder", "leftWrist"), {
+		assert.deepEqual(getImageDistance(details, "leftShoulder", "leftWrist"), {
 			status: "available",
 			value: 200,
 			unit: "pixels",
 		});
 
 		const mirrored = {
-			...input,
-			landmarks: input.landmarks.map((joint) => ({ ...joint, x: 1 - joint.x })),
+			...details,
+			landmarks: details.landmarks.map((joint) => ({
+				...joint,
+				x: 1 - joint.x,
+			})),
 		};
 		assert.equal(
 			readMeasuredNumber(getImageJointAngle(mirrored, ...elbow)),
-			readMeasuredNumber(getImageJointAngle(input, ...elbow)),
+			readMeasuredNumber(getImageJointAngle(details, ...elbow)),
 		);
-		assert.deepEqual(input, before);
+		assert.deepEqual(details, before);
 	});
 
 	test("keeps missing confidence, low presence and invalid coordinates unavailable", () => {
@@ -70,52 +73,55 @@ describe("getImageJointAngle", () => {
 			{ visibility: 1.1 },
 			{ visibility: 0.9, presence: 0.2 },
 		]) {
-			const input = readGeometry();
-			input.landmarks[15] = { x: 1, y: 1, z: 0, ...confidence };
+			const geometry = readGeometry();
+			geometry.landmarks[15] = { x: 1, y: 1, z: 0, ...confidence };
 
-			assert.deepEqual(getImageJointAngle(input, ...elbow), {
+			assert.deepEqual(getImageJointAngle(geometry, ...elbow), {
 				status: "unavailable",
 				reason: "uncertain-landmark",
 			});
 		}
 
-		const input = readGeometry();
-		input.landmarks[15] = { x: NaN, y: 1, z: 0, visibility: 1 };
-		assert.deepEqual(getImageJointAngle(input, ...elbow), {
+		const geometry = readGeometry();
+		geometry.landmarks[15] = { x: NaN, y: 1, z: 0, visibility: 1 };
+		assert.deepEqual(getImageJointAngle(geometry, ...elbow), {
 			status: "unavailable",
 			reason: "invalid-coordinates",
 		});
 
 		assert.deepEqual(
-			getImageJointAngle({ ...input, landmarks: [] }, ...elbow),
+			getImageJointAngle({ ...geometry, landmarks: [] }, ...elbow),
 			{
 				status: "unavailable",
 				reason: "missing-landmark",
 			},
 		);
 
-		input.landmarks[15] = { x: 1, y: 1, z: 0, visibility: 0.3 };
+		geometry.landmarks[15] = { x: 1, y: 1, z: 0, visibility: 0.3 };
 		assert.equal(
-			getImageJointAngle(input, ...elbow, { minVisibility: 0.3 }).status,
+			getImageJointAngle(geometry, ...elbow, { minVisibility: 0.3 }).status,
 			"available",
 		);
 	});
 
 	test("handles straight, folded and degenerate limbs without fabricating an angle", () => {
-		const input = readGeometry();
+		const geometry = readGeometry();
 
-		input.landmarks[15] = { x: 0, y: -1, z: 0, visibility: 1 };
-		assert.equal(readMeasuredNumber(getImageJointAngle(input, ...elbow)), 180);
-		input.landmarks[15] = { x: 0, y: 1, z: 0, visibility: 1 };
-		assert.equal(readMeasuredNumber(getImageJointAngle(input, ...elbow)), 0);
+		geometry.landmarks[15] = { x: 0, y: -1, z: 0, visibility: 1 };
+		assert.equal(
+			readMeasuredNumber(getImageJointAngle(geometry, ...elbow)),
+			180,
+		);
+		geometry.landmarks[15] = { x: 0, y: 1, z: 0, visibility: 1 };
+		assert.equal(readMeasuredNumber(getImageJointAngle(geometry, ...elbow)), 0);
 
-		input.landmarks[15] = { x: 0, y: 0, z: 0, visibility: 1 };
-		assert.deepEqual(getImageJointAngle(input, ...elbow), {
+		geometry.landmarks[15] = { x: 0, y: 0, z: 0, visibility: 1 };
+		assert.deepEqual(getImageJointAngle(geometry, ...elbow), {
 			status: "unavailable",
 			reason: "degenerate-angle",
 		});
 		assert.equal(
-			readMeasuredNumber(getImageDistance(input, "leftElbow", "leftWrist")),
+			readMeasuredNumber(getImageDistance(geometry, "leftElbow", "leftWrist")),
 			0,
 		);
 
@@ -182,7 +188,7 @@ describe("getWorldJointAngle", () => {
 describe("evaluatePoseRule", () => {
 	test("feeds geometry into rules while retaining explicit unknown measurements", () => {
 		const frame = { ...createPoseFrame(), landmarks: readGeometry().landmarks };
-		const options = {
+		const settings = {
 			landmarks: elbow,
 			evaluate: (
 				_pose: unknown,
@@ -201,11 +207,11 @@ describe("evaluatePoseRule", () => {
 			},
 		};
 
-		assert.equal(evaluatePoseRule(frame, options), "pass");
+		assert.equal(evaluatePoseRule(frame, settings), "pass");
 		frame.landmarks[15] = { x: 0, y: -1, z: 0, visibility: 1 };
-		assert.equal(evaluatePoseRule(frame, options), "fail");
+		assert.equal(evaluatePoseRule(frame, settings), "fail");
 		frame.landmarks[15] = { x: 0, y: 0, z: 0, visibility: 1 };
-		assert.equal(evaluatePoseRule(frame, options), "unknown");
+		assert.equal(evaluatePoseRule(frame, settings), "unknown");
 	});
 
 	test("shares confidence policy between standalone measurements and rules", () => {

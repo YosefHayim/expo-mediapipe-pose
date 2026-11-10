@@ -1,26 +1,26 @@
 import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
-import type { BrowserMask, WorkerRequest, WorkerResponse } from "@/types";
+import type { BrowserMask, WorkerReply, WorkerRequest } from "@/types";
 
-let detector: PoseLandmarker | undefined;
+let detector: PoseLandmarker | null = null;
 let generation = 0;
 let runningMode: "IMAGE" | "VIDEO" = "IMAGE";
 let maskMaxDimension = 256;
-const send = (message: WorkerResponse) => postMessage(message);
+const send = (message: WorkerReply) => postMessage(message);
 const answerWorkerRequest = async (message: WorkerRequest) => {
 	const isMessageTypeClose = message.type === "close";
 	if (isMessageTypeClose) {
 		detector?.close();
-		detector = undefined;
+		detector = null;
 		return;
 	}
 
 	const isMessageTypeInit = message.type === "init";
 	if (isMessageTypeInit) {
 		detector?.close();
-		detector = undefined;
+		detector = null;
 		generation = message.generation;
 		maskMaxDimension = message.detection.maskMaxDimension;
-		const { detection: options } = message;
+		const { detection: settings } = message;
 		const vision = await FilesetResolver.forVisionTasks(
 			`${message.base}wasm`,
 			true,
@@ -33,11 +33,11 @@ const answerWorkerRequest = async (message: WorkerRequest) => {
 						delegate: "CPU",
 					},
 			runningMode: "IMAGE",
-			numPoses: options.maxPoses,
-			minPoseDetectionConfidence: options.minPoseDetectionConfidence,
-			minPosePresenceConfidence: options.minPosePresenceConfidence,
-			minTrackingConfidence: options.minTrackingConfidence,
-			outputSegmentationMasks: options.segmentationEnabled,
+			numPoses: settings.maxPoses,
+			minPoseDetectionConfidence: settings.minPoseDetectionConfidence,
+			minPosePresenceConfidence: settings.minPosePresenceConfidence,
+			minTrackingConfidence: settings.minTrackingConfidence,
+			outputSegmentationMasks: settings.segmentationEnabled,
 		});
 		runningMode = "IMAGE";
 		send({ type: "ready", generation });
@@ -62,16 +62,16 @@ const answerWorkerRequest = async (message: WorkerRequest) => {
 		}
 
 		const start = performance.now();
-		const result = message.video
+		const report = message.video
 			? loadedDetector.detectForVideo(image, message.timestamp)
 			: loadedDetector.detect(image);
 		try {
 			const duration = performance.now() - start;
-			const poses = result.landmarks.map((landmarks, index) => ({
+			const poses = report.landmarks.map((landmarks, index) => ({
 				landmarks,
-				worldLandmarks: result.worldLandmarks[index] ?? [],
+				worldLandmarks: report.worldLandmarks[index] ?? [],
 			}));
-			const masks: BrowserMask[] = (result.segmentationMasks ?? []).map(
+			const masks: BrowserMask[] = (report.segmentationMasks ?? []).map(
 				(mask) => {
 					const scale = Math.min(
 						1,
@@ -79,23 +79,24 @@ const answerWorkerRequest = async (message: WorkerRequest) => {
 					);
 					const width = Math.max(1, Math.round(mask.width * scale));
 					const height = Math.max(1, Math.round(mask.height * scale));
-					const source = mask.getAsFloat32Array();
-					const values = new Uint8Array(width * height);
+					const maskFloats = mask.getAsFloat32Array();
+					const maskBytes = new Uint8Array(width * height);
 					for (let y = 0; y < height; y++)
-						for (let x = 0; x < width; x++) {
-							const sourceX = Math.min(
+						for (let horizontal = 0; horizontal < width; horizontal++) {
+							const originHorizontal = Math.min(
 								mask.width - 1,
-								Math.floor(((x + 0.5) * mask.width) / width),
+								Math.floor(((horizontal + 0.5) * mask.width) / width),
 							);
-							const sourceY = Math.min(
+							const originY = Math.min(
 								mask.height - 1,
 								Math.floor(((y + 0.5) * mask.height) / height),
 							);
-							values[y * width + x] = Math.round(
-								(source[sourceY * mask.width + sourceX] ?? 0) * 255,
+							maskBytes[y * width + horizontal] = Math.round(
+								(maskFloats[originY * mask.width + originHorizontal] ?? 0) *
+									255,
 							);
 						}
-					return { width, height, values };
+					return { width, height, values: maskBytes };
 				},
 			);
 			send({
@@ -111,7 +112,7 @@ const answerWorkerRequest = async (message: WorkerRequest) => {
 				},
 			});
 		} finally {
-			result.close();
+			report.close();
 		}
 	} finally {
 		image.close();

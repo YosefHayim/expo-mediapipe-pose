@@ -24,13 +24,13 @@ const inspectMask = (
 	name: string,
 ) => {
 	const mask = segmentation.masks[0];
-	verify(mask !== undefined, "First mask must exist");
+	verify(mask != null, "First mask must exist");
 	verify(
 		Math.max(mask.width, mask.height) <= 256,
 		"Mask dimensions must be bounded",
 	);
-	const source = new File(mask.uri);
-	const png = source.bytesSync();
+	const maskFile = new File(mask.uri);
+	const png = maskFile.bytesSync();
 	verify(
 		png[0] === 137 && png[1] === 80 && png[2] === 78 && png[3] === 71,
 		"Mask must be a PNG",
@@ -45,16 +45,16 @@ const inspectMask = (
 	const artifact = new File(Paths.document, name);
 	if (artifact.exists) artifact.delete();
 
-	source.copy(artifact);
-	return source;
+	maskFile.copy(artifact);
+	return maskFile;
 };
 const maskFiles = () => {
 	const folders = Paths.cache
 		.list()
 		.filter(
-			(entry) =>
-				entry.name.startsWith("expo-mediapipe-pose-masks-") &&
-				entry instanceof Directory,
+			(file) =>
+				file.name.startsWith("expo-mediapipe-pose-masks-") &&
+				file instanceof Directory,
 		);
 	return folders.flatMap((folder) => {
 		const isFolderInstanceDirectory = folder instanceof Directory;
@@ -95,7 +95,7 @@ export const runSegmentationChecks = async ({
 		const beforeDisabled = maskFiles();
 		const disabled = await analyzePoseImage(photo);
 		verify(
-			disabled.segmentation === undefined,
+			disabled.segmentation == null,
 			"Segmentation must be disabled by default",
 		);
 		verify(
@@ -178,9 +178,9 @@ export const runSegmentationChecks = async ({
 		const cleanup = await Promise.allSettled(
 			[...leases].map(releasePoseSegmentation),
 		);
-		for (const result of cleanup) {
-			const isStatusRejected = result.status === "rejected";
-			if (isStatusRejected) failures.push(result.reason);
+		for (const report of cleanup) {
+			const isStatusRejected = report.status === "rejected";
+			if (isStatusRejected) failures.push(report.reason);
 		}
 	}
 

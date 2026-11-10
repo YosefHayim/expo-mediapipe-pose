@@ -22,7 +22,7 @@ export interface PoseTrackingOptions
 		PoseRuleOptions,
 		"landmarks" | "minVisibility" | "holdMs" | "staleAfterMs" | "isActive"
 	> {
-	onChange?: (state: PoseTrackingState) => void;
+	onChange?: (snapshot: PoseTrackingState) => void;
 }
 export const trackingState = (
 	status: PoseTrackingStatus,
@@ -34,11 +34,11 @@ export const trackingState = (
 });
 export const inspectPoseTracking = (
 	frame: PoseFrame,
-	options: PoseTrackingOptions,
+	settings: PoseTrackingOptions,
 ): PoseTrackingState => {
-	validatePoseRuleOptions(options);
+	validatePoseRuleOptions(settings);
 
-	const isInactive = options.isActive === false;
+	const isInactive = settings.isActive === false;
 	if (isInactive) return trackingState("inactive");
 
 	const isFrameLandmarksEmpty = frame.landmarks.length === 0;
@@ -47,7 +47,7 @@ export const inspectPoseTracking = (
 	const missingLandmarks: LandmarkName[] = [];
 	const uncertainLandmarks: LandmarkName[] = [];
 	const outsideImageLandmarks: LandmarkName[] = [];
-	for (const name of new Set(options.landmarks)) {
+	for (const name of new Set(settings.landmarks)) {
 		const joint = frame.landmarks[LANDMARK_NAMES.indexOf(name)];
 
 		const isJointMissing = joint == null;
@@ -62,7 +62,7 @@ export const inspectPoseTracking = (
 
 		const confident = hasLandmarkConfidence(
 			joint,
-			options.minVisibility ?? 0.6,
+			settings.minVisibility ?? 0.6,
 		);
 
 		const isUnusableLandmark = !finiteCoordinates || !confident;
@@ -72,7 +72,7 @@ export const inspectPoseTracking = (
 		}
 
 		const insideImage = [joint.x, joint.y].every(
-			(value) => value >= 0 && value <= 1,
+			(score) => score >= 0 && score <= 1,
 		);
 
 		const isOutsideImage = !insideImage;

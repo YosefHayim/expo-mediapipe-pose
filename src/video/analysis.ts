@@ -29,7 +29,7 @@ export type PoseVideoOptions = PoseImageOptions &
 		signal?: AbortSignal;
 		onProgress?: (progress: PoseVideoProgress) => void;
 	};
-export const resolvePoseVideoOptions = (options: PoseVideoOptions = {}) => {
+export const resolvePoseVideoOptions = (settings: PoseVideoOptions = {}) => {
 	const {
 		samplingFps,
 		startMs,
@@ -39,7 +39,7 @@ export const resolvePoseVideoOptions = (options: PoseVideoOptions = {}) => {
 		signal,
 		onProgress,
 		...image
-	} = options;
+	} = settings;
 	const sampling = PoseVideoSampling.parse({
 		samplingFps,
 		startMs,
@@ -56,13 +56,13 @@ export const resolvePoseVideoOptions = (options: PoseVideoOptions = {}) => {
 };
 export const createVideoSamplePlan = (
 	durationMs: number,
-	samplingOptions: z.input<typeof PoseVideoSampling> = {},
+	samplingSettings: z.input<typeof PoseVideoSampling> = {},
 ) => {
 	const isDurationInvalid = !Number.isFinite(durationMs) || durationMs <= 0;
 	if (isDurationInvalid)
 		throw new RangeError("Video duration must be finite and positive");
 
-	const sampling = PoseVideoSampling.parse(samplingOptions);
+	const sampling = PoseVideoSampling.parse(samplingSettings);
 
 	const endMs = sampling.endMs ?? durationMs;
 
@@ -88,7 +88,7 @@ export const createVideoSamplePlan = (
 
 	return {
 		frameCount,
-		timestampAt(index: number) {
+		timestampMsAt(index: number) {
 			const isFrameIndexOutOfRange =
 				!Number.isInteger(index) || index < 0 || index >= frameCount;
 			if (isFrameIndexOutOfRange)

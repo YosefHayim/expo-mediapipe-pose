@@ -17,14 +17,14 @@ interface RuleRuntime {
 	lastFrame: number;
 	timer: ReturnType<typeof setTimeout> | undefined;
 }
-const readRuleIdentity = (options: PoseRuleOptions) =>
+const readRuleIdentity = (settings: PoseRuleOptions) =>
 	JSON.stringify({
-		landmarks: options.landmarks,
-		minVisibility: options.minVisibility,
-		holdMs: options.holdMs,
-		staleAfterMs: options.staleAfterMs,
-		isActive: options.isActive,
-		resetKey: options.resetKey,
+		landmarks: settings.landmarks,
+		minVisibility: settings.minVisibility,
+		holdMs: settings.holdMs,
+		staleAfterMs: settings.staleAfterMs,
+		isActive: settings.isActive,
+		resetKey: settings.resetKey,
 	});
 
 type RuleSelections = Record<string, readonly LandmarkName[]>;
@@ -39,9 +39,9 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 	type Id = Extract<keyof Selection, string>;
 	const configurations = React.useMemo(
 		() =>
-			Object.entries<PoseRuleOptions>(rules).map(([id, options]) => {
-				validatePoseRuleOptions(options);
-				return { id, identity: readRuleIdentity(options) };
+			Object.entries<PoseRuleOptions>(rules).map(([id, settings]) => {
+				validatePoseRuleOptions(settings);
+				return { id, identity: readRuleIdentity(settings) };
 			}),
 		[rules],
 	);
@@ -157,18 +157,18 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 				const isRevisionSuperseded = revision.current !== updateRevision;
 				if (isRevisionSuperseded) break;
 
-				const options = latest.current[id];
+				const ruleSettings = latest.current[id];
 
-				const isRuleSettingsMissing = options == null;
+				const isRuleSettingsMissing = ruleSettings == null;
 				if (isRuleSettingsMissing) continue;
 
-				const isRuleInactive = options.isActive === false;
+				const isRuleInactive = ruleSettings.isActive === false;
 				if (isRuleInactive) {
 					resetRuntime(id, runtime);
 					continue;
 				}
 
-				const staleAfterMs = options.staleAfterMs ?? 500;
+				const staleAfterMs = ruleSettings.staleAfterMs ?? 500;
 				const restarted = frame.additionalData.frameNumber <= runtime.lastFrame;
 
 				const expired = now - runtime.state.updatedAt >= staleAfterMs;
@@ -181,16 +181,16 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 				if (isRevisionSupersededAfterReset) break;
 
 				runtime.lastFrame = frame.additionalData.frameNumber;
-				const outcome = evaluatePoseRule(
+				const verdict = evaluatePoseRule(
 					frame,
-					options,
+					ruleSettings,
 					runtime.state.candidate,
 				);
 				const next = advancePoseRule(
 					runtime.state,
-					outcome,
+					verdict,
 					now,
-					options.holdMs ?? 0,
+					ruleSettings.holdMs ?? 0,
 				);
 				clearTimeout(runtime.timer);
 				runtime.timer = setTimeout(

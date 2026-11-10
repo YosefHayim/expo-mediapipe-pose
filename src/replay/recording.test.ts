@@ -25,7 +25,7 @@ describe("createPoseRecorder", () => {
 
 		const session = recorder.stop();
 		assert.deepEqual(
-			session.frames.map((entry) => entry.timestampMs),
+			session.frames.map((timedFrame) => timedFrame.timestampMs),
 			[0, 50],
 		);
 		assert.equal(session.frames[0]?.frame.landmarks[0]?.x, 0.5);

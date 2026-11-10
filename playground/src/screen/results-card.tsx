@@ -3,7 +3,7 @@ import { download, RECORDING_ENVELOPE_BYTES } from "@/recording";
 import { measureRule } from "@/rules";
 import type { PlaygroundScreen } from "./use-playground";
 
-type ResultsCardProps = Pick<
+type ReportsCardProps = Pick<
 	PlaygroundScreen,
 	| "choosePreset"
 	| "config"
@@ -24,29 +24,29 @@ type ResultsCardProps = Pick<
 	| "setResultTab"
 >;
 
-export const ResultsCard = ({
+export const ReportsCard = ({
 	choosePreset,
-	config,
+	config: settings,
 	finishRecording,
 	frame,
 	mode,
 	paused,
-	recordCount,
-	recordRef,
-	recordSize,
+	recordCount: recordingCount,
+	recordRef: recordingRef,
+	recordSize: recordingSize,
 	recorded,
 	recording,
-	resultTab,
-	ruleStates,
+	resultTab: reportTab,
+	ruleStates: ruleStatuses,
 	selected,
-	setRecordCount,
+	setRecordCount: setRecordingCount,
 	setRecording,
-	setResultTab,
-}: ResultsCardProps) => {
-	const isFeedbackTab = resultTab === "feedback";
-	const isLandmarksTab = resultTab === "landmarks";
-	const isRecordTab = resultTab === "record";
-	const isRuleListEmpty = config.rules.length === 0;
+	setResultTab: setReportTab,
+}: ReportsCardProps) => {
+	const isFeedbackTab = reportTab === "feedback";
+	const isLandmarksTab = reportTab === "landmarks";
+	const isRecordingTab = reportTab === "record";
+	const isRuleListEmpty = settings.rules.length === 0;
 
 	return (
 		<section className="results-card">
@@ -59,8 +59,8 @@ export const ResultsCard = ({
 					<button
 						type="button"
 						key={tab}
-						aria-pressed={resultTab === tab}
-						onClick={() => setResultTab(tab)}
+						aria-pressed={reportTab === tab}
+						onClick={() => setReportTab(tab)}
 					>
 						{tab[0]?.toUpperCase() + tab.slice(1)}
 					</button>
@@ -80,12 +80,12 @@ export const ResultsCard = ({
 							</button>
 						</>
 					) : (
-						config.rules.map((rule, index) => {
+						settings.rules.map((rule, index) => {
 							const hasSelection = selected !== null;
 							const measurement = hasSelection
 								? measureRule(selected, rule)
 								: { value: null, unit: "" };
-							const state = ruleStates[index]?.status ?? "unknown";
+							const ruleStatus = ruleStatuses[index]?.status ?? "unknown";
 							return (
 								<div className="rule-result" key={rule.id}>
 									<div>
@@ -97,7 +97,9 @@ export const ResultsCard = ({
 											{measurement.unit}
 										</small>
 									</div>
-									<span className={`status-pill ${state}`}>{state}</span>
+									<span className={`status-pill ${ruleStatus}`}>
+										{ruleStatus}
+									</span>
 								</div>
 							);
 						})
@@ -114,7 +116,7 @@ export const ResultsCard = ({
 				<div className="landmark-table">
 					<table>
 						<caption>
-							Selected pose {config.skeleton.poseIndex} · normalized image
+							Selected pose {settings.skeleton.poseIndex} · normalized image
 							coordinates · raw data is preserved
 						</caption>
 						<thead>
@@ -141,7 +143,7 @@ export const ResultsCard = ({
 					</table>
 				</div>
 			)}
-			{isRecordTab && (
+			{isRecordingTab && (
 				<div className="result-body">
 					<h3>Save the landmarks. Leave the pixels.</h3>
 					<p>
@@ -158,9 +160,9 @@ export const ResultsCard = ({
 									return;
 								}
 
-								recordRef.current = [];
-								recordSize.current = RECORDING_ENVELOPE_BYTES;
-								setRecordCount(0);
+								recordingRef.current = [];
+								recordingSize.current = RECORDING_ENVELOPE_BYTES;
+								setRecordingCount(0);
 								setRecording(true);
 							}}
 						>
@@ -179,7 +181,7 @@ export const ResultsCard = ({
 						)}
 					</div>
 					<p aria-live="polite">
-						{recordCount} frames captured
+						{recordingCount} frames captured
 						{recording ? " · recording" : ""}
 					</p>
 				</div>

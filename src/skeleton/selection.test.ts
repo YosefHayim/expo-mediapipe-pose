@@ -33,8 +33,8 @@ const createMultiplePoseFrame = (): PoseFrame => {
 describe("MaxPoses", () => {
 	test("pose-count contracts enforce bounded requests and results", () => {
 		assert.equal(resolvePoseImageOptions().maxPoses, 1);
-		for (const value of [0, 7, 1.5, NaN])
-			assert.throws(() => MaxPoses.parse(value));
+		for (const amount of [0, 7, 1.5, NaN])
+			assert.throws(() => MaxPoses.parse(amount));
 
 		const frame = createMultiplePoseFrame();
 		assert.equal(PoseFrame.parse(frame).poses?.length, 2);
@@ -83,16 +83,16 @@ describe("selectPose", () => {
 
 	test("rules, tracking and overlays evaluate the explicit pose selection", () => {
 		const frame = createMultiplePoseFrame();
-		const options = {
+		const settings = {
 			landmarks: ["nose"] as const,
 			evaluate: (pose: { nose: { x: number } }) => pose.nose.x < 0.4,
 		};
 
-		assert.equal(evaluatePoseRule(selectPose(frame, 1), options), "pass");
-		assert.equal(evaluatePoseRule(frame, options), "fail");
-		assert.equal(evaluatePoseRule(selectPose(frame, 2), options), "unknown");
+		assert.equal(evaluatePoseRule(selectPose(frame, 1), settings), "pass");
+		assert.equal(evaluatePoseRule(frame, settings), "fail");
+		assert.equal(evaluatePoseRule(selectPose(frame, 2), settings), "unknown");
 		assert.equal(
-			inspectPoseTracking(selectPose(frame, 2), options).status,
+			inspectPoseTracking(selectPose(frame, 2), settings).status,
 			"lost",
 		);
 

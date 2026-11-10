@@ -34,9 +34,9 @@ export const RuleEditor = ({
 	const update = (patch: Partial<Rule>) => onChange({ ...rule, ...patch });
 	const updateThreshold = (
 		key: "enterThreshold" | "exitThreshold",
-		value: string,
+		choice: string,
 	) => {
-		const next = { ...draft, [key]: value };
+		const next = { ...draft, [key]: choice };
 		setDraft(next);
 		const enterThreshold = Number(next.enterThreshold);
 		const exitThreshold = Number(next.exitThreshold);
@@ -118,9 +118,9 @@ export const RuleEditor = ({
 			<Select
 				label="Pass direction"
 				value={rule.direction}
-				onChange={(value) =>
+				onChange={(choice) =>
 					update({
-						direction: value as Rule["direction"],
+						direction: choice as Rule["direction"],
 						enterThreshold: rule.exitThreshold,
 						exitThreshold: rule.enterThreshold,
 					})
@@ -139,7 +139,7 @@ export const RuleEditor = ({
 							min={-10000}
 							max={10000}
 							value={draft[key]}
-							onChange={(e) => updateThreshold(key, e.target.value)}
+							onChange={(event) => updateThreshold(key, event.target.value)}
 						/>
 					</label>
 				))}

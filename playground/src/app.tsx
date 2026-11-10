@@ -1,9 +1,9 @@
 import { Inspector } from "./screen/inspector";
 import { IntegrationSection } from "./screen/integration-section";
 import { IntroSection } from "./screen/intro-section";
-import { MetricsRow } from "./screen/metrics-row";
+import { MetricsStrip } from "./screen/metrics-row";
 import { PreviewCard } from "./screen/preview-card";
-import { ResultsCard } from "./screen/results-card";
+import { ReportsCard } from "./screen/results-card";
 import { SiteFooter } from "./screen/site-footer";
 import { SiteHeader } from "./screen/site-header";
 import { usePlayground } from "./screen/use-playground";
@@ -14,7 +14,7 @@ export const App = () => {
 		choosePreset,
 		code,
 		codeMode,
-		config,
+		config: settings,
 		copy,
 		device,
 		duration,
@@ -31,19 +31,19 @@ export const App = () => {
 		paused,
 		playing,
 		position,
-		recordCount,
-		recordRef,
-		recordSize,
+		recordCount: recordingCount,
+		recordRef: recordingRef,
+		recordSize: recordingSize,
 		recorded,
 		recording,
 		replay,
-		resultTab,
+		resultTab: reportTab,
 		ruleRef,
-		ruleStates,
+		ruleStates: ruleStatuses,
 		sample,
 		selected,
 		setCodeMode,
-		setConfig,
+		setConfig: setSettings,
 		setDevice,
 		setFrame,
 		setMasks,
@@ -54,17 +54,17 @@ export const App = () => {
 		setPaused,
 		setPlaying,
 		setPosition,
-		setRecordCount,
+		setRecordCount: setRecordingCount,
 		setRecording,
 		setReplay,
-		setResultTab,
+		setResultTab: setReportTab,
 		setSample,
 		setSpeed,
 		setUpload,
 		setVideoProgress,
 		skeleton,
-		sourceHasMedia,
-		sourceUrl,
+		sourceHasMedia: hasMedia,
+		sourceUrl: mediaUrl,
 		speed,
 		upload,
 		video,
@@ -98,7 +98,7 @@ export const App = () => {
 					<div className="preview-column">
 						<PreviewCard
 							changeMode={changeMode}
-							config={config}
+							config={settings}
 							device={device}
 							duration={duration}
 							engine={engine}
@@ -130,35 +130,35 @@ export const App = () => {
 							setUpload={setUpload}
 							setVideoProgress={setVideoProgress}
 							skeleton={skeleton}
-							sourceHasMedia={sourceHasMedia}
-							sourceUrl={sourceUrl}
+							sourceHasMedia={hasMedia}
+							sourceUrl={mediaUrl}
 							speed={speed}
 							upload={upload}
 							video={video}
 							videoProgress={videoProgress}
 						/>
-						<MetricsRow engine={engine} frame={frame} />
+						<MetricsStrip engine={engine} frame={frame} />
 						{engine.actualCapture && (
 							<p className="caption">{engine.actualCapture}</p>
 						)}
-						<ResultsCard
+						<ReportsCard
 							choosePreset={choosePreset}
-							config={config}
+							config={settings}
 							finishRecording={finishRecording}
 							frame={frame}
 							mode={mode}
 							paused={paused}
-							recordCount={recordCount}
-							recordRef={recordRef}
-							recordSize={recordSize}
+							recordCount={recordingCount}
+							recordRef={recordingRef}
+							recordSize={recordingSize}
 							recorded={recorded}
 							recording={recording}
-							resultTab={resultTab}
-							ruleStates={ruleStates}
+							resultTab={reportTab}
+							ruleStates={ruleStatuses}
 							selected={selected}
-							setRecordCount={setRecordCount}
+							setRecordCount={setRecordingCount}
 							setRecording={setRecording}
-							setResultTab={setResultTab}
+							setResultTab={setReportTab}
 						/>
 						<p className="browser-note">
 							<strong>A browser preview, a native library.</strong> This
@@ -170,11 +170,11 @@ export const App = () => {
 					</div>
 					<Inspector
 						choosePreset={choosePreset}
-						config={config}
+						config={settings}
 						copy={copy}
 						loadFile={loadFile}
 						modelName={modelName}
-						setConfig={setConfig}
+						setConfig={setSettings}
 						setMessage={setMessage}
 						setModel={setModel}
 						setModelName={setModelName}

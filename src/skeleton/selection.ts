@@ -17,12 +17,12 @@ export const selectPose = <Frame extends SelectablePose>(
 		throw new RangeError("poseIndex must be an integer from 0 to 5");
 
 	// Version-one recordings made before multi-pose support only contain the first pose fields.
-	const isNoPosesAtFirstIndex = frame.poses === undefined && poseIndex === 0;
+	const isNoPosesAtFirstIndex = frame.poses == null && poseIndex === 0;
 	if (isNoPosesAtFirstIndex) return frame;
 
 	const selected = frame.poses?.[poseIndex];
 
-	const isSelectedMissing = selected === undefined;
+	const isSelectedMissing = selected == null;
 	if (isSelectedMissing) return { ...frame, landmarks: [], worldLandmarks: [] };
 
 	return {

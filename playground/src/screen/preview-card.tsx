@@ -58,7 +58,7 @@ const pickTabLabel = (tab: string) => {
 
 export const PreviewCard = ({
 	changeMode,
-	config,
+	config: settings,
 	device,
 	duration,
 	engine,
@@ -90,8 +90,8 @@ export const PreviewCard = ({
 	setUpload,
 	setVideoProgress,
 	skeleton,
-	sourceHasMedia,
-	sourceUrl,
+	sourceHasMedia: hasMedia,
+	sourceUrl: mediaUrl,
 	speed,
 	upload,
 	video,
@@ -110,20 +110,20 @@ export const PreviewCard = ({
 	const mediaStageMirrorClass = isMirroredCamera ? "mirrored" : "";
 	const fileChoiceLabel = isPhotoMode ? "an image" : "a video";
 	const fileAccept = isPhotoMode ? "image/*" : "video/*";
-	const imageAltText = isSampleMode
+	const imageAltString = isSampleMode
 		? "Public MediaPipe evaluation sample"
 		: "Your selected local image";
-	const videoSourceUrl = isVideoMode ? upload || undefined : undefined;
+	const videoMediaUrl = isVideoMode ? upload || undefined : undefined;
 	const isFrameKnown = frame != null;
 	const frameAspectStyle = isFrameKnown
 		? { aspectRatio: `${frame.imageSize.width} / ${frame.imageSize.height}` }
 		: undefined;
 	const isEmptyPreviewShown =
-		(!sourceHasMedia && isNotReplayMode) || (isReplayMode && !replay);
+		(!hasMedia && isNotReplayMode) || (isReplayMode && !replay);
 	const emptyPreviewTitle = isReplayMode
 		? "Bring your landmarks back to life"
 		: "Your next test starts here";
-	const emptyPreviewBody = isReplayMode
+	const emptyPreviewMessage = isReplayMode
 		? "Import a playground or native landmark recording. No camera pixels are stored."
 		: "Choose a local file above. It never leaves this browser.";
 	const previewBadgeLabel = isReplayMode ? "LANDMARK REPLAY" : "BROWSER · CPU";
@@ -137,16 +137,16 @@ export const PreviewCard = ({
 		<section className="preview-card">
 			<nav className="source-tabs" aria-label="Input source">
 				{(["sample", "camera", "photo", "video", "replay"] as const).map(
-					(item) => {
-						const isTabSelected = mode === item;
+					(element) => {
+						const isTabSelected = mode === element;
 						return (
 							<button
 								type="button"
-								key={item}
+								key={element}
 								aria-pressed={isTabSelected}
-								onClick={() => changeMode(item)}
+								onClick={() => changeMode(element)}
 							>
-								{pickTabLabel(item)}
+								{pickTabLabel(element)}
 							</button>
 						);
 					},
@@ -174,7 +174,7 @@ export const PreviewCard = ({
 							<input
 								type="checkbox"
 								checked={mirrored}
-								onChange={(e) => setMirrored(e.target.checked)}
+								onChange={(event) => setMirrored(event.target.checked)}
 							/>
 							Mirror preview
 						</label>
@@ -187,8 +187,8 @@ export const PreviewCard = ({
 							key={mode}
 							type="file"
 							accept={fileAccept}
-							onChange={(e) => {
-								const file = e.target.files?.[0];
+							onChange={(event) => {
+								const file = event.target.files?.[0];
 								if (file) void loadFile(file, "media");
 							}}
 						/>
@@ -212,8 +212,8 @@ export const PreviewCard = ({
 							<input
 								type="file"
 								accept=".json,application/json"
-								onChange={(e) => {
-									const file = e.target.files?.[0];
+								onChange={(event) => {
+									const file = event.target.files?.[0];
 									if (file) void loadFile(file, "recording");
 								}}
 							/>
@@ -238,12 +238,12 @@ export const PreviewCard = ({
 					className={`media-stage ${mediaStageMirrorClass}`}
 					style={frameAspectStyle}
 				>
-					{isStillMode && sourceUrl && (
+					{isStillMode && mediaUrl && (
 						<img
 							ref={image}
-							key={sourceUrl}
-							src={sourceUrl}
-							alt={imageAltText}
+							key={mediaUrl}
+							src={mediaUrl}
+							alt={imageAltString}
 							onError={() =>
 								setMessage(
 									"This image could not be decoded. Try a JPEG or PNG.",
@@ -254,15 +254,15 @@ export const PreviewCard = ({
 					{isMovingMode && (
 						<video
 							ref={video}
-							key={sourceUrl || mode}
-							src={videoSourceUrl}
+							key={mediaUrl || mode}
+							src={videoMediaUrl}
 							muted
 							playsInline
 							controls={isVideoMode}
-							onTimeUpdate={(e) =>
+							onTimeUpdate={(event) =>
 								setVideoProgress({
-									position: e.currentTarget.currentTime,
-									duration: e.currentTarget.duration || 0,
+									position: event.currentTarget.currentTime,
+									duration: event.currentTarget.duration || 0,
 								})
 							}
 							onError={() =>
@@ -271,7 +271,7 @@ export const PreviewCard = ({
 								)
 							}
 							onSeeked={() => {
-								ruleRef.current = config.rules.map(() =>
+								ruleRef.current = settings.rules.map(() =>
 									initialPoseRuleState(),
 								);
 								setFrame(null);
@@ -282,11 +282,11 @@ export const PreviewCard = ({
 					{frame && (
 						<>
 							<MaskCanvas
-								mask={masks[config.skeleton.poseIndex]}
-								color={config.mask.color}
-								opacity={config.mask.opacity}
+								mask={masks[settings.skeleton.poseIndex]}
+								color={settings.mask.color}
+								opacity={settings.mask.opacity}
 							/>
-							{config.skeleton.enabled && (
+							{settings.skeleton.enabled && (
 								<svg
 									className="skeleton"
 									viewBox={`0 0 ${frame.imageSize.width} ${frame.imageSize.height}`}
@@ -325,7 +325,7 @@ export const PreviewCard = ({
 					<div className="empty-preview">
 						<span>◎</span>
 						<h2>{emptyPreviewTitle}</h2>
-						<p>{emptyPreviewBody}</p>
+						<p>{emptyPreviewMessage}</p>
 					</div>
 				)}
 				<div className="preview-badge">
@@ -343,7 +343,7 @@ export const PreviewCard = ({
 						type="button"
 						onClick={() => {
 							finishRecording();
-							setPaused((value) => !value);
+							setPaused((isPaused) => !isPaused);
 						}}
 					>
 						{pauseButtonLabel}
@@ -391,7 +391,7 @@ export const PreviewCard = ({
 							const isPositionPastDuration = position >= duration;
 							if (isPositionPastDuration) setPosition(0);
 
-							setPlaying((value) => !value);
+							setPlaying((isPlaying) => !isPlaying);
 						}}
 					>
 						{replayButtonLabel}
@@ -401,21 +401,23 @@ export const PreviewCard = ({
 						value={position}
 						min={0}
 						max={duration}
-						onChange={(value) => {
+						onChange={(choice) => {
 							setPlaying(false);
-							setPosition(value);
-							setFrame(readFrameAt(replay, value));
-							ruleRef.current = config.rules.map(() => initialPoseRuleState());
+							setPosition(choice);
+							setFrame(readFrameAt(replay, choice));
+							ruleRef.current = settings.rules.map(() =>
+								initialPoseRuleState(),
+							);
 						}}
 					/>
 					<Select
 						label="Playback speed"
 						value={String(speed)}
-						onChange={(value) => setSpeed(Number(value))}
+						onChange={(amount) => setSpeed(Number(amount))}
 					>
-						{[0.25, 0.5, 1, 2, 4].map((value) => (
-							<option value={value} key={value}>
-								{value}×
+						{[0.25, 0.5, 1, 2, 4].map((speed) => (
+							<option value={speed} key={speed}>
+								{speed}×
 							</option>
 						))}
 					</Select>

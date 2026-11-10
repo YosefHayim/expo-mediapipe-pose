@@ -7,7 +7,7 @@ import {
 	type PoseRecording,
 } from "./recording";
 
-const copyPoseResults = (frame: Pick<PoseFrame, "poses">) => {
+const copyPoseReports = (frame: Pick<PoseFrame, "poses">) => {
 	const poses = frame.poses;
 	const isFramePosesMissing = poses == null;
 	if (isFramePosesMissing) return {};
@@ -30,7 +30,7 @@ export interface PoseReplayState {
 export interface PoseReplayCallbacks<Frame = PoseFrame> {
 	onFrame: (frame: Frame, timestampMs: number) => void;
 	onReset?: () => void;
-	onStateChange?: (state: PoseReplayState) => void;
+	onStateChange?: (snapshot: PoseReplayState) => void;
 }
 export const createPoseReplay = (
 	recording: PoseRecording,
@@ -38,7 +38,7 @@ export const createPoseReplay = (
 ) => {
 	return createReplay(copyPoseRecording(recording), callbacks, (frame) => ({
 		...frame,
-		...copyPoseResults(frame),
+		...copyPoseReports(frame),
 		landmarks: frame.landmarks.map((joint) => ({ ...joint })),
 		worldLandmarks: frame.worldLandmarks.map((joint) => ({ ...joint })),
 		additionalData: { ...frame.additionalData },
@@ -53,7 +53,7 @@ export const createPoseDetectionReplay = (
 		callbacks,
 		(frame) => ({
 			...frame,
-			...copyPoseResults(frame),
+			...copyPoseReports(frame),
 			landmarks: frame.landmarks.map((joint) => ({ ...joint })),
 			worldLandmarks: frame.worldLandmarks.map((joint) => ({ ...joint })),
 			imageSize: { ...frame.imageSize },
@@ -125,10 +125,10 @@ const createReplay = <Frame>(
 		const isNotPlaying = status !== "playing";
 		if (isNotPlaying) return;
 
-		const entry = session.frames[nextFrame];
+		const timedFrame = session.frames[nextFrame];
 
-		const isEntryMissing = entry == null;
-		if (isEntryMissing) {
+		const isTimedFrameMissing = timedFrame == null;
+		if (isTimedFrameMissing) {
 			positionMs = durationMs;
 			status = "ended";
 			notify();
@@ -136,7 +136,10 @@ const createReplay = <Frame>(
 		}
 
 		const scheduledRevision = revision;
-		const delay = Math.max(0, (entry.timestampMs - readPosition()) / speed);
+		const delay = Math.max(
+			0,
+			(timedFrame.timestampMs - readPosition()) / speed,
+		);
 		timer = setTimeout(() => {
 			const isScheduleOutdated = scheduledRevision !== revision;
 			if (isScheduleOutdated) return;
@@ -144,7 +147,7 @@ const createReplay = <Frame>(
 			timer = undefined;
 			nextFrame += 1;
 			try {
-				callbacks.onFrame(copyFrame(entry.frame), entry.timestampMs);
+				callbacks.onFrame(copyFrame(timedFrame.frame), timedFrame.timestampMs);
 			} catch (error) {
 				stopAfterCallbackFailure(error);
 			}
@@ -182,7 +185,7 @@ const createReplay = <Frame>(
 		positionMs = timeMs;
 		anchorMs = performance.now();
 		nextFrame = session.frames.findIndex(
-			(entry) => entry.timestampMs >= timeMs,
+			(timedFrame) => timedFrame.timestampMs >= timeMs,
 		);
 
 		const hasNoNextFrame = nextFrame === -1;
@@ -231,20 +234,20 @@ const createReplay = <Frame>(
 			pause();
 			seek(0);
 		},
-		setSpeed(value: number) {
+		setSpeed(nextSpeed: number) {
 			requireOpen();
 
 			const isRateOutOfRange =
-				!Number.isFinite(value) || value < 0.1 || value > 4;
+				!Number.isFinite(nextSpeed) || nextSpeed < 0.1 || nextSpeed > 4;
 			if (isRateOutOfRange)
 				throw new RangeError("Replay speed must be between 0.1 and 4");
 
-			const isSameSpeed = value === speed;
+			const isSameSpeed = nextSpeed === speed;
 			if (isSameSpeed) return;
 
 			positionMs = readPosition();
 			anchorMs = performance.now();
-			speed = value;
+			speed = nextSpeed;
 			cancel();
 			const speedRevision = revision;
 			notify();

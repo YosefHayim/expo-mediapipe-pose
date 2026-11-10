@@ -5,15 +5,15 @@ vi.mock("expo", async () => import("../testing/expo-stub"));
 
 describe("getCameraCapabilities", () => {
 	test("public discovery decodes native responses and propagates failures", async () => {
-		let response: unknown = { status: "permissionRequired" };
-		let failure: Error | undefined;
+		let reply: unknown = { status: "permissionRequired" };
+		let failure: Error | null = null;
 		const mockKey = Symbol.for("pose.nativeCapabilitiesTest");
 		Object.defineProperty(globalThis, mockKey, {
 			configurable: true,
 			value: () => {
 				if (failure) return Promise.reject(failure);
 
-				return Promise.resolve(response);
+				return Promise.resolve(reply);
 			},
 		});
 
@@ -24,13 +24,13 @@ describe("getCameraCapabilities", () => {
 				status: "permissionRequired",
 			});
 
-			response = { status: "available", platform: "android", cameras: [] };
+			reply = { status: "available", platform: "android", cameras: [] };
 			await assert.rejects(getCameraCapabilities());
 
-			response = { status: "unavailable" };
-			assert.deepEqual(await getCameraCapabilities(), response);
+			reply = { status: "unavailable" };
+			assert.deepEqual(await getCameraCapabilities(), reply);
 
-			response = {
+			reply = {
 				status: "available",
 				platform: "android",
 				cameras: [
@@ -42,7 +42,7 @@ describe("getCameraCapabilities", () => {
 					},
 				],
 			};
-			assert.deepEqual(await getCameraCapabilities(), response);
+			assert.deepEqual(await getCameraCapabilities(), reply);
 
 			failure = new Error("native camera query failed");
 			await assert.rejects(getCameraCapabilities(), failure);

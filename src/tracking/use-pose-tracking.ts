@@ -12,21 +12,21 @@ import {
 	trackingState,
 } from "./logic";
 
-export const usePoseTracking = (options: PoseTrackingOptions) => {
-	validatePoseRuleOptions(options);
-	const latest = React.useRef(options);
-	const [state, setState] = React.useState(() => {
-		const isInactive = options.isActive === false;
+export const usePoseTracking = (trackingSettings: PoseTrackingOptions) => {
+	validatePoseRuleOptions(trackingSettings);
+	const latest = React.useRef(trackingSettings);
+	const [snapshot, setStatus] = React.useState(() => {
+		const isInactive = trackingSettings.isActive === false;
 		return trackingState(isInactive ? "inactive" : "searching");
 	});
-	const current = React.useRef(state);
+	const current = React.useRef(snapshot);
 	const stability = React.useRef(initialPoseRuleState());
 	const lastFrame = React.useRef(0);
 	const timeout = React.useRef<ReturnType<typeof setTimeout> | undefined>(
 		undefined,
 	);
 	React.useLayoutEffect(() => {
-		latest.current = options;
+		latest.current = trackingSettings;
 	});
 	const commit = React.useCallback((next: PoseTrackingState) => {
 		const isSameAsCurrent =
@@ -34,7 +34,7 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 		if (isSameAsCurrent) return;
 
 		current.current = next;
-		setState(next);
+		setStatus(next);
 		latest.current.onChange?.(next);
 	}, []);
 	const reset = React.useCallback(() => {
@@ -84,11 +84,11 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 		[commit, reset],
 	);
 	const identity = JSON.stringify({
-		landmarks: options.landmarks,
-		minVisibility: options.minVisibility,
-		holdMs: options.holdMs,
-		staleAfterMs: options.staleAfterMs,
-		isActive: options.isActive,
+		landmarks: trackingSettings.landmarks,
+		minVisibility: trackingSettings.minVisibility,
+		holdMs: trackingSettings.holdMs,
+		staleAfterMs: trackingSettings.staleAfterMs,
+		isActive: trackingSettings.isActive,
 	});
 	const previousIdentity = React.useRef(identity);
 	React.useLayoutEffect(() => {
@@ -100,5 +100,5 @@ export const usePoseTracking = (options: PoseTrackingOptions) => {
 
 		return () => clearTimeout(timeout.current);
 	}, [identity, reset]);
-	return { ...state, update, reset };
+	return { ...snapshot, update, reset };
 };

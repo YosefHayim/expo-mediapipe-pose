@@ -9,7 +9,7 @@ export interface PoseRuleOptions<Name extends LandmarkName = LandmarkName> {
 	evaluate: (
 		pose: Readonly<Record<Name, Landmark>>,
 		frame: PoseFrame,
-		previousOutcome: PoseRuleStatus,
+		previousVerdict: PoseRuleStatus,
 	) => boolean | "unknown";
 	minVisibility?: number;
 	holdMs?: number;
@@ -34,20 +34,21 @@ export const initialPoseRuleState = (): PoseRuleState => ({
 });
 
 export const validatePoseRuleOptions = (
-	options: Pick<
+	settings: Pick<
 		PoseRuleOptions,
 		"landmarks" | "minVisibility" | "holdMs" | "staleAfterMs" | "resetKey"
 	>,
 ) => {
 	const invalidResetKey =
-		typeof options.resetKey === "number" && !Number.isFinite(options.resetKey);
+		typeof settings.resetKey === "number" &&
+		!Number.isFinite(settings.resetKey);
 	if (invalidResetKey) throw new RangeError("Numeric resetKey must be finite");
 
-	const isLandmarksEmpty = options.landmarks.length === 0;
+	const isLandmarksEmpty = settings.landmarks.length === 0;
 	if (isLandmarksEmpty)
 		throw new RangeError("A pose rule requires at least one landmark");
 
-	const visibility = options.minVisibility ?? 0.6;
+	const visibility = settings.minVisibility ?? 0.6;
 
 	const visibilityInRange = visibility >= 0 && visibility <= 1;
 
@@ -57,29 +58,29 @@ export const validatePoseRuleOptions = (
 		throw new RangeError("minVisibility must be between 0 and 1");
 	}
 
-	for (const duration of [options.holdMs ?? 0, options.staleAfterMs ?? 500]) {
+	for (const duration of [settings.holdMs ?? 0, settings.staleAfterMs ?? 500]) {
 		const isDurationInvalid = !Number.isFinite(duration) || duration < 0;
 		if (isDurationInvalid)
 			throw new RangeError("Rule durations must be finite and non-negative");
 	}
 
-	const isStaleAfterZero = options.staleAfterMs === 0;
+	const isStaleAfterZero = settings.staleAfterMs === 0;
 	if (isStaleAfterZero) throw new RangeError("staleAfterMs must be positive");
 };
 
 /** Confidence is a prerequisite for evaluating a condition, not its pass/fail result. */
 export const evaluatePoseRule = <Name extends LandmarkName>(
 	frame: PoseFrame,
-	options: PoseRuleOptions<Name>,
-	previousOutcome: PoseRuleStatus = "unknown",
+	settings: PoseRuleOptions<Name>,
+	previousVerdict: PoseRuleStatus = "unknown",
 ): PoseRuleStatus => {
-	const isRuleInactive = options.isActive === false;
+	const isRuleInactive = settings.isActive === false;
 	if (isRuleInactive) return "unknown";
 
 	const pose = getNamedLandmarks(frame);
-	const minimumConfidence = options.minVisibility ?? 0.6;
+	const minimumConfidence = settings.minVisibility ?? 0.6;
 
-	const hasUncertainLandmark = options.landmarks.some((name) => {
+	const hasUncertainLandmark = settings.landmarks.some((name) => {
 		const joint = pose[name];
 
 		const isJointMissing = joint == null;
@@ -97,22 +98,22 @@ export const evaluatePoseRule = <Name extends LandmarkName>(
 	if (hasUncertainLandmark) return "unknown";
 
 	// Every requested key has been checked above; other landmarks remain optional internally.
-	const outcome = options.evaluate(
+	const verdict = settings.evaluate(
 		pose as Record<Name, Landmark>,
 		frame,
-		previousOutcome,
+		previousVerdict,
 	);
 
-	const isOutcomeUnknown = outcome === "unknown";
-	if (isOutcomeUnknown) return "unknown";
+	const isVerdictUnknown = verdict === "unknown";
+	if (isVerdictUnknown) return "unknown";
 
-	return outcome ? "pass" : "fail";
+	return verdict ? "pass" : "fail";
 };
 
 /** Uses a caller-supplied monotonic clock. Unknown invalidates feedback immediately. */
 export const advancePoseRule = (
 	previous: PoseRuleState,
-	outcome: PoseRuleStatus,
+	verdict: PoseRuleStatus,
 	now: number,
 	holdMs = 0,
 ): PoseRuleState => {
@@ -127,8 +128,8 @@ export const advancePoseRule = (
 		);
 	}
 
-	const isOutcomeUnknown = outcome === "unknown";
-	if (isOutcomeUnknown)
+	const isVerdictUnknown = verdict === "unknown";
+	if (isVerdictUnknown)
 		return {
 			status: "unknown",
 			candidate: "unknown",
@@ -137,17 +138,17 @@ export const advancePoseRule = (
 		};
 
 	const hasCandidateChangedOrClockReversed =
-		outcome !== previous.candidate || now < previous.updatedAt;
+		verdict !== previous.candidate || now < previous.updatedAt;
 	const since = hasCandidateChangedOrClockReversed ? now : previous.since;
 	const isHoldComplete = now - since >= holdMs;
 	return {
-		candidate: outcome,
+		candidate: verdict,
 		since,
 		updatedAt: now,
-		status: isHoldComplete ? outcome : previous.status,
+		status: isHoldComplete ? verdict : previous.status,
 	};
 };
 
 export const definePoseRule = <Name extends LandmarkName>(
-	options: PoseRuleOptions<Name>,
-) => options;
+	settings: PoseRuleOptions<Name>,
+) => settings;

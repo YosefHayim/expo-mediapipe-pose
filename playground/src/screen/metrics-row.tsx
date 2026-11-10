@@ -1,9 +1,9 @@
 import { Metric } from "./metric";
 import type { PlaygroundScreen } from "./use-playground";
 
-type MetricsRowProps = Pick<PlaygroundScreen, "engine" | "frame">;
+type MetricsStripProps = Pick<PlaygroundScreen, "engine" | "frame">;
 
-export const MetricsRow = ({ engine, frame }: MetricsRowProps) => {
+export const MetricsStrip = ({ engine, frame }: MetricsStripProps) => {
 	const hasFrame = frame != null;
 	const framePosesCountLabel = hasFrame ? String(frame.poses.length) : "—";
 	const frameDurationLabel = hasFrame
