@@ -25,7 +25,7 @@ For Expo and React Native developers building camera interactions, movement visu
 - Select among multiple detected poses
 - Composite opt-in masks with explicit cleanup and backpressure
 
-Version 0.3.0 includes these features. Styling and rules are configurable without replacing Google's model. See the [changelog](CHANGELOG.md) for release history.
+Version 0.4.0 includes these features. Styling and rules are configurable without replacing Google's model. See the [changelog](CHANGELOG.md) for release history.
 
 ## Status and requirements
 
@@ -47,7 +47,7 @@ pnpm add expo-mediapipe-pose
 pnpm exec expo install react-native-svg expo-camera
 ```
 
-The package includes compiled JavaScript, TypeScript declarations, native Swift/Kotlin sources and the full pose model. Use the [v0.3.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.3.0/docs/api.md) for this release; `main` may advance independently. Native dependency or configuration changes require a new development build. The older `v0.2.0` GitHub tag contains the earlier camera API.
+The package includes compiled JavaScript, TypeScript declarations, native Swift/Kotlin sources and the full pose model. Use the [v0.4.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.4.0/docs/api.md) for this release; `main` may advance independently. Native dependency or configuration changes require a new development build. The older `v0.2.0` GitHub tag contains the earlier camera API.
 
 [zod](https://zod.dev/) validates events at the native boundary. [react-native-svg](https://docs.expo.dev/versions/latest/sdk/svg/) draws the optional overlay. The example uses [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) for permissions; another permission provider is also fine.
 
