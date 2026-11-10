@@ -50,6 +50,8 @@ export const ReplayPanel = ({
 
 	const hasNotice = notice != null;
 
+	const hasFrame = frame != null;
+
 	return (
 		<View style={panelStyles.panel}>
 			{hasNotice && <Text style={panelStyles.errorLabel}>{notice}</Text>}
@@ -64,7 +66,7 @@ export const ReplayPanel = ({
 				Tracking: {tracking.status} · Arm: {rule.status}
 			</Text>
 			<View style={panelStyles.fillArea} onLayout={handleReplayFrameLayout}>
-				{frame && <PoseSkeleton frame={frame} {...size} color="#38bdf8" />}
+				{hasFrame && <PoseSkeleton frame={frame} {...size} color="#38bdf8" />}
 			</View>
 			<Button
 				title="Play"

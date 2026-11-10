@@ -117,6 +117,8 @@ export const RuleEditor = ({
 	const handleRuleUnknownColorChange = (unknownColor: string) =>
 		update({ unknownColor });
 
+	const hasThresholdError = thresholdError !== "";
+
 	return (
 		<fieldset className="rule-editor">
 			<legend>Rule {index + 1}</legend>
@@ -166,7 +168,7 @@ export const RuleEditor = ({
 					/>
 				))}
 			</div>
-			{thresholdError && <small role="alert">{thresholdError}</small>}
+			{hasThresholdError && <small role="alert">{thresholdError}</small>}
 			<Range
 				label="Rule confidence"
 				value={rule.minVisibility}

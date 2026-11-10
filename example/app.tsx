@@ -166,7 +166,7 @@ const App = () => {
 	if (isPermissionMissing)
 		return (
 			<View style={styles.screen}>
-				<Text style={styles.text}>Checking camera permission…</Text>
+				<Text style={styles.label}>Checking camera permission…</Text>
 			</View>
 		);
 
@@ -184,7 +184,7 @@ const App = () => {
 			: "Open settings";
 		return (
 			<View style={styles.screen}>
-				<Text style={styles.text}>
+				<Text style={styles.label}>
 					Pose detection runs on your device. Camera access is required for live
 					detection. Local file analysis does not need it.
 				</Text>
@@ -272,6 +272,11 @@ const App = () => {
 
 	const handlePauseTogglePress = () => setPaused((isPaused) => !isPaused);
 
+	const hasCameraSelection = cameraSelection != null;
+	const hasNoCameraSelection = cameraSelection == null;
+	const hasDisplayedMetrics = displayedMetrics != null;
+	const hasFailure = failure != null;
+
 	return (
 		<View style={styles.screen}>
 			<Text style={styles.title}>MediaPipe Pose</Text>
@@ -285,14 +290,14 @@ const App = () => {
 				disabled={recordingActive}
 				onPress={handleAnalyzeVideoPress}
 			/>
-			<Text style={styles.text}>{trackingLabels[tracking.status]}</Text>
-			<Text style={styles.text}>
+			<Text style={styles.label}>{trackingLabels[tracking.status]}</Text>
+			<Text style={styles.label}>
 				{feedbackLabels[feedback.statuses.raisedArm]}
 			</Text>
-			<Text style={styles.text}>
+			<Text style={styles.label}>
 				Elbow feedback: {feedback.statuses.elbowBend}
 			</Text>
-			{cameraSelection && (
+			{hasCameraSelection && (
 				<PoseCameraView
 					key={cameraKey}
 					style={styles.camera}
@@ -309,13 +314,13 @@ const App = () => {
 					skeleton={feedbackSkeleton}
 				/>
 			)}
-			{!cameraSelection && (
-				<Text style={styles.text}>
+			{hasNoCameraSelection && (
+				<Text style={styles.label}>
 					Choose an available camera below to start.
 				</Text>
 			)}
-			{displayedMetrics && (
-				<Text style={styles.text}>
+			{hasDisplayedMetrics && (
+				<Text style={styles.label}>
 					Inference: {displayedMetrics.inferenceFps.toFixed(1)} fps · Results:{" "}
 					{displayedMetrics.resultFps.toFixed(1)} fps
 				</Text>
@@ -333,9 +338,9 @@ const App = () => {
 				onPress={toggleRecording}
 				disabled={!canToggleRecording}
 			/>
-			{failure && (
+			{hasFailure && (
 				<View>
-					<Text style={styles.text}>Camera error: {failure.code}</Text>
+					<Text style={styles.label}>Camera error: {failure.code}</Text>
 					<Button title="Retry camera" onPress={retryCamera} />
 				</View>
 			)}
@@ -358,7 +363,7 @@ const styles = StyleSheet.create({
 		gap: 16,
 	},
 	title: { color: "white", fontSize: 24, fontWeight: "600" },
-	text: { color: "white", fontSize: 16 },
+	label: { color: "white", fontSize: 16 },
 	camera: { flex: 1, borderRadius: 16 },
 	actions: { flexDirection: "row", justifyContent: "space-between" },
 });

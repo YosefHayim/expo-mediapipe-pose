@@ -23,6 +23,8 @@ export const Range = ({
 	const handleRangeInputChange = (event: ChangeEvent<HTMLInputElement>) =>
 		onChange(Number(event.target.value));
 
+	const hasHint = hint != null && hint !== "";
+
 	return (
 		<div className="field">
 			<label htmlFor={id}>
@@ -38,7 +40,7 @@ export const Range = ({
 				value={value}
 				onChange={handleRangeInputChange}
 			/>
-			{hint && <small>{hint}</small>}
+			{hasHint && <small>{hint}</small>}
 		</div>
 	);
 };

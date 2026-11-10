@@ -109,6 +109,9 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 	const handleVideoFrameLayout = (event: LayoutChangeEvent) =>
 		setSize(event.nativeEvent.layout);
 
+	const hasProgress = progress != null;
+	const hasReport = report != null;
+
 	return (
 		<View style={panelStyles.panel}>
 			<Text style={panelStyles.label}>
@@ -135,14 +138,14 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 				disabled={!running}
 			/>
 			<Text style={panelStyles.label}>{status}</Text>
-			{progress && (
+			{hasProgress && (
 				<Text style={panelStyles.label}>
 					{progress.completedFrames}/{progress.totalFrames} samples ·{" "}
 					{progress.timestampMs} ms
 				</Text>
 			)}
 			<View style={panelStyles.fillArea} onLayout={handleVideoFrameLayout}>
-				{report && <PoseSkeleton detection={report.detection} {...size} />}
+				{hasReport && <PoseSkeleton detection={report.detection} {...size} />}
 			</View>
 			<Button title="Return to camera" onPress={onClose} />
 		</View>
