@@ -9,7 +9,7 @@ import {
 import * as React from "react";
 import { Button, Text, TextInput, View } from "react-native";
 
-function videoFailureMessage(error: unknown): string {
+const createVideoFailureMessage = (error: unknown): string => {
 	const isAggregateError = error instanceof AggregateError;
 	if (isAggregateError) return String(error);
 
@@ -17,9 +17,9 @@ function videoFailureMessage(error: unknown): string {
 	if (isAbortError) return "Cancelled.";
 
 	return String(error);
-}
+};
 
-export function VideoPanel({ onClose }: { onClose: () => void }) {
+export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 	const [location, setLocation] = React.useState("");
 	const [result, setResult] = React.useState<PoseVideoFrame | null>(null);
 	const [progress, setProgress] = React.useState<PoseVideoProgress | null>(
@@ -73,7 +73,7 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 		} catch (error) {
 			const isRequestStillCurrentAfterFailure = controller.current === request;
 			if (isRequestStillCurrentAfterFailure)
-				setStatus(videoFailureMessage(error));
+				setStatus(createVideoFailureMessage(error));
 		} finally {
 			const isRequestStillCurrentAtEnd = controller.current === request;
 			if (isRequestStillCurrentAtEnd) {
@@ -143,4 +143,4 @@ export function VideoPanel({ onClose }: { onClose: () => void }) {
 			<Button title="Return to camera" onPress={onClose} />
 		</View>
 	);
-}
+};

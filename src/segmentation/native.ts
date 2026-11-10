@@ -1,15 +1,17 @@
 import { requireNativeModule } from "expo";
 import { SegmentationLeaseId } from "./mask";
 
-export async function releasePoseSegmentation(leaseId: string): Promise<void> {
+export const releasePoseSegmentation = async (
+	leaseId: string,
+): Promise<void> => {
 	SegmentationLeaseId.parse(leaseId);
 	await requireNativeModule<{
 		releasePoseSegmentation(id: string): Promise<void>;
 	}>("ExpoMediaPipePose").releasePoseSegmentation(leaseId);
-}
-export async function discardResultSegmentation(
+};
+export const discardResultSegmentation = async (
 	candidateAnalysis: unknown,
-): Promise<void> {
+): Promise<void> => {
 	const isCandidateAnalysisNotObject =
 		typeof candidateAnalysis !== "object" || candidateAnalysis === null;
 	if (isCandidateAnalysisNotObject) return;
@@ -32,4 +34,4 @@ export async function discardResultSegmentation(
 	if (isLeaseIdRejected) return;
 
 	await releasePoseSegmentation(leaseIdReply.data);
-}
+};

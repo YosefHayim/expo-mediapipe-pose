@@ -5,12 +5,12 @@ import {
 	parsePoseRecording,
 	serializePoseRecording,
 } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
 describe("createPoseRecorder", () => {
 	test("recording is opt-in, bounded, and copies camera results", () => {
 		const recorder = createPoseRecorder({ maxFrames: 2 });
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 
 		assert.equal(recorder.append(frame, 100), false);
 
@@ -48,10 +48,10 @@ describe("createPoseRecorder", () => {
 	test("recording rejects invalid chronology, excess fields, invalid landmarks and unsupported versions", () => {
 		const recorder = createPoseRecorder();
 		recorder.start();
-		recorder.append(poseFrame(), 100);
+		recorder.append(createPoseFrame(), 100);
 
 		for (const now of [100, 99, NaN, Infinity, 86_400_101])
-			assert.throws(() => recorder.append(poseFrame(), now));
+			assert.throws(() => recorder.append(createPoseFrame(), now));
 		assert.equal(recorder.frameCount, 1);
 
 		const session = recorder.stop();
@@ -66,8 +66,8 @@ describe("createPoseRecorder", () => {
 					{
 						timestampMs: 0,
 						frame: {
-							...poseFrame(),
-							landmarks: Array(34).fill(poseFrame().landmarks[0]),
+							...createPoseFrame(),
+							landmarks: Array(34).fill(createPoseFrame().landmarks[0]),
 						},
 					},
 				],
@@ -75,13 +75,13 @@ describe("createPoseRecorder", () => {
 		])
 			assert.throws(() => parsePoseRecording(JSON.stringify(invalid)));
 
-		assert.equal(recorder.append(poseFrame(), 0), false);
+		assert.equal(recorder.append(createPoseFrame(), 0), false);
 		for (const maxFrames of [0, 10001, 1.5, NaN])
 			assert.throws(() => createPoseRecorder({ maxFrames }));
 	});
 
 	test("recording rejects an oversized append while keeping earlier frames exportable", () => {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 		const landmark = {
 			x: 1.2345678901234567e300,
 			y: -1.2345678901234567e300,

@@ -2,7 +2,7 @@ import * as React from "react";
 import { ScrollView, Text } from "react-native";
 import { runNativeChecks } from "./run-native-checks";
 
-export function NativeChecks() {
+export const NativeChecks = () => {
 	const [report, setReport] = React.useState("Running native fixture checks…");
 	React.useEffect(() => {
 		let mounted = true;
@@ -24,4 +24,4 @@ export function NativeChecks() {
 			<Text selectable>{report}</Text>
 		</ScrollView>
 	);
-}
+};

@@ -12,15 +12,27 @@ describe("updateRules", () => {
 		const detection = createSampleBrowserFrame();
 		const rule = { ...defaultRule, enterThreshold: 95, exitThreshold: 100 };
 
-		const firstStates = updateRules(
-			detection,
-			0,
-			[rule],
-			[initialPoseRuleState()],
-			100,
-		);
-		const heldStates = updateRules(detection, 0, [rule], firstStates, 400);
-		const unselectedStates = updateRules(detection, 1, [rule], heldStates, 500);
+		const firstStates = updateRules({
+			frame: detection,
+			poseIndex: 0,
+			rules: [rule],
+			previous: [initialPoseRuleState()],
+			now: 100,
+		});
+		const heldStates = updateRules({
+			frame: detection,
+			poseIndex: 0,
+			rules: [rule],
+			previous: firstStates,
+			now: 400,
+		});
+		const unselectedStates = updateRules({
+			frame: detection,
+			poseIndex: 1,
+			rules: [rule],
+			previous: heldStates,
+			now: 500,
+		});
 		const unselectedSkeleton = createDetectionSkeleton(
 			detection,
 			{ width: 400, height: 200 },

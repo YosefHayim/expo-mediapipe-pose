@@ -20,7 +20,7 @@ interface Options {
 	video: RefObject<HTMLVideoElement | null>;
 	onFrame: (frame: BrowserFrame, masks: BrowserMask[]) => void;
 }
-export function useInference(options: Options) {
+export const useInference = (options: Options) => {
 	const { config, mode, url, device, paused, model, image, video } = options;
 	const [status, setStatus] = useState("Loading model…");
 	const [error, setError] = useState<string | null>(null);
@@ -225,7 +225,7 @@ export function useInference(options: Options) {
 				event.message ||
 					"The inference worker could not start. Try a current Chrome or Safari browser.",
 			);
-		async function start() {
+		const start = async () => {
 			try {
 				setStatus("Loading model…");
 
@@ -294,7 +294,7 @@ export function useInference(options: Options) {
 				const isCauseError = cause instanceof Error;
 				fail(isCauseError ? cause.message : String(cause));
 			}
-		}
+		};
 		void start();
 		return () => {
 			disposed = true;
@@ -338,4 +338,4 @@ export function useInference(options: Options) {
 		actualCapture,
 		cadence,
 	};
-}
+};

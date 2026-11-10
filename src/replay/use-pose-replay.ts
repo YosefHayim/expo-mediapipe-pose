@@ -7,10 +7,10 @@ import {
 } from "./logic";
 import type { PoseRecording } from "./recording";
 
-export function usePoseReplay(
+export const usePoseReplay = (
 	recording: PoseRecording,
 	callbacks: PoseReplayCallbacks,
-) {
+) => {
 	const latestCallbacks = React.useRef(callbacks);
 	const controller = React.useRef<PoseReplay | null>(null);
 	const [state, setState] = React.useState<PoseReplayState>({
@@ -47,7 +47,7 @@ export function usePoseReplay(
 		};
 	}, [recording]);
 	const controls = React.useMemo(() => {
-		const current = () => {
+		const readMountedController = () => {
 			const mountedController = controller.current;
 			const isControllerMissing = mountedController == null;
 			if (isControllerMissing)
@@ -56,12 +56,12 @@ export function usePoseReplay(
 			return mountedController;
 		};
 		return {
-			play: () => current().play(),
-			pause: () => current().pause(),
-			seek: (timeMs: number) => current().seek(timeMs),
-			reset: () => current().reset(),
-			setSpeed: (speed: number) => current().setSpeed(speed),
+			play: () => readMountedController().play(),
+			pause: () => readMountedController().pause(),
+			seek: (timeMs: number) => readMountedController().seek(timeMs),
+			reset: () => readMountedController().reset(),
+			setSpeed: (speed: number) => readMountedController().setSpeed(speed),
 		};
 	}, []);
 	return { ...state, ...controls };
-}
+};

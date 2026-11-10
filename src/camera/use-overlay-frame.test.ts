@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, test, vi } from "vitest";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 import { usePoseOverlayFrame } from "./use-overlay-frame";
 
 interface OverlayHarnessProps {
@@ -43,7 +43,7 @@ describe("usePoseOverlayFrame", () => {
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
 		let overlay: ReturnType<typeof usePoseOverlayFrame> | undefined;
-		const currentOverlay = () => {
+		const readCurrentOverlay = () => {
 			assert.ok(overlay);
 			return overlay;
 		};
@@ -66,7 +66,7 @@ describe("usePoseOverlayFrame", () => {
 					}),
 				),
 			);
-			await act(() => currentOverlay().update(poseFrame()));
+			await act(() => readCurrentOverlay().update(createPoseFrame()));
 			await tick(200);
 
 			await act(() =>
@@ -78,13 +78,13 @@ describe("usePoseOverlayFrame", () => {
 				),
 			);
 			await tick(400);
-			assert.ok(currentOverlay().frame);
+			assert.ok(readCurrentOverlay().frame);
 			await tick(1399);
-			assert.ok(currentOverlay().frame);
+			assert.ok(readCurrentOverlay().frame);
 			await tick(1);
-			assert.equal(currentOverlay().frame, null);
+			assert.equal(readCurrentOverlay().frame, null);
 
-			await act(() => currentOverlay().update(poseFrame()));
+			await act(() => readCurrentOverlay().update(createPoseFrame()));
 			await tick(600);
 			await act(() =>
 				root.render(
@@ -94,18 +94,18 @@ describe("usePoseOverlayFrame", () => {
 					}),
 				),
 			);
-			assert.equal(currentOverlay().frame, null);
+			assert.equal(readCurrentOverlay().frame, null);
 
-			await act(() => currentOverlay().update(poseFrame()));
+			await act(() => readCurrentOverlay().update(createPoseFrame()));
 			await tick(300);
-			await act(() => currentOverlay().update(poseFrame()));
+			await act(() => readCurrentOverlay().update(createPoseFrame()));
 			await tick(300);
-			assert.ok(currentOverlay().frame);
+			assert.ok(readCurrentOverlay().frame);
 
-			await act(() => currentOverlay().clear());
-			assert.equal(currentOverlay().frame, null);
+			await act(() => readCurrentOverlay().clear());
+			assert.equal(readCurrentOverlay().frame, null);
 			await tick(1000);
-			assert.equal(currentOverlay().frame, null);
+			assert.equal(readCurrentOverlay().frame, null);
 		} finally {
 			await act(() => root.unmount());
 			vi.useRealTimers();

@@ -11,11 +11,11 @@ import {
 	resolvePoseImageOptions,
 	selectPose,
 } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
-function multiplePoses(): PoseFrame {
-	const first = poseFrame();
-	const second = poseFrame();
+const createMultiplePoseFrame = (): PoseFrame => {
+	const first = createPoseFrame();
+	const second = createPoseFrame();
 	const secondNose = second.landmarks[0];
 	assert.ok(secondNose);
 	secondNose.x = 0.25;
@@ -28,7 +28,7 @@ function multiplePoses(): PoseFrame {
 			{ landmarks: second.landmarks, worldLandmarks: second.worldLandmarks },
 		],
 	};
-}
+};
 
 describe("MaxPoses", () => {
 	test("pose-count contracts enforce bounded requests and results", () => {
@@ -36,7 +36,7 @@ describe("MaxPoses", () => {
 		for (const value of [0, 7, 1.5, NaN])
 			assert.throws(() => MaxPoses.parse(value));
 
-		const frame = multiplePoses();
+		const frame = createMultiplePoseFrame();
 		assert.equal(PoseFrame.parse(frame).poses?.length, 2);
 		assert.throws(() =>
 			PoseFrame.parse({
@@ -57,7 +57,7 @@ describe("MaxPoses", () => {
 
 describe("selectPose", () => {
 	test("selection preserves raw results and makes missing poses explicitly empty", () => {
-		const frame = multiplePoses();
+		const frame = createMultiplePoseFrame();
 
 		const second = selectPose(frame, 1);
 		assert.equal(second.landmarks[0]?.x, 0.25);
@@ -74,7 +74,7 @@ describe("selectPose", () => {
 		assert.deepEqual(absent.landmarks, []);
 		assert.deepEqual(absent.worldLandmarks, []);
 
-		const legacy = poseFrame();
+		const legacy = createPoseFrame();
 		assert.equal(selectPose(legacy, 0), legacy);
 		assert.deepEqual(selectPose(legacy, 1).landmarks, []);
 		for (const index of [-1, 6, 0.5, NaN])
@@ -82,7 +82,7 @@ describe("selectPose", () => {
 	});
 
 	test("rules, tracking and overlays evaluate the explicit pose selection", () => {
-		const frame = multiplePoses();
+		const frame = createMultiplePoseFrame();
 		const options = {
 			landmarks: ["nose"] as const,
 			evaluate: (pose: { nose: { x: number } }) => pose.nose.x < 0.4,
@@ -115,7 +115,7 @@ describe("createPoseReplay", () => {
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
 		const recorder = createPoseRecorder();
 		recorder.start();
-		recorder.append(multiplePoses(), 0);
+		recorder.append(createMultiplePoseFrame(), 0);
 		const recording = recorder.stop();
 		assert.equal(recording.frames[0]?.frame.poses?.length, 2);
 

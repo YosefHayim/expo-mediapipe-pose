@@ -2,7 +2,7 @@ import { LANDMARK_NAMES } from "expo-mediapipe-pose/core";
 import { useEffect, useState } from "react";
 import type { Rule } from "@/config";
 import { Color } from "./color";
-import { humanize } from "./humanize";
+import { createReadableLabel } from "./humanize";
 import { Range } from "./range";
 import { Select } from "./select";
 
@@ -32,7 +32,7 @@ export const RuleEditor = ({
 		setThresholdError("");
 	}, [rule.enterThreshold, rule.exitThreshold]);
 	const update = (patch: Partial<Rule>) => onChange({ ...rule, ...patch });
-	const threshold = (
+	const updateThreshold = (
 		key: "enterThreshold" | "exitThreshold",
 		value: string,
 	) => {
@@ -105,7 +105,7 @@ export const RuleEditor = ({
 			{(["start", "vertex", "end"] as const).map((key) => (
 				<Select
 					key={key}
-					label={humanize(key)}
+					label={createReadableLabel(key)}
 					value={rule[key]}
 					onChange={(name) => update({ [key]: name })}
 				>
@@ -132,14 +132,14 @@ export const RuleEditor = ({
 			<div className="two-fields">
 				{(["enterThreshold", "exitThreshold"] as const).map((key) => (
 					<label className="field" key={key}>
-						{humanize(key)}
+						{createReadableLabel(key)}
 						<input
 							type="number"
 							step="any"
 							min={-10000}
 							max={10000}
 							value={draft[key]}
-							onChange={(e) => threshold(key, e.target.value)}
+							onChange={(e) => updateThreshold(key, e.target.value)}
 						/>
 					</label>
 				))}

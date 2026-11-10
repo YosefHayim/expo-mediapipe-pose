@@ -7,7 +7,7 @@ import {
 	resolvePoseImageOptions,
 	validateLocalFileLocation,
 } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
 describe("validateLocalFileLocation", () => {
 	test("photo analysis validates local inputs", () => {
@@ -61,7 +61,7 @@ describe("resolvePoseImageOptions", () => {
 
 describe("PoseDetection", () => {
 	test("media detections support geometry and skeletons without camera metadata", () => {
-		const { landmarks, worldLandmarks, additionalData } = poseFrame();
+		const { landmarks, worldLandmarks, additionalData } = createPoseFrame();
 		const detection = PoseDetection.parse({
 			additionalData,
 			landmarks,

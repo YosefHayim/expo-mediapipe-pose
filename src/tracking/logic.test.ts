@@ -1,11 +1,11 @@
 import { strict as assert } from "node:assert";
 import { describe, test } from "vitest";
 import { inspectPoseTracking } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
 describe("inspectPoseTracking", () => {
 	test("distinguishes no pose, absent joints, uncertain joints and complete tracking", () => {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 		const options = { landmarks: ["leftWrist", "rightWrist"] as const };
 
 		assert.equal(inspectPoseTracking(frame, options).status, "found");
@@ -40,7 +40,7 @@ describe("inspectPoseTracking", () => {
 	});
 
 	test("reports confident out-of-frame joints without modifying their coordinates", () => {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 		frame.landmarks[15] = { x: -0.1, y: 0.5, z: 0, visibility: 0.9 };
 
 		assert.deepEqual(

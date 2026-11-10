@@ -24,16 +24,16 @@ interface NativeVideoAnalysis {
 	readPoseVideoFrame(id: string, timestampMs: number): Promise<unknown>;
 	closePoseVideo(id: string): Promise<void>;
 }
-function createAbortError() {
+const createAbortError = () => {
 	const error = new Error("Video analysis was cancelled");
 	error.name = "AbortError";
 	return error;
-}
-function throwIfAborted(signal: AbortSignal | undefined) {
+};
+const throwIfAborted = (signal: AbortSignal | undefined) => {
 	const isSignalAborted = signal?.aborted === true;
 	if (isSignalAborted) throw createAbortError();
-}
-function throwVideoFailures(failures: unknown[]) {
+};
+const throwVideoFailures = (failures: unknown[]) => {
 	const isFailuresEmpty = failures.length === 0;
 	if (isFailuresEmpty) return;
 
@@ -53,8 +53,8 @@ function throwVideoFailures(failures: unknown[]) {
 	if (isPrimaryError) combined.name = primary.name;
 
 	throw combined;
-}
-function videoDetection(frame: unknown): unknown {
+};
+const readVideoDetection = (frame: unknown): unknown => {
 	const isFrameNotObject = typeof frame !== "object" || frame === null;
 	if (isFrameNotObject) return undefined;
 
@@ -62,8 +62,9 @@ function videoDetection(frame: unknown): unknown {
 	if (isFrameWithoutDetection) return undefined;
 
 	return frame.detection;
-}
-export async function* analyzePoseVideo(
+};
+// An arrow cannot be a generator, so this stays a const function expression.
+export const analyzePoseVideo = async function* (
 	location: string,
 	options: PoseVideoOptions = {},
 ): AsyncGenerator<PoseVideoFrame, void, void> {
@@ -84,10 +85,10 @@ export async function* analyzePoseVideo(
 		return closing;
 	};
 	// A consumer may pause indefinitely at yield; cancellation must still release native resources.
-	const onAbort = () => {
+	const closeOnAbort = () => {
 		void close().catch(() => {});
 	};
-	signal?.addEventListener("abort", onAbort, { once: true });
+	signal?.addEventListener("abort", closeOnAbort, { once: true });
 	const failures: unknown[] = [];
 	let undelivered: unknown;
 	try {
@@ -98,7 +99,7 @@ export async function* analyzePoseVideo(
 			throwIfAborted(signal);
 			const timestampMs = plan.timestampAt(index);
 			const rawFrame = await native.readPoseVideoFrame(session.id, timestampMs);
-			undelivered = videoDetection(rawFrame);
+			undelivered = readVideoDetection(rawFrame);
 			const frame = PoseVideoFrame.parse(rawFrame);
 			throwIfAborted(signal);
 
@@ -121,7 +122,7 @@ export async function* analyzePoseVideo(
 		const isSignalAborted = signal?.aborted === true;
 		failures.push(isSignalAborted ? createAbortError() : error);
 	} finally {
-		signal?.removeEventListener("abort", onAbort);
+		signal?.removeEventListener("abort", closeOnAbort);
 		try {
 			await discardResultSegmentation(undelivered);
 		} catch (error) {
@@ -134,4 +135,4 @@ export async function* analyzePoseVideo(
 		}
 		throwVideoFailures(failures);
 	}
-}
+};

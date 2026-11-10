@@ -7,22 +7,22 @@ import {
 	releasePoseSegmentation,
 } from "expo-mediapipe-pose";
 
-function verify(condition: boolean, message: string): asserts condition {
+const verify = (condition: boolean, message: string): asserts condition => {
 	const isCheckFailed = !condition;
 	if (isCheckFailed) throw new Error(message);
-}
-function available(detection: PoseDetection) {
+};
+const readAvailableSegmentation = (detection: PoseDetection) => {
 	const segmentation = detection.segmentation;
 	verify(
 		segmentation?.status === "available",
 		"Segmentation must return a mask lease",
 	);
 	return segmentation;
-}
-function inspectMask(
+};
+const inspectMask = (
 	segmentation: Extract<PoseSegmentation, { status: "available" }>,
 	name: string,
-) {
+) => {
 	const mask = segmentation.masks[0];
 	verify(mask !== undefined, "First mask must exist");
 	verify(
@@ -47,8 +47,8 @@ function inspectMask(
 
 	source.copy(artifact);
 	return source;
-}
-function maskFiles() {
+};
+const maskFiles = () => {
 	const folders = Paths.cache
 		.list()
 		.filter(
@@ -60,19 +60,28 @@ function maskFiles() {
 		const isFolderInstanceDirectory = folder instanceof Directory;
 		return isFolderInstanceDirectory ? folder.list() : [];
 	}).length;
+};
+export interface RunSegmentationChecksDetails {
+	photo: string;
+	rotated: string;
+	empty: string;
+	multiple: string;
+	video: string;
+	cases: string[];
 }
-export async function runSegmentationChecks(
-	photo: string,
-	rotated: string,
-	empty: string,
-	multiple: string,
-	video: string,
-	cases: string[],
-) {
+
+export const runSegmentationChecks = async ({
+	photo,
+	rotated,
+	empty,
+	multiple,
+	video,
+	cases,
+}: RunSegmentationChecksDetails) => {
 	const leases = new Set<string>();
 	const failures: unknown[] = [];
-	const tracked = (detection: PoseDetection) => {
-		const segmentation = available(detection);
+	const trackSegmentation = (detection: PoseDetection) => {
+		const segmentation = readAvailableSegmentation(detection);
 		leases.add(segmentation.leaseId);
 		return segmentation;
 	};
@@ -106,11 +115,11 @@ export async function runSegmentationChecks(
 			"First enabled no-pose request must clear previous-process files",
 		);
 		cases.push("previous-process mask cleanup after an empty detection");
-		const first = tracked(
+		const first = trackSegmentation(
 			await analyzePoseImage(photo, { segmentationEnabled: true }),
 		);
 		const firstFile = inspectMask(first, "mask-upright.png");
-		const second = tracked(
+		const second = trackSegmentation(
 			await analyzePoseImage(rotated, { segmentationEnabled: true }),
 		);
 		const secondFile = inspectMask(second, "mask-rotated.png");
@@ -138,7 +147,7 @@ export async function runSegmentationChecks(
 			"Release is idempotent and only deletes its own lease",
 		);
 		cases.push("mask backpressure and explicit isolated cleanup");
-		const people = tracked(
+		const people = trackSegmentation(
 			await analyzePoseImage(multiple, {
 				maxPoses: 2,
 				segmentationEnabled: true,
@@ -157,7 +166,7 @@ export async function runSegmentationChecks(
 		for await (const sample of analyzePoseVideo(video, {
 			segmentationEnabled: true,
 		})) {
-			const masks = tracked(sample.detection);
+			const masks = trackSegmentation(sample.detection);
 			await releasePoseSegmentation(masks.leaseId);
 			break;
 		}
@@ -181,4 +190,4 @@ export async function runSegmentationChecks(
 	const hasMultipleFailures = failures.length > 1;
 	if (hasMultipleFailures)
 		throw new AggregateError(failures, "Mask fixture and cleanup failures");
-}
+};

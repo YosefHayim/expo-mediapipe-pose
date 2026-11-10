@@ -1,16 +1,23 @@
 import { File, Paths } from "expo-file-system";
 import { analyzePoseVideo, type PoseDetection } from "expo-mediapipe-pose";
 
-function verify(condition: boolean, message: string): asserts condition {
+const verify = (condition: boolean, message: string): asserts condition => {
 	const isCheckFailed = !condition;
 	if (isCheckFailed) throw new Error(message);
+};
+export interface RunVideoChecksDetails {
+	video: string;
+	rotated: string;
+	reference: PoseDetection;
+	cases: string[];
 }
-export async function runVideoChecks(
-	video: string,
-	rotated: string,
-	reference: PoseDetection,
-	cases: string[],
-) {
+
+export const runVideoChecks = async ({
+	video,
+	rotated,
+	reference,
+	cases,
+}: RunVideoChecksDetails) => {
 	for (const [label, location] of [
 		["upright", video],
 		["rotated", rotated],
@@ -145,4 +152,4 @@ export async function runVideoChecks(
 	cases.push(
 		"bounded video decode and resource reuse after break/cancellation",
 	);
-}
+};

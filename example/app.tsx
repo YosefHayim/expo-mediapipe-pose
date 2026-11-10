@@ -22,8 +22,8 @@ import {
 	View,
 } from "react-native";
 import {
+	createJointFeedbackStyles,
 	feedbackLabels,
-	jointFeedbackStyles,
 	trackingLabels,
 } from "@/rules/pose-feedback";
 import { raisedArmRule } from "@/rules/pose-rules";
@@ -32,10 +32,10 @@ import { PhotoPanel } from "./photo-panel";
 import { ReplayPanel } from "./replay-panel";
 import { VideoPanel } from "./video-panel";
 
-const wristFeedback = jointFeedbackStyles("leftWrist");
-const elbowFeedback = jointFeedbackStyles("leftElbow");
+const wristFeedback = createJointFeedbackStyles("leftWrist");
+const elbowFeedback = createJointFeedbackStyles("leftElbow");
 
-export default function App() {
+const App = () => {
 	const [permission, requestPermission] = useCameraPermissions();
 	const [cameraSelection, setCameraSelection] =
 		React.useState<CameraSelection | null>(null);
@@ -235,13 +235,13 @@ export default function App() {
 		tracking.reset();
 		setCameraKey((previous) => previous + 1);
 	};
-	const handleFailure = (error: InferenceError) => {
+	const resetAfterFailure = (error: InferenceError) => {
 		setMetrics(null);
 		feedback.reset();
 		tracking.reset();
 		setFailure(error);
 	};
-	const handleConfiguration = () => {
+	const resetAfterConfiguration = () => {
 		setMetrics(null);
 		feedback.reset();
 		tracking.reset();
@@ -282,8 +282,8 @@ export default function App() {
 					callbackFps={5}
 					onPerformanceMetrics={setMetrics}
 					onLandmark={handleLandmark}
-					onCameraConfigured={handleConfiguration}
-					onInferenceError={handleFailure}
+					onCameraConfigured={resetAfterConfiguration}
+					onInferenceError={resetAfterFailure}
 					skeleton={feedbackSkeleton}
 				/>
 			)}
@@ -331,7 +331,9 @@ export default function App() {
 			</View>
 		</View>
 	);
-}
+};
+
+export default App;
 
 const styles = StyleSheet.create({
 	screen: {

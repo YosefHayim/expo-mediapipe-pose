@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { defaultRule, defaults, parseConfig } from "./config";
+import { createDefaultSettings, defaultRule, parseConfig } from "./config";
 
 describe("parseConfig", () => {
 	test("keeps defaults and rejects unsupported or executable content", () => {
-		const config = defaults();
+		const config = createDefaultSettings();
 
 		expect(parseConfig(JSON.stringify(config))).toStrictEqual(config);
 		expect(config.detection.minTrackingConfidence).toBe(0.35);

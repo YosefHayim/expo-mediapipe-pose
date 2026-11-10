@@ -9,13 +9,13 @@ import {
 	type PoseReplay,
 	type PoseRuleState,
 } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
-function recording() {
+const createRecording = () => {
 	const recorder = createPoseRecorder();
 	recorder.start();
 	for (const [index, timestamp] of [0, 100, 250].entries()) {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 		recorder.append(
 			{
 				...frame,
@@ -25,7 +25,7 @@ function recording() {
 		);
 	}
 	return recorder.stop();
-}
+};
 
 describe("createPoseReplay", () => {
 	test("replay schedules recorded frames, pauses, changes speed, seeks and disposes", () => {
@@ -38,7 +38,7 @@ describe("createPoseReplay", () => {
 		};
 		const frames: number[] = [];
 		let resets = 0;
-		const replay = createPoseReplay(recording(), {
+		const replay = createPoseReplay(createRecording(), {
 			onFrame: (_frame, timestamp) => frames.push(timestamp),
 			onReset: () => resets++,
 		});
@@ -89,7 +89,7 @@ describe("createPoseReplay", () => {
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		let replay: PoseReplay;
 		const originalX: number[] = [];
-		replay = createPoseReplay(recording(), {
+		replay = createPoseReplay(createRecording(), {
 			onFrame: (frame) => {
 				const nose = frame.landmarks[0];
 				assert.ok(nose);
@@ -122,7 +122,7 @@ describe("createPoseReplay", () => {
 		vi.spyOn(performance, "now").mockImplementation(() => 0);
 		const failure = new Error("consumer callback failed");
 
-		const replay = createPoseReplay(recording(), {
+		const replay = createPoseReplay(createRecording(), {
 			onFrame: () => {
 				throw failure;
 			},
@@ -132,7 +132,7 @@ describe("createPoseReplay", () => {
 		assert.equal(replay.state.status, "paused");
 		replay.dispose();
 
-		const resetFailure = createPoseReplay(recording(), {
+		const resetFailure = createPoseReplay(createRecording(), {
 			onFrame: () => {},
 			onReset: () => {
 				throw failure;
@@ -143,7 +143,7 @@ describe("createPoseReplay", () => {
 		assert.equal(resetFailure.state.status, "paused");
 		resetFailure.dispose();
 
-		const stateFailure = createPoseReplay(recording(), {
+		const stateFailure = createPoseReplay(createRecording(), {
 			onFrame: () => {},
 			onStateChange: () => {
 				throw failure;
@@ -159,7 +159,7 @@ describe("createPoseReplay", () => {
 		vi.spyOn(performance, "now").mockImplementation(() => 0);
 		let replay: PoseReplay;
 		let delivered = 0;
-		replay = createPoseReplay(recording(), {
+		replay = createPoseReplay(createRecording(), {
 			onFrame: () => delivered++,
 			onStateChange: () => {
 				replay.pause();
@@ -181,7 +181,7 @@ describe("advancePoseRule", () => {
 		let now = 0;
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		let state: PoseRuleState = initialPoseRuleState();
-		const replay = createPoseReplay(recording(), {
+		const replay = createPoseReplay(createRecording(), {
 			onFrame: (frame, timestamp) => {
 				state = advancePoseRule(
 					state,

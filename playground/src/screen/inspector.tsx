@@ -1,4 +1,4 @@
-import { configurationLink, defaults } from "@/config";
+import { createConfigurationLink, createDefaultSettings } from "@/config";
 import { Controls } from "@/controls/controls";
 import { download } from "@/recording";
 import type { PlaygroundScreen } from "./use-playground";
@@ -38,7 +38,7 @@ export const Inspector = ({
 					type="button"
 					className="text-button"
 					onClick={() => {
-						setConfig(defaults());
+						setConfig(createDefaultSettings());
 						setModel(null);
 						setModelName("");
 						setMessage("Restored documented library defaults.");
@@ -88,7 +88,7 @@ export const Inspector = ({
 					type="button"
 					onClick={() =>
 						void copy(
-							configurationLink(config),
+							createConfigurationLink(config),
 							"Configuration link copied. Media and model files are not included.",
 						)
 					}

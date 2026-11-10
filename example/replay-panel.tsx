@@ -10,7 +10,7 @@ import * as React from "react";
 import { Button, Text, View } from "react-native";
 import { raisedArmRule } from "@/rules/pose-rules";
 
-export function ReplayPanel({
+export const ReplayPanel = ({
 	recording,
 	notice,
 	onClose,
@@ -18,7 +18,7 @@ export function ReplayPanel({
 	recording: PoseRecording;
 	notice: string | null;
 	onClose: () => void;
-}) {
+}) => {
 	const [frame, setFrame] = React.useState<PoseFrame | null>(null);
 	const [size, setSize] = React.useState({ width: 0, height: 0 });
 	const rule = usePoseRule(raisedArmRule);
@@ -81,4 +81,4 @@ export function ReplayPanel({
 			<Button title="Return to camera" onPress={onClose} />
 		</View>
 	);
-}
+};

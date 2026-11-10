@@ -14,10 +14,10 @@ import {
 import type { Rule } from "./config";
 import type { BrowserFrame } from "./types";
 
-export function measureRule(
+export const measureRule = (
 	frame: BrowserFrame,
 	rule: Rule,
-): { value: number | null; unit: string } {
+): { value: number | null; unit: string } => {
 	const options = { minVisibility: rule.minVisibility };
 
 	const isRuleKindHeight = rule.kind === "height";
@@ -60,14 +60,22 @@ export function measureRule(
 		return { value: null, unit: "unavailable" };
 
 	return { value: jointMeasurement.value, unit: jointMeasurement.unit };
+};
+export interface UpdateRulesDetails {
+	frame: BrowserFrame;
+	poseIndex: number;
+	rules: readonly Rule[];
+	previous: readonly PoseRuleState[];
+	now: number;
 }
-export function updateRules(
-	frame: BrowserFrame,
-	poseIndex: number,
-	rules: readonly Rule[],
-	previous: readonly PoseRuleState[],
-	now: number,
-) {
+
+export const updateRules = ({
+	frame,
+	poseIndex,
+	rules,
+	previous,
+	now,
+}: UpdateRulesDetails) => {
 	const selected = selectPose(frame, poseIndex);
 	return rules.map((rule, index) => {
 		const state = previous[index] ?? initialPoseRuleState();
@@ -87,4 +95,4 @@ export function updateRules(
 
 		return advancePoseRule(state, outcome, now, rule.holdMs);
 	});
-}
+};

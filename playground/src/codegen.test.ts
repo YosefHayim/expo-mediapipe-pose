@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { generateCode } from "./codegen";
-import { defaultRule, preset } from "./config";
+import { defaultRule, readPresetSettings } from "./config";
 
 const compileTimeoutMilliseconds = 120000;
 
@@ -13,7 +13,7 @@ describe("generateCode", () => {
 		() => {
 			const directory = mkdtempSync(join(process.cwd(), ".generated-code-"));
 			try {
-				const config = preset("arms");
+				const config = readPresetSettings("arms");
 				const configured = {
 					...config,
 					detection: {
@@ -67,7 +67,7 @@ describe("generateCode", () => {
 	);
 
 	test("custom full models and segmentation styles are reflected in exported code", () => {
-		const config = preset("mask");
+		const config = readPresetSettings("mask");
 
 		const code = generateCode(config, "camera", true);
 

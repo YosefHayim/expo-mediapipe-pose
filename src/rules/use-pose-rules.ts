@@ -17,7 +17,7 @@ interface RuleRuntime {
 	lastFrame: number;
 	timer: ReturnType<typeof setTimeout> | undefined;
 }
-const ruleIdentity = (options: PoseRuleOptions) =>
+const readRuleIdentity = (options: PoseRuleOptions) =>
 	JSON.stringify({
 		landmarks: options.landmarks,
 		minVisibility: options.minVisibility,
@@ -41,7 +41,7 @@ export const usePoseRules = <const Selection extends RuleSelections>(
 		() =>
 			Object.entries<PoseRuleOptions>(rules).map(([id, options]) => {
 				validatePoseRuleOptions(options);
-				return { id, identity: ruleIdentity(options) };
+				return { id, identity: readRuleIdentity(options) };
 			}),
 		[rules],
 	);

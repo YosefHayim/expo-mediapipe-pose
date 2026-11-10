@@ -39,11 +39,11 @@ export const CameraCapabilities = z.union([
 ]);
 export type CameraCapabilities = z.infer<typeof CameraCapabilities>;
 
-export function findCameraCapability(
+export const findCameraCapability = (
 	capabilities: CameraCapabilities,
 	facing: CameraFacing,
 	lens: CameraLens = "auto",
-): CameraCapability | undefined {
+): CameraCapability | undefined => {
 	const isCapabilitiesUnavailable = capabilities.status !== "available";
 	if (isCapabilitiesUnavailable) return undefined;
 
@@ -52,4 +52,4 @@ export function findCameraCapability(
 	return capabilities.cameras.find(
 		(camera) => camera.facing === facing && camera.lens === effectiveLens,
 	);
-}
+};
