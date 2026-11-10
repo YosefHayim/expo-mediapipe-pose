@@ -167,7 +167,7 @@ export const useInference = (hookSettings: UseInferenceSettings) => {
 						type: "frame",
 						image: bitmap,
 						timestamp: lastTimestamp,
-						video: moving,
+						video: isMoving,
 						generation: 1,
 					},
 					[bitmap],
