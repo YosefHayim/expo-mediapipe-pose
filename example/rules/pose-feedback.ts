@@ -5,7 +5,7 @@ import type {
 	SkeletonFeedback,
 } from "expo-mediapipe-pose";
 
-export const feedbackColors: Record<PoseRuleStatus, string> = {
+const feedbackColors: Record<PoseRuleStatus, string> = {
 	pass: "#22c55e",
 	fail: "#ef4444",
 	unknown: "#94a3b8",
