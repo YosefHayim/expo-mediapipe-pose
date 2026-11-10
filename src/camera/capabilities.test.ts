@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "vitest";
 import { CameraCapabilities, findCameraCapability } from "../core";
 
-const decode = (value: unknown) => CameraCapabilities.parse(value);
+const decode = (candidate: unknown) => CameraCapabilities.parse(candidate);
 
 describe("findCameraCapability", () => {
 	test("discovery retains format relationships and only resolves selectable lenses", () => {
@@ -58,17 +58,20 @@ describe("CameraCapabilities", () => {
 			zoomRange: null,
 			modes: [{ previewFps: 30, resolution: null }],
 		};
-		const data = {
+		const details = {
 			status: "available",
 			platform: "android",
 			cameras: [camera],
 		};
 
 		assert.equal(
-			findCameraCapability(decode(data), "front")?.modes[0].resolution,
+			findCameraCapability(decode(details), "front")?.modes[0].resolution,
 			null,
 		);
-		assert.equal(findCameraCapability(decode(data), "front")?.zoomRange, null);
+		assert.equal(
+			findCameraCapability(decode(details), "front")?.zoomRange,
+			null,
+		);
 		for (const invalidCamera of [
 			{ ...camera, zoomRange: { min: 4, max: 2 } },
 			{ ...camera, modes: [] },
@@ -78,6 +81,6 @@ describe("CameraCapabilities", () => {
 				modes: [{ previewFps: 30, resolution: { width: 0, height: 720 } }],
 			},
 		])
-			assert.throws(() => decode({ ...data, cameras: [invalidCamera] }));
+			assert.throws(() => decode({ ...details, cameras: [invalidCamera] }));
 	});
 });

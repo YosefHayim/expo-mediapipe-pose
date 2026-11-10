@@ -12,16 +12,14 @@ interface RulesHarnessProps {
 	onResult: (ruleSet: ReturnType<typeof usePoseRules>) => void;
 }
 
-const RulesHarness = ({ rules, onResult }: RulesHarnessProps) => {
+const RulesHarness = ({ rules, onResult: onReport }: RulesHarnessProps) => {
 	const ruleSet = usePoseRules(rules);
-	onResult(ruleSet);
+	onReport(ruleSet);
 	assert.deepEqual(
 		Object.keys(ruleSet.statuses).sort(),
 		Object.keys(rules).sort(),
 	);
-	assert.ok(
-		Object.values(ruleSet.statuses).every((status) => status !== undefined),
-	);
+	assert.ok(Object.values(ruleSet.statuses).every((status) => status != null));
 	return null;
 };
 
@@ -51,10 +49,10 @@ describe("usePoseRules", () => {
 		let now = 1000;
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
-		let result: ReturnType<typeof usePoseRules> | undefined;
+		let report: ReturnType<typeof usePoseRules> | null = null;
 		const readCurrentRules = () => {
-			assert.ok(result);
-			return result;
+			assert.ok(report);
+			return report;
 		};
 		const transitions: string[] = [];
 		const updatedTransitions: string[] = [];
@@ -71,13 +69,13 @@ describe("usePoseRules", () => {
 			staleAfterMs: 1000,
 			onChange: (status) => transitions.push(`elbow:${status}`),
 		};
-		const captureResult = (captured: ReturnType<typeof usePoseRules>) => {
-			result = captured;
+		const captureReport = (captured: ReturnType<typeof usePoseRules>) => {
+			report = captured;
 		};
 		const mountRules = async (rules: Record<string, PoseRuleOptions>) => {
 			await act(() =>
 				root.render(
-					createElement(RulesHarness, { onResult: captureResult, rules }),
+					createElement(RulesHarness, { onResult: captureReport, rules }),
 				),
 			);
 		};
@@ -148,7 +146,9 @@ describe("usePoseRules", () => {
 			await advanceTime(500);
 			assert.equal(readCurrentRules().statuses.wrist, "unknown");
 			assert.equal(
-				transitions.filter((value) => value === "elbow:unknown").length,
+				transitions.filter(
+					(transitionName) => transitionName === "elbow:unknown",
+				).length,
 				0,
 			);
 			let measuredAngle = 80;

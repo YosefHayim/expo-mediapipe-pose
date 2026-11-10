@@ -18,11 +18,11 @@ type InspectorProps = Pick<
 
 export const Inspector = ({
 	choosePreset,
-	config,
+	config: settings,
 	copy,
 	loadFile,
 	modelName,
-	setConfig,
+	setConfig: setSettings,
 	setMessage,
 	setModel,
 	setModelName,
@@ -38,7 +38,7 @@ export const Inspector = ({
 					type="button"
 					className="text-button"
 					onClick={() => {
-						setConfig(createDefaultSettings());
+						setSettings(createDefaultSettings());
 						setModel(null);
 						setModelName("");
 						setMessage("Restored documented library defaults.");
@@ -79,8 +79,8 @@ export const Inspector = ({
 				</p>
 			)}
 			<Controls
-				config={config}
-				setConfig={setConfig}
+				config={settings}
+				setConfig={setSettings}
 				onModel={(file) => void loadFile(file, "model")}
 			/>
 			<div className="config-actions">
@@ -88,7 +88,7 @@ export const Inspector = ({
 					type="button"
 					onClick={() =>
 						void copy(
-							createConfigurationLink(config),
+							createConfigurationLink(settings),
 							"Configuration link copied. Media and model files are not included.",
 						)
 					}
@@ -98,7 +98,7 @@ export const Inspector = ({
 				<button
 					type="button"
 					onClick={() =>
-						download("pose-config.json", JSON.stringify(config, null, 2))
+						download("pose-config.json", JSON.stringify(settings, null, 2))
 					}
 				>
 					Export JSON
@@ -108,8 +108,8 @@ export const Inspector = ({
 					<input
 						type="file"
 						accept=".json,application/json"
-						onChange={(e) => {
-							const file = e.target.files?.[0];
+						onChange={(event) => {
+							const file = event.target.files?.[0];
 							if (file) void loadFile(file, "config");
 						}}
 					/>

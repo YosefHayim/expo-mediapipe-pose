@@ -1,5 +1,5 @@
 import type { Landmark, PoseLandmarks } from "expo-mediapipe-pose/core";
-import type { Config } from "./config";
+import type { Settings } from "./config";
 
 export interface BrowserFrame {
 	landmarks: Landmark[];
@@ -17,7 +17,7 @@ export type WorkerRequest =
 	| {
 			type: "init";
 			base: string;
-			detection: Config["detection"];
+			detection: Settings["detection"];
 			model: ArrayBuffer | null;
 			generation: number;
 	  }
@@ -29,7 +29,7 @@ export type WorkerRequest =
 			generation: number;
 	  }
 	| { type: "close" };
-export type WorkerResponse =
+export type WorkerReply =
 	| { type: "ready"; generation: number }
 	| {
 			type: "result";
@@ -38,4 +38,4 @@ export type WorkerResponse =
 			generation: number;
 	  }
 	| { type: "error"; message: string; generation: number };
-export type SourceMode = "sample" | "camera" | "photo" | "video" | "replay";
+export type MediaMode = "sample" | "camera" | "photo" | "video" | "replay";

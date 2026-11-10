@@ -1,7 +1,7 @@
 interface ToggleProps {
 	label: string;
 	value: boolean;
-	onChange: (value: boolean) => void;
+	onChange: (isOn: boolean) => void;
 }
 
 export const Toggle = ({ label, value, onChange }: ToggleProps) => {
@@ -10,7 +10,7 @@ export const Toggle = ({ label, value, onChange }: ToggleProps) => {
 			<input
 				type="checkbox"
 				checked={value}
-				onChange={(e) => onChange(e.target.checked)}
+				onChange={(event) => onChange(event.target.checked)}
 			/>
 			{label}
 		</label>

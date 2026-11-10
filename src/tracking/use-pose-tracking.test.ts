@@ -42,18 +42,18 @@ describe("usePoseTracking", () => {
 		let now = 1000;
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
-		let tracking: ReturnType<typeof usePoseTracking> | undefined;
+		let tracking: ReturnType<typeof usePoseTracking> | null = null;
 		const readCurrentTracking = () => {
 			assert.ok(tracking);
 			return tracking;
 		};
 		const transitions: PoseTrackingStatus[] = [];
 		const latestTransitions: PoseTrackingStatus[] = [];
-		const options: PoseTrackingOptions = {
+		const settings: PoseTrackingOptions = {
 			landmarks: ["leftWrist"],
 			holdMs: 100,
 			staleAfterMs: 500,
-			onChange: (state) => transitions.push(state.status),
+			onChange: (snapshot) => transitions.push(snapshot.status),
 		};
 		const captureTracking = (captured: ReturnType<typeof usePoseTracking>) => {
 			tracking = captured;
@@ -80,7 +80,7 @@ describe("usePoseTracking", () => {
 				root.render(
 					createElement(TrackingHarness, {
 						onTracking: captureTracking,
-						...options,
+						...settings,
 					}),
 				),
 			);
@@ -100,8 +100,8 @@ describe("usePoseTracking", () => {
 				root.render(
 					createElement(TrackingHarness, {
 						onTracking: captureTracking,
-						...options,
-						onChange: (state) => latestTransitions.push(state.status),
+						...settings,
+						onChange: (snapshot) => latestTransitions.push(snapshot.status),
 					}),
 				),
 			);
@@ -118,7 +118,7 @@ describe("usePoseTracking", () => {
 				root.render(
 					createElement(TrackingHarness, {
 						onTracking: captureTracking,
-						...options,
+						...settings,
 						isActive: false,
 					}),
 				),
@@ -131,7 +131,7 @@ describe("usePoseTracking", () => {
 				root.render(
 					createElement(TrackingHarness, {
 						onTracking: captureTracking,
-						...options,
+						...settings,
 					}),
 				),
 			);
@@ -145,7 +145,7 @@ describe("usePoseTracking", () => {
 				root.render(
 					createElement(TrackingHarness, {
 						onTracking: captureTracking,
-						...options,
+						...settings,
 						landmarks: ["rightWrist"],
 					}),
 				),
@@ -158,7 +158,7 @@ describe("usePoseTracking", () => {
 				root.render(
 					createElement(TrackingHarness, {
 						onTracking: captureTracking,
-						...options,
+						...settings,
 						minVisibility: 1,
 					}),
 				),
@@ -170,10 +170,10 @@ describe("usePoseTracking", () => {
 				root.render(
 					createElement(TrackingHarness, {
 						onTracking: captureTracking,
-						...options,
+						...settings,
 						holdMs: 0,
-						onChange: (state) => {
-							const isStatusFound = state.status === "found";
+						onChange: (snapshot) => {
+							const isStatusFound = snapshot.status === "found";
 							if (isStatusFound) readCurrentTracking().reset();
 						},
 					}),
@@ -187,7 +187,7 @@ describe("usePoseTracking", () => {
 				root.render(
 					createElement(TrackingHarness, {
 						onTracking: captureTracking,
-						...options,
+						...settings,
 					}),
 				),
 			);

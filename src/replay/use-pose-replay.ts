@@ -13,7 +13,7 @@ export const usePoseReplay = (
 ) => {
 	const latestCallbacks = React.useRef(callbacks);
 	const controller = React.useRef<PoseReplay | null>(null);
-	const [state, setState] = React.useState<PoseReplayState>({
+	const [snapshot, setStatus] = React.useState<PoseReplayState>({
 		status: "paused",
 		positionMs: 0,
 		durationMs: 0,
@@ -28,12 +28,12 @@ export const usePoseReplay = (
 				latestCallbacks.current.onFrame(frame, timestampMs),
 			onReset: () => latestCallbacks.current.onReset?.(),
 			onStateChange: (next) => {
-				setState(next);
+				setStatus(next);
 				latestCallbacks.current.onStateChange?.(next);
 			},
 		});
 		controller.current = replay;
-		setState(replay.state);
+		setStatus(replay.state);
 		try {
 			latestCallbacks.current.onReset?.();
 		} catch (error) {
@@ -63,5 +63,5 @@ export const usePoseReplay = (
 			setSpeed: (speed: number) => readMountedController().setSpeed(speed),
 		};
 	}, []);
-	return { ...state, ...controls };
+	return { ...snapshot, ...controls };
 };

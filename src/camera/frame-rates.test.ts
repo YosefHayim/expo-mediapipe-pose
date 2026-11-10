@@ -13,14 +13,14 @@ describe("validateFrameRates", () => {
 		validateFrameRates({ frameLimit: 60, previewFps: 60, callbackFps: 60 });
 
 		for (const name of ["frameLimit", "previewFps", "callbackFps"]) {
-			for (const value of [0, 61, 1.5, NaN, Infinity]) {
+			for (const frameRate of [0, 61, 1.5, NaN, Infinity]) {
 				assert.throws(
 					() =>
 						validateFrameRates({
 							frameLimit: 30,
 							previewFps: 30,
 							callbackFps: 30,
-							[name]: value,
+							[name]: frameRate,
 						}),
 					RangeError,
 				);

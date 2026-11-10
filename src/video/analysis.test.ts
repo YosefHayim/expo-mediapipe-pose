@@ -8,14 +8,14 @@ describe("createVideoSamplePlan", () => {
 	test("video sampling is bounded, monotonic and excludes the range end", () => {
 		const plan = createVideoSamplePlan(1000, { samplingFps: 30 });
 		const times = Array.from({ length: plan.frameCount }, (_, index) =>
-			plan.timestampAt(index),
+			plan.timestampMsAt(index),
 		);
 		assert.equal(times.length, 30);
 		assert.deepEqual(times.slice(0, 4), [0, 33, 66, 100]);
 		assert.equal(times.at(-1), 966);
 		assert.equal(new Set(times).size, 30);
-		assert.throws(() => plan.timestampAt(-1));
-		assert.throws(() => plan.timestampAt(30));
+		assert.throws(() => plan.timestampMsAt(-1));
+		assert.throws(() => plan.timestampMsAt(30));
 		const ranged = createVideoSamplePlan(5000, {
 			startMs: 200,
 			endMs: 1201,
@@ -23,7 +23,7 @@ describe("createVideoSamplePlan", () => {
 		});
 		assert.deepEqual(
 			Array.from({ length: ranged.frameCount }, (_, i) =>
-				ranged.timestampAt(i),
+				ranged.timestampMsAt(i),
 			),
 			[200, 700, 1200],
 		);
@@ -44,8 +44,8 @@ describe("analyzePoseVideo", () => {
 		const calls: Array<string | number> = [];
 		let failRead = false;
 		let invalidSession = false;
-		let closeFailure: Error | undefined;
-		let releaseRead: (() => void) | undefined;
+		let closeFailure: Error | null = null;
+		let releaseRead: (() => void) | null = null;
 		let blockRead = false;
 		let opened = false;
 		const mockKey = Symbol.for("pose.nativeVideoTest");
@@ -67,8 +67,8 @@ describe("analyzePoseVideo", () => {
 					calls.push(timestampMs);
 
 					if (blockRead)
-						await new Promise<void>((resolve) => {
-							releaseRead = resolve;
+						await new Promise<void>((done) => {
+							releaseRead = done;
 						});
 
 					if (failRead) throw new Error("decode failed");
@@ -92,12 +92,13 @@ describe("analyzePoseVideo", () => {
 			const progress: number[] = [];
 			const stream = analyzePoseVideo("/video.mp4", {
 				samplingFps: 2,
-				onProgress: (value) => progress.push(value.completedFrames),
+				onProgress: (videoProgress) =>
+					progress.push(videoProgress.completedFrames),
 			});
 			assert.deepEqual(calls, []);
 			assert.equal((await stream.next()).value?.timestampMs, 0);
 			assert.deepEqual(calls, ["open", 0]);
-			await new Promise((resolve) => setTimeout(resolve, 5));
+			await new Promise((done) => setTimeout(done, 5));
 			assert.deepEqual(calls, ["open", 0]);
 			assert.equal((await stream.next()).value?.timestampMs, 500);
 			assert.equal((await stream.next()).done, true);
@@ -169,7 +170,7 @@ describe("analyzePoseVideo", () => {
 				assert.equal(error.errors[1], cleanupFailure);
 				return true;
 			});
-			closeFailure = undefined;
+			closeFailure = null;
 
 			const pausedAbort = new AbortController();
 			const paused = analyzePoseVideo("/video.mp4", {
@@ -197,7 +198,7 @@ describe("analyzePoseVideo", () => {
 				signal: inFlightAbort.signal,
 			});
 			const pending = inFlight.next();
-			await new Promise((resolve) => setTimeout(resolve, 5));
+			await new Promise((done) => setTimeout(done, 5));
 			inFlightAbort.abort();
 			assert.ok(releaseRead);
 			releaseRead();

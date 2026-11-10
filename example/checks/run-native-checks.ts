@@ -52,18 +52,18 @@ export const runNativeChecks = async () => {
 		const capabilities = await getCameraCapabilities();
 		cases.push(`camera discovery: ${capabilities.status}`);
 		const photo = await readLocalAssetUri(require("./fixtures/pose.jpg"));
-		const result = await analyzePoseImage(photo);
+		const report = await analyzePoseImage(photo);
 		verify(
-			result.landmarks.length === 33,
+			report.landmarks.length === 33,
 			"Pose image must produce 33 image landmarks",
 		);
 		verify(
-			result.worldLandmarks.length === 33,
+			report.worldLandmarks.length === 33,
 			"Pose image must produce 33 world landmarks",
 		);
-		verify(result.model.delegate === "CPU", "Photo analysis uses CPU");
+		verify(report.model.delegate === "CPU", "Photo analysis uses CPU");
 		verify(
-			!("additionalData" in result),
+			!("additionalData" in report),
 			"Photo results must not invent camera metadata",
 		);
 		cases.push("real pose image and world landmarks");
@@ -90,11 +90,11 @@ export const runNativeChecks = async () => {
 		for (const [index, module] of orientations.entries()) {
 			const oriented = await analyzePoseImage(await readLocalAssetUri(module));
 			verify(
-				oriented.imageSize.width === result.imageSize.width,
+				oriented.imageSize.width === report.imageSize.width,
 				"EXIF upright width must match",
 			);
 			verify(
-				oriented.imageSize.height === result.imageSize.height,
+				oriented.imageSize.height === report.imageSize.height,
 				"EXIF upright height must match",
 			);
 			verify(
@@ -102,8 +102,8 @@ export const runNativeChecks = async () => {
 				"EXIF image must produce a pose",
 			);
 			for (const [jointIndex, landmark] of oriented.landmarks.entries()) {
-				const reference = result.landmarks[jointIndex];
-				verify(reference !== undefined, "Reference landmark must exist");
+				const reference = report.landmarks[jointIndex];
+				verify(reference != null, "Reference landmark must exist");
 				verify(
 					Math.abs(landmark.x - reference.x) < 0.05,
 					"EXIF x must align with upright reference",
@@ -170,7 +170,7 @@ export const runNativeChecks = async () => {
 			rotated: await readLocalAssetUri(
 				require("./fixtures/pose-video-rotated.mp4"),
 			),
-			reference: result,
+			reference: report,
 			cases,
 		});
 		await runMultiplePoseChecks(

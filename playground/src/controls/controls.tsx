@@ -6,7 +6,7 @@ import {
 	POSE_CONNECTIONS,
 } from "expo-mediapipe-pose/core";
 import { useState } from "react";
-import { type Config, defaultRule } from "@/config";
+import { defaultRule, type Settings } from "@/config";
 import { Color } from "./color";
 import { createReadableLabel } from "./humanize";
 import { Range } from "./range";
@@ -15,18 +15,22 @@ import { Select } from "./select";
 import { Toggle } from "./toggle";
 
 interface ControlsProps {
-	config: Config;
-	setConfig: (config: Config) => void;
+	config: Settings;
+	setConfig: (settings: Settings) => void;
 	onModel: (file: File) => void;
 }
 
-export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
+export const Controls = ({
+	config: c,
+	setConfig: setSettings,
+	onModel,
+}: ControlsProps) => {
 	const [joint, setJoint] = useState<LandmarkName>("leftWrist");
 	const [edge, setEdge] = useState<ConnectionName>("leftElbow:leftWrist");
-	const updateDetection = (patch: Partial<Config["detection"]>) =>
-		setConfig({ ...c, detection: { ...c.detection, ...patch } });
-	const updateSkeleton = (patch: Partial<Config["skeleton"]>) =>
-		setConfig({ ...c, skeleton: { ...c.skeleton, ...patch } });
+	const updateDetection = (patch: Partial<Settings["detection"]>) =>
+		setSettings({ ...c, detection: { ...c.detection, ...patch } });
+	const updateSkeleton = (patch: Partial<Settings["skeleton"]>) =>
+		setSettings({ ...c, skeleton: { ...c.skeleton, ...patch } });
 	const jointStyle = c.skeleton.joints[joint] ?? {
 		color: c.skeleton.color,
 		radius: c.skeleton.jointRadius,
@@ -107,7 +111,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 							<Select
 								label="Joint to customize"
 								value={joint}
-								onChange={(value) => setJoint(value as LandmarkName)}
+								onChange={(landmark) => setJoint(landmark as LandmarkName)}
 							>
 								{LANDMARK_NAMES.map((name) => (
 									<option key={name}>{name}</option>
@@ -116,9 +120,9 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 							<Toggle
 								label="Include this landmark"
 								value={c.skeleton.landmarks.includes(joint)}
-								onChange={(value) =>
+								onChange={(choice) =>
 									updateSkeleton({
-										landmarks: value
+										landmarks: choice
 											? [...c.skeleton.landmarks, joint]
 											: c.skeleton.landmarks.filter((name) => name !== joint),
 									})
@@ -163,7 +167,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 							<Select
 								label="Connection to customize"
 								value={edge}
-								onChange={(value) => setEdge(value as ConnectionName)}
+								onChange={(connection) => setEdge(connection as ConnectionName)}
 							>
 								{POSE_CONNECTIONS.map(([a, b]) => (
 									<option key={`${a}:${b}`}>{`${a}:${b}`}</option>
@@ -243,15 +247,15 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 							min={0}
 							max={1}
 							step={0.05}
-							onChange={(value) => updateDetection({ [key]: value })}
+							onChange={(choice) => updateDetection({ [key]: choice })}
 						/>
 					))}
 					<Select
 						label="Pose model"
 						value={c.detection.modelVariant}
-						onChange={(value) =>
+						onChange={(choice) =>
 							updateDetection({
-								modelVariant: value as Config["detection"]["modelVariant"],
+								modelVariant: choice as Settings["detection"]["modelVariant"],
 							})
 						}
 					>
@@ -264,8 +268,8 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 						<input
 							type="file"
 							accept=".task"
-							onChange={(e) => {
-								const file = e.target.files?.[0];
+							onChange={(event) => {
+								const file = event.target.files?.[0];
 								if (file) onModel(file);
 							}}
 						/>
@@ -295,8 +299,8 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								value={c.timing[key]}
 								min={1}
 								max={60}
-								onChange={(value) =>
-									setConfig({ ...c, timing: { ...c.timing, [key]: value } })
+								onChange={(choice) =>
+									setSettings({ ...c, timing: { ...c.timing, [key]: choice } })
 								}
 							/>
 						),
@@ -333,7 +337,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 						label="Mask tint"
 						value={c.mask.color}
 						onChange={(color) =>
-							setConfig({ ...c, mask: { ...c.mask, color } })
+							setSettings({ ...c, mask: { ...c.mask, color } })
 						}
 					/>
 					<Range
@@ -343,7 +347,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 						max={1}
 						step={0.05}
 						onChange={(opacity) =>
-							setConfig({ ...c, mask: { ...c.mask, opacity } })
+							setSettings({ ...c, mask: { ...c.mask, opacity } })
 						}
 					/>
 					<small>
@@ -367,7 +371,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 							rule={rule}
 							index={index}
 							onChange={(next) =>
-								setConfig({
+								setSettings({
 									...c,
 									rules: c.rules.map((r, i) => {
 										const isSameIndex = i === index;
@@ -376,7 +380,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								})
 							}
 							onRemove={() =>
-								setConfig({
+								setSettings({
 									...c,
 									rules: c.rules.filter((_, i) => i !== index),
 								})
@@ -387,7 +391,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 						type="button"
 						disabled={c.rules.length >= 6}
 						onClick={() =>
-							setConfig({
+							setSettings({
 								...c,
 								rules: [
 									...c.rules,
@@ -412,12 +416,12 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 					<Select
 						label="Native camera facing"
 						value={c.native.cameraFacing}
-						onChange={(value) =>
-							setConfig({
+						onChange={(choice) =>
+							setSettings({
 								...c,
 								native: {
 									...c.native,
-									cameraFacing: value as "front" | "back",
+									cameraFacing: choice as "front" | "back",
 								},
 							})
 						}
@@ -428,12 +432,12 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 					<Select
 						label="Native lens"
 						value={c.native.cameraLens}
-						onChange={(value) =>
-							setConfig({
+						onChange={(choice) =>
+							setSettings({
 								...c,
 								native: {
 									...c.native,
-									cameraLens: value as Config["native"]["cameraLens"],
+									cameraLens: choice as Settings["native"]["cameraLens"],
 								},
 							})
 						}
@@ -451,7 +455,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 						max={10}
 						step={0.1}
 						onChange={(cameraZoomFactor) =>
-							setConfig({ ...c, native: { ...c.native, cameraZoomFactor } })
+							setSettings({ ...c, native: { ...c.native, cameraZoomFactor } })
 						}
 					/>
 					<small>

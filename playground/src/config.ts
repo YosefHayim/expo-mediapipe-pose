@@ -52,7 +52,7 @@ export const RuleSchema = z
 			? rule.enterThreshold > rule.exitThreshold
 			: rule.enterThreshold < rule.exitThreshold;
 	});
-export const ConfigSchema = z.strictObject({
+export const SettingsSchema = z.strictObject({
 	version: z.literal(1),
 	detection: z.strictObject({
 		minPoseDetectionConfidence: createNumberSchema(0, 1),
@@ -99,7 +99,7 @@ export const ConfigSchema = z.strictObject({
 		cameraZoomFactor: createNumberSchema(1, 100),
 	}),
 });
-export type Config = z.infer<typeof ConfigSchema>;
+export type Settings = z.infer<typeof SettingsSchema>;
 export type Rule = z.infer<typeof RuleSchema>;
 export const defaultRule: Rule = {
 	id: "elbow-rule",
@@ -118,7 +118,7 @@ export const defaultRule: Rule = {
 	failColor: "#ef4444",
 	unknownColor: "#94a3b8",
 };
-export const createDefaultSettings = (): Config => {
+export const createDefaultSettings = (): Settings => {
 	return {
 		version: 1,
 		detection: {
@@ -148,24 +148,24 @@ export const createDefaultSettings = (): Config => {
 		native: { cameraFacing: "front", cameraLens: "auto", cameraZoomFactor: 1 },
 	};
 };
-export const parseConfig = (serializedConfig: string): Config => {
-	const maximumConfigCharacters = 40000;
+export const parseSettings = (serializedSettings: string): Settings => {
+	const maximumSettingsCharacters = 40000;
 
-	const isTooLong = serializedConfig.length > maximumConfigCharacters;
+	const isTooLong = serializedSettings.length > maximumSettingsCharacters;
 	if (isTooLong) throw new Error("Configuration exceeds 40,000 characters.");
 
-	const parsedConfig: unknown = JSON.parse(serializedConfig);
-	return ConfigSchema.parse(parsedConfig);
+	const parsedSettings: unknown = JSON.parse(serializedSettings);
+	return SettingsSchema.parse(parsedSettings);
 };
-export const readPresetSettings = (name: string): Config => {
-	const config = createDefaultSettings();
+export const readPresetSettings = (name: string): Settings => {
+	const settings = createDefaultSettings();
 
 	const isNameArms = name === "arms";
 	if (isNameArms)
 		return {
-			...config,
+			...settings,
 			skeleton: {
-				...config.skeleton,
+				...settings.skeleton,
 				bodyParts: ["leftArm", "rightArm", "torso"],
 			},
 			rules: [defaultRule],
@@ -173,17 +173,17 @@ export const readPresetSettings = (name: string): Config => {
 
 	const isNameMultiple = name === "multiple";
 	if (isNameMultiple)
-		return { ...config, detection: { ...config.detection, maxPoses: 2 } };
+		return { ...settings, detection: { ...settings.detection, maxPoses: 2 } };
 
 	const isNameMask = name === "mask";
 	if (isNameMask)
 		return {
-			...config,
-			detection: { ...config.detection, segmentationEnabled: true },
+			...settings,
+			detection: { ...settings.detection, segmentationEnabled: true },
 		};
 
-	return config;
+	return settings;
 };
-export const createConfigurationLink = (config: Config): string => {
-	return `${location.origin}${location.pathname}#config=${encodeURIComponent(JSON.stringify(config))}`;
+export const createConfigurationLink = (settings: Settings): string => {
+	return `${location.origin}${location.pathname}#config=${encodeURIComponent(JSON.stringify(settings))}`;
 };

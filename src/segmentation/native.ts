@@ -9,7 +9,7 @@ export const releasePoseSegmentation = async (
 		releasePoseSegmentation(id: string): Promise<void>;
 	}>("ExpoMediaPipePose").releasePoseSegmentation(leaseId);
 };
-export const discardResultSegmentation = async (
+export const discardReportSegmentation = async (
 	candidateAnalysis: unknown,
 ): Promise<void> => {
 	const isCandidateAnalysisNotObject =

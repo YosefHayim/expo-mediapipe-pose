@@ -50,7 +50,7 @@ export const projectLandmark = (
 		image.height,
 		view.width,
 		view.height,
-	].every((value) => Number.isFinite(value) && value > 0);
+	].every((amount) => Number.isFinite(amount) && amount > 0);
 	if (hasInvalidDimension) {
 		throw new RangeError(
 			"Image and view dimensions must be finite and positive",
@@ -77,14 +77,14 @@ const defaultSkeletonStyle = {
 export const createDetectionSkeleton = (
 	detection: SelectablePose & { imageSize: Dimensions },
 	view: Dimensions,
-	options: SkeletonOptions = {},
+	settings: SkeletonOptions = {},
 ) => {
-	const poseIndex = options.poseIndex;
+	const poseIndex = settings.poseIndex;
 	const isPoseIndexMissing = poseIndex == null;
 	const selected = isPoseIndexMissing
 		? detection
 		: selectPose(detection, poseIndex);
-	const style = { ...defaultSkeletonStyle, ...options };
+	const style = { ...defaultSkeletonStyle, ...settings };
 
 	const visibilityInRange =
 		style.minVisibility >= 0 && style.minVisibility <= 1;
@@ -97,8 +97,8 @@ export const createDetectionSkeleton = (
 
 	let selectedNames: readonly LandmarkName[] = LANDMARK_NAMES;
 
-	if (options.bodyParts)
-		selectedNames = options.bodyParts.flatMap((part) => [...BODY_PARTS[part]]);
+	if (settings.bodyParts)
+		selectedNames = settings.bodyParts.flatMap((part) => [...BODY_PARTS[part]]);
 
 	const selectedNamesSet = new Set(selectedNames);
 
@@ -109,7 +109,7 @@ export const createDetectionSkeleton = (
 		if (isJointNotSelected) return [];
 
 		const excludedBySelection =
-			options.landmarks && !options.landmarks.includes(name);
+			settings.landmarks && !settings.landmarks.includes(name);
 		if (excludedBySelection) return [];
 
 		const visibility = joint.visibility;
@@ -125,7 +125,7 @@ export const createDetectionSkeleton = (
 		const jointStyle = {
 			color: style.color,
 			radius: style.jointRadius,
-			...options.joints?.[name],
+			...settings.joints?.[name],
 		};
 		return [
 			{
@@ -149,7 +149,7 @@ export const createDetectionSkeleton = (
 		const connectionStyle = {
 			color: style.color,
 			width: style.lineWidth,
-			...options.connections?.[name],
+			...settings.connections?.[name],
 		};
 		return [{ name, start, end, ...connectionStyle }];
 	});
@@ -159,10 +159,10 @@ export const createDetectionSkeleton = (
 export const createSkeleton = (
 	frame: PoseFrame,
 	view: Dimensions,
-	options: SkeletonOptions = {},
+	settings: SkeletonOptions = {},
 ) =>
 	createDetectionSkeleton(
 		{ ...frame, imageSize: frame.additionalData },
 		view,
-		options,
+		settings,
 	);

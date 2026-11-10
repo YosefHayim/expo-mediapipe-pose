@@ -35,20 +35,20 @@ const validateThreshold = (threshold: PoseThreshold) => {
 		);
 };
 const compareThreshold = (
-	value: number | null,
+	reading: number | null,
 	previous: PoseRuleStatus,
 	threshold: PoseThreshold,
 ): boolean | "unknown" => {
-	const isMissingOrNotFinite = value === null || !Number.isFinite(value);
+	const isMissingOrNotFinite = reading === null || !Number.isFinite(reading);
 	if (isMissingOrNotFinite) return "unknown";
 
 	const isAboveDirection = threshold.direction === "above";
 	const hasEntered = isAboveDirection
-		? value >= threshold.enterThreshold
-		: value <= threshold.enterThreshold;
+		? reading >= threshold.enterThreshold
+		: reading <= threshold.enterThreshold;
 	const hasExited = isAboveDirection
-		? value <= threshold.exitThreshold
-		: value >= threshold.exitThreshold;
+		? reading <= threshold.exitThreshold
+		: reading >= threshold.exitThreshold;
 
 	if (hasEntered) return true;
 
@@ -60,12 +60,12 @@ const compareThreshold = (
 	return previous === "pass";
 };
 export const evaluatePoseThreshold = (
-	value: number | null,
+	reading: number | null,
 	previous: PoseRuleStatus,
 	threshold: PoseThreshold,
 ): boolean | "unknown" => {
 	validateThreshold(threshold);
-	return compareThreshold(value, previous, threshold);
+	return compareThreshold(reading, previous, threshold);
 };
 export interface ThresholdRuleOptions<Name extends LandmarkName>
 	extends Omit<PoseRuleOptions<Name>, "evaluate">,
@@ -76,11 +76,11 @@ export interface ThresholdRuleOptions<Name extends LandmarkName>
 	) => number | null;
 }
 export const createThresholdRule = <Name extends LandmarkName>(
-	options: ThresholdRuleOptions<Name>,
+	settings: ThresholdRuleOptions<Name>,
 ): PoseRuleOptions<Name> => {
-	validatePoseRuleOptions(options);
+	validatePoseRuleOptions(settings);
 	const { measure, direction, enterThreshold, exitThreshold, ...rule } =
-		options;
+		settings;
 	const threshold = { direction, enterThreshold, exitThreshold };
 	validateThreshold(threshold);
 	return {

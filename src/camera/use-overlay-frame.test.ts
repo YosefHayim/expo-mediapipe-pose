@@ -42,7 +42,7 @@ describe("usePoseOverlayFrame", () => {
 		let now = 1000;
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
-		let overlay: ReturnType<typeof usePoseOverlayFrame> | undefined;
+		let overlay: ReturnType<typeof usePoseOverlayFrame> | null = null;
 		const readCurrentOverlay = () => {
 			assert.ok(overlay);
 			return overlay;

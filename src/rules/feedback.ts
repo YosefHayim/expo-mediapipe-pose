@@ -28,19 +28,19 @@ export const composeSkeletonFeedback = (
 	base: SkeletonOptions,
 	feedback: readonly SkeletonFeedback[],
 ): SkeletonOptions => {
-	let result = { ...base };
-	for (const entry of feedback) {
-		const appearance = entry.styles[entry.status];
+	let report = { ...base };
+	for (const note of feedback) {
+		const appearance = note.styles[note.status];
 
 		const isAppearanceMissing = appearance == null;
 		if (isAppearanceMissing) continue;
 
-		result = {
-			...result,
+		report = {
+			...report,
 			...appearance,
-			joints: mergeStyles(result.joints, appearance.joints),
-			connections: mergeStyles(result.connections, appearance.connections),
+			joints: mergeStyles(report.joints, appearance.joints),
+			connections: mergeStyles(report.connections, appearance.connections),
 		};
 	}
-	return result;
+	return report;
 };

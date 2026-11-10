@@ -1,6 +1,6 @@
 import libraryPackage from "expo-mediapipe-pose/package.json";
 import { Select } from "@/controls/select";
-import type { SourceMode } from "@/types";
+import type { MediaMode } from "@/types";
 import type { PlaygroundScreen } from "./use-playground";
 
 type IntegrationSectionProps = Pick<
@@ -30,7 +30,7 @@ export const IntegrationSection = ({
 				<Select
 					label="Integration type"
 					value={codeMode}
-					onChange={(value) => setCodeMode(value as SourceMode)}
+					onChange={(mode) => setCodeMode(mode as MediaMode)}
 				>
 					<option value="camera">Live camera + feedback rules</option>
 					<option value="photo">Local photo analysis</option>

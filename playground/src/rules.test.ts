@@ -12,25 +12,25 @@ describe("updateRules", () => {
 		const detection = createSampleBrowserFrame();
 		const rule = { ...defaultRule, enterThreshold: 95, exitThreshold: 100 };
 
-		const firstStates = updateRules({
+		const firstStatuses = updateRules({
 			frame: detection,
 			poseIndex: 0,
 			rules: [rule],
 			previous: [initialPoseRuleState()],
 			now: 100,
 		});
-		const heldStates = updateRules({
+		const heldStatuses = updateRules({
 			frame: detection,
 			poseIndex: 0,
 			rules: [rule],
-			previous: firstStates,
+			previous: firstStatuses,
 			now: 400,
 		});
-		const unselectedStates = updateRules({
+		const unselectedStatuses = updateRules({
 			frame: detection,
 			poseIndex: 1,
 			rules: [rule],
-			previous: heldStates,
+			previous: heldStatuses,
 			now: 500,
 		});
 		const unselectedSkeleton = createDetectionSkeleton(
@@ -39,9 +39,9 @@ describe("updateRules", () => {
 			{ poseIndex: 1 },
 		);
 
-		expect(firstStates[0]?.status).toBe("unknown");
-		expect(heldStates[0]?.status).toBe("pass");
-		expect(unselectedStates[0]?.status).toBe("unknown");
+		expect(firstStatuses[0]?.status).toBe("unknown");
+		expect(heldStatuses[0]?.status).toBe("pass");
+		expect(unselectedStatuses[0]?.status).toBe("unknown");
 		expect(unselectedSkeleton.points).toHaveLength(0);
 		expect(detection.landmarks).toHaveLength(33);
 	});

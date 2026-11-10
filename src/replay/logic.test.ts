@@ -88,12 +88,12 @@ describe("createPoseReplay", () => {
 		let now = 0;
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		let replay: PoseReplay;
-		const originalX: number[] = [];
+		const originalHorizontal: number[] = [];
 		replay = createPoseReplay(createRecording(), {
 			onFrame: (frame) => {
 				const nose = frame.landmarks[0];
 				assert.ok(nose);
-				originalX.push(nose.x);
+				originalHorizontal.push(nose.x);
 				nose.x = 99;
 				replay.pause();
 			},
@@ -103,12 +103,12 @@ describe("createPoseReplay", () => {
 		vi.advanceTimersByTime(0);
 		now = 1000;
 		vi.advanceTimersByTime(1000);
-		assert.equal(originalX.length, 1);
+		assert.equal(originalHorizontal.length, 1);
 
 		replay.reset();
 		replay.play();
 		vi.advanceTimersByTime(0);
-		assert.deepEqual(originalX, [0.5, 0.5]);
+		assert.deepEqual(originalHorizontal, [0.5, 0.5]);
 
 		for (const speed of [0, -1, 5, NaN])
 			assert.throws(() => replay.setSpeed(speed));
@@ -143,15 +143,15 @@ describe("createPoseReplay", () => {
 		assert.equal(resetFailure.state.status, "paused");
 		resetFailure.dispose();
 
-		const stateFailure = createPoseReplay(createRecording(), {
+		const statusFailure = createPoseReplay(createRecording(), {
 			onFrame: () => {},
 			onStateChange: () => {
 				throw failure;
 			},
 		});
-		assert.throws(() => stateFailure.play(), failure);
-		assert.equal(stateFailure.state.status, "paused");
-		stateFailure.dispose();
+		assert.throws(() => statusFailure.play(), failure);
+		assert.equal(statusFailure.state.status, "paused");
+		statusFailure.dispose();
 	});
 
 	test("state callbacks can pause playback without rescheduling or recursive notifications", () => {
@@ -180,11 +180,11 @@ describe("advancePoseRule", () => {
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
 		let now = 0;
 		vi.spyOn(performance, "now").mockImplementation(() => now);
-		let state: PoseRuleState = initialPoseRuleState();
+		let ruleSnapshot: PoseRuleState = initialPoseRuleState();
 		const replay = createPoseReplay(createRecording(), {
 			onFrame: (frame, timestamp) => {
-				state = advancePoseRule(
-					state,
+				ruleSnapshot = advancePoseRule(
+					ruleSnapshot,
 					evaluatePoseRule(frame, {
 						landmarks: ["nose"],
 						evaluate: () => true,
@@ -199,10 +199,10 @@ describe("advancePoseRule", () => {
 		vi.advanceTimersByTime(0);
 		now = 100;
 		vi.advanceTimersByTime(100);
-		assert.equal(state.status, "unknown");
+		assert.equal(ruleSnapshot.status, "unknown");
 		now = 250;
 		vi.advanceTimersByTime(150);
-		assert.equal(state.status, "pass");
+		assert.equal(ruleSnapshot.status, "pass");
 		assert.equal(replay.state.status, "ended");
 	});
 });

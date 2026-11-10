@@ -6,7 +6,7 @@ interface RangeProps {
 	min: number;
 	max: number;
 	step?: number;
-	onChange: (value: number) => void;
+	onChange: (amount: number) => void;
 	hint?: string;
 }
 
@@ -33,7 +33,7 @@ export const Range = ({
 				max={max}
 				step={step}
 				value={value}
-				onChange={(e) => onChange(Number(e.target.value))}
+				onChange={(event) => onChange(Number(event.target.value))}
 			/>
 			{hint && <small>{hint}</small>}
 		</div>

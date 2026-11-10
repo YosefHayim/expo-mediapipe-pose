@@ -13,11 +13,11 @@ describe("generateCode", () => {
 		() => {
 			const directory = mkdtempSync(join(process.cwd(), ".generated-code-"));
 			try {
-				const config = readPresetSettings("arms");
+				const settings = readPresetSettings("arms");
 				const configured = {
-					...config,
+					...settings,
 					detection: {
-						...config.detection,
+						...settings.detection,
 						modelVariant: "heavy" as const,
 						segmentationEnabled: true,
 					},
@@ -67,9 +67,9 @@ describe("generateCode", () => {
 	);
 
 	test("custom full models and segmentation styles are reflected in exported code", () => {
-		const config = readPresetSettings("mask");
+		const presetSettings = readPresetSettings("mask");
 
-		const code = generateCode(config, "camera", true);
+		const code = generateCode(presetSettings, "camera", true);
 
 		expect(code).toMatch(
 			/poseModelAssetPath="\/absolute\/path\/to\/your-model.task"/,

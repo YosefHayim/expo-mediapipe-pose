@@ -5,10 +5,10 @@ export interface FrameRates {
 }
 
 export const validateFrameRates = (rates: FrameRates) => {
-	for (const [name, value] of Object.entries(rates)) {
-		const withinRange = value >= 1 && value <= 60;
+	for (const [name, frameRate] of Object.entries(rates)) {
+		const withinRange = frameRate >= 1 && frameRate <= 60;
 
-		const isInvalidFrameRate = !Number.isInteger(value) || !withinRange;
+		const isInvalidFrameRate = !Number.isInteger(frameRate) || !withinRange;
 		if (isInvalidFrameRate) {
 			throw new RangeError(`${name} must be an integer between 1 and 60`);
 		}

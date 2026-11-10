@@ -1,8 +1,8 @@
 import { LANDMARK_NAMES, type Landmark } from "expo-mediapipe-pose/core";
 import type { BrowserFrame } from "./types";
 
-const createLandmark = (x: number, y: number): Landmark => ({
-	x,
+const createLandmark = (horizontal: number, y: number): Landmark => ({
+	x: horizontal,
 	y,
 	z: 0,
 	visibility: 1,

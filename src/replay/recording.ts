@@ -34,7 +34,7 @@ const hasIncreasingTimestamps = (recording: {
 		const isFirstFrame = index === 0;
 		const previousFrame = recording.frames[index - 1];
 		const isAfterPrevious =
-			previousFrame !== undefined &&
+			previousFrame != null &&
 			recordedFrame.timestampMs > previousFrame.timestampMs;
 		return isFirstFrame || isAfterPrevious;
 	});
@@ -43,13 +43,13 @@ const hasIncreasingTimestamps = (recording: {
 const createRecordingSchema = <FrameSchema extends z.ZodType>(
 	frameSchema: FrameSchema,
 ) => {
-	const frameEntrySchema = z.strictObject({
+	const timedFrameSchema = z.strictObject({
 		timestampMs: z.number().min(0).max(MAXIMUM_RECORDING_MILLISECONDS),
 		frame: frameSchema,
 	});
 	const recordingShapeSchema = z.strictObject({
 		version: z.literal(RECORDING_VERSION),
-		frames: z.array(frameEntrySchema).max(MAXIMUM_FRAMES),
+		frames: z.array(timedFrameSchema).max(MAXIMUM_FRAMES),
 	});
 	return recordingShapeSchema.refine(hasIncreasingTimestamps);
 };
@@ -168,7 +168,7 @@ const createRecorder = <Frame, Recording>(
 	}).length;
 	let status: PoseRecorderStatus = "idle";
 	let frames: Array<{ timestampMs: number; frame: Frame }> = [];
-	let startedAt: number | undefined;
+	let startedAt: number | null = null;
 	let previousTimestamp = -1;
 	let serializedCharacters = emptyRecordingCharacters;
 	return {
@@ -180,7 +180,7 @@ const createRecorder = <Frame, Recording>(
 		},
 		start() {
 			frames = [];
-			startedAt = undefined;
+			startedAt = null;
 			previousTimestamp = -1;
 			serializedCharacters = emptyRecordingCharacters;
 			status = "recording";
@@ -206,11 +206,11 @@ const createRecorder = <Frame, Recording>(
 			if (isTooLong) throw new RangeError("Recordings cannot exceed 24 hours");
 
 			const snapshot = { timestampMs, frame: decode(frame) };
-			const serializedEntry = JSON.stringify(snapshot);
-			const isFirstEntry = frames.length === 0;
-			const separatorCharacters = isFirstEntry ? 0 : 1;
+			const serializedSnapshot = JSON.stringify(snapshot);
+			const isFirstFrame = frames.length === 0;
+			const separatorCharacters = isFirstFrame ? 0 : 1;
 			const nextSerializedCharacters =
-				serializedCharacters + separatorCharacters + serializedEntry.length;
+				serializedCharacters + separatorCharacters + serializedSnapshot.length;
 
 			const isOverLimit =
 				nextSerializedCharacters > MAXIMUM_SERIALIZED_CHARACTERS;

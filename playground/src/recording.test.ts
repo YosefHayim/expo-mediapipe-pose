@@ -3,7 +3,7 @@ import { createPoseFrame } from "../../src/testing/fixtures";
 import { parseRecording, readFrameAt } from "./recording";
 import { createSampleBrowserFrame } from "./sample-frame";
 
-const createTwoFrameRecordingText = (): string => {
+const createTwoFrameRecordingString = (): string => {
 	const sampleFrame = createSampleBrowserFrame();
 
 	return JSON.stringify({
@@ -18,7 +18,7 @@ const createTwoFrameRecordingText = (): string => {
 
 describe("parseRecording", () => {
 	test("rejects recordings with pixel data or out-of-order frames", () => {
-		const recording = parseRecording(createTwoFrameRecordingText());
+		const recording = parseRecording(createTwoFrameRecordingString());
 
 		expect(() =>
 			parseRecording(JSON.stringify({ ...recording, pixels: "private" })),
@@ -61,7 +61,7 @@ describe("parseRecording", () => {
 
 describe("frameAt", () => {
 	test("returns the frame at or before a time and null when there are no frames", () => {
-		const recording = parseRecording(createTwoFrameRecordingText());
+		const recording = parseRecording(createTwoFrameRecordingString());
 		const emptyRecording = parseRecording(
 			JSON.stringify({ ...recording, frames: [] }),
 		);

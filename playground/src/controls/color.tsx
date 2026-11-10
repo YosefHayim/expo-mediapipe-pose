@@ -1,7 +1,7 @@
 interface ColorProps {
 	label: string;
 	value: string;
-	onChange: (value: string) => void;
+	onChange: (color: string) => void;
 }
 
 export const Color = ({ label, value, onChange }: ColorProps) => {
@@ -12,7 +12,7 @@ export const Color = ({ label, value, onChange }: ColorProps) => {
 				aria-label={label}
 				type="color"
 				value={value}
-				onChange={(e) => onChange(e.target.value)}
+				onChange={(event) => onChange(event.target.value)}
 			/>
 			<code>{value}</code>
 		</label>

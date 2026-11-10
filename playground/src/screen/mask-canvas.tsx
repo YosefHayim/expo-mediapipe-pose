@@ -18,25 +18,25 @@ export const MaskCanvas = ({ mask, color, opacity }: MaskCanvasProps) => {
 		canvas.width = mask.width;
 		canvas.height = mask.height;
 
-		const context = canvas.getContext("2d");
+		const canvas2d = canvas.getContext("2d");
 
-		const isDrawingMissing = context == null;
+		const isDrawingMissing = canvas2d == null;
 		if (isDrawingMissing) return;
 
-		const pixels = context.createImageData(mask.width, mask.height);
+		const pixels = canvas2d.createImageData(mask.width, mask.height);
 		const rgb = [1, 3, 5].map((offset) =>
 			Number.parseInt(color.slice(offset, offset + 2), 16),
 		);
-		mask.values.forEach((value, index) => {
+		mask.values.forEach((pixel, index) => {
 			pixels.data[index * 4] = rgb[0] ?? 0;
 			pixels.data[index * 4 + 1] = rgb[1] ?? 0;
 			pixels.data[index * 4 + 2] = rgb[2] ?? 0;
-			pixels.data[index * 4 + 3] = value;
+			pixels.data[index * 4 + 3] = pixel;
 		});
-		context.putImageData(pixels, 0, 0);
+		canvas2d.putImageData(pixels, 0, 0);
 	}, [mask, color]);
-	const isMaskPresent = mask !== undefined;
-	return isMaskPresent ? (
+	const hasMask = mask != null;
+	return hasMask ? (
 		<canvas
 			ref={ref}
 			className="mask"

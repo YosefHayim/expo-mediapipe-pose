@@ -18,13 +18,13 @@ import {
 	PosePerformanceMetrics,
 } from "../contracts";
 import { MaskMaxDimension } from "../segmentation/mask";
-import { discardResultSegmentation } from "../segmentation/native";
+import { discardReportSegmentation } from "../segmentation/native";
 import type { SkeletonOptions } from "../skeleton/logic";
 import { PoseSkeleton } from "../skeleton/view";
 import { getOverlayStaleAfterMs } from "./frame-rates";
 import { usePoseOverlayFrame } from "./use-overlay-frame";
 
-interface CameraOptions {
+interface CameraSettings {
 	isActive?: boolean;
 	cameraFacing?: z.infer<typeof CameraFacing>;
 	cameraLens?: z.infer<typeof CameraLens>;
@@ -42,7 +42,7 @@ interface CameraOptions {
 	maskMaxDimension?: number;
 }
 
-export interface PoseCameraViewProps extends ViewProps, CameraOptions {
+export interface PoseCameraViewProps extends ViewProps, CameraSettings {
 	skeleton?: boolean | SkeletonOptions;
 	onCameraConfigured?: (configuration: CameraConfiguration) => void;
 	onInferenceError?: (failure: InferenceError) => void;
@@ -50,7 +50,7 @@ export interface PoseCameraViewProps extends ViewProps, CameraOptions {
 	onPerformanceMetrics?: (metrics: PosePerformanceMetrics) => void;
 }
 
-interface NativeCameraProps extends ViewProps, CameraOptions {
+interface NativeCameraProps extends ViewProps, CameraSettings {
 	performanceMetricsEnabled: boolean;
 	onPerformanceMetrics: (event: { nativeEvent: unknown }) => void;
 	onCameraConfigured: (event: { nativeEvent: unknown }) => void;
@@ -152,12 +152,12 @@ export const PoseCameraView = ({
 	const isSkeletonVisible = isActive && skeletonEnabled;
 	const skeletonFrame = isSkeletonVisible ? frame : null;
 	const isSkeletonTypeObject = typeof skeleton === "object";
-	const skeletonOptions = isSkeletonTypeObject ? skeleton : {};
+	const skeletonSettings = isSkeletonTypeObject ? skeleton : {};
 
 	const handleFrame = React.useCallback(
 		(event: { nativeEvent: unknown }) => {
 			const discardEventSegmentation = () => {
-				void discardResultSegmentation(event.nativeEvent).catch(() =>
+				void discardReportSegmentation(event.nativeEvent).catch(() =>
 					onInferenceError?.({ code: "segmentationCleanup" }),
 				);
 			};
@@ -284,7 +284,7 @@ export const PoseCameraView = ({
 				frameLimit={frameLimit}
 				previewFps={previewFps}
 				callbackFps={callbackFps}
-				performanceMetricsEnabled={onPerformanceMetrics !== undefined}
+				performanceMetricsEnabled={onPerformanceMetrics != null}
 				onPerformanceMetrics={handleMetrics}
 				poseModelVariant={poseModelVariant}
 				poseModelAssetPath={poseModelAssetPath}
@@ -300,7 +300,7 @@ export const PoseCameraView = ({
 			/>
 			{skeletonFrame && (
 				<View style={styles.overlay} pointerEvents="none">
-					<PoseSkeleton {...skeletonOptions} frame={skeletonFrame} {...size} />
+					<PoseSkeleton {...skeletonSettings} frame={skeletonFrame} {...size} />
 				</View>
 			)}
 			{children}

@@ -57,7 +57,7 @@ describe("createSkeleton", () => {
 
 	test("applies explicit styles over global defaults and removes low-confidence connections", () => {
 		const frame = createPoseFrame();
-		const options = {
+		const settings = {
 			bodyParts: ["leftArm"] as const,
 			color: "blue",
 			jointRadius: 6,
@@ -68,7 +68,7 @@ describe("createSkeleton", () => {
 		const skeleton = createSkeleton(
 			frame,
 			{ width: 360, height: 640 },
-			options,
+			settings,
 		);
 
 		assert.equal(
@@ -86,7 +86,7 @@ describe("createSkeleton", () => {
 
 		frame.landmarks[13] = { x: 0.5, y: 0.5, z: 0, visibility: 0.1 };
 		assert.equal(
-			createSkeleton(frame, { width: 360, height: 640 }, options).lines.length,
+			createSkeleton(frame, { width: 360, height: 640 }, settings).lines.length,
 			0,
 		);
 

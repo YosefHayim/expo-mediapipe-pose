@@ -76,7 +76,7 @@ describe("usePoseReplay", () => {
 		recorder.append(createPoseFrame(), 0);
 		recorder.append(createPoseFrame(), 100);
 		const recording = recorder.stop();
-		let replay: ReturnType<typeof usePoseReplay> | undefined;
+		let replay: ReturnType<typeof usePoseReplay> | null = null;
 		let status: string = "unknown";
 		const delivered: string[] = [];
 		const readCurrentReplay = () => {
@@ -84,11 +84,11 @@ describe("usePoseReplay", () => {
 			return replay;
 		};
 		const reports: ReplayHarnessReports = {
-			setStatus: (value) => {
-				status = value;
+			setStatus: (nextStatus) => {
+				status = nextStatus;
 			},
-			setReplay: (value) => {
-				replay = value;
+			setReplay: (nextReplay) => {
+				replay = nextReplay;
 			},
 			onDelivered: (label) => {
 				delivered.push(label);

@@ -7,8 +7,8 @@ export const NativeChecks = () => {
 	React.useEffect(() => {
 		let mounted = true;
 		runNativeChecks()
-			.then((result) => {
-				if (mounted) setReport(result);
+			.then((report) => {
+				if (mounted) setReport(report);
 			})
 			.catch((error) => {
 				if (mounted) setReport(String(error));

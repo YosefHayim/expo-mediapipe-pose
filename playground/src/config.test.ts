@@ -1,47 +1,47 @@
 import { describe, expect, test } from "vitest";
-import { createDefaultSettings, defaultRule, parseConfig } from "./config";
+import { createDefaultSettings, defaultRule, parseSettings } from "./config";
 
 describe("parseConfig", () => {
 	test("keeps defaults and rejects unsupported or executable content", () => {
-		const config = createDefaultSettings();
+		const settings = createDefaultSettings();
 
-		expect(parseConfig(JSON.stringify(config))).toStrictEqual(config);
-		expect(config.detection.minTrackingConfidence).toBe(0.35);
+		expect(parseSettings(JSON.stringify(settings))).toStrictEqual(settings);
+		expect(settings.detection.minTrackingConfidence).toBe(0.35);
 
 		expect(() =>
-			parseConfig(
+			parseSettings(
 				JSON.stringify({
-					...config,
+					...settings,
 					rules: [{ ...defaultRule, kind: "height", space: "world" }],
 				}),
 			),
 		).toThrow();
 		expect(() =>
-			parseConfig(JSON.stringify({ ...config, version: 2 })),
+			parseSettings(JSON.stringify({ ...settings, version: 2 })),
 		).toThrow();
 		expect(() =>
-			parseConfig(
+			parseSettings(
 				JSON.stringify({
-					...config,
+					...settings,
 					rules: [{ ...defaultRule, evaluate: "alert(1)" }],
 				}),
 			),
 		).toThrow();
 		expect(() =>
-			parseConfig(
+			parseSettings(
 				JSON.stringify({
-					...config,
+					...settings,
 					skeleton: {
-						...config.skeleton,
+						...settings.skeleton,
 						joints: { imaginary: { color: "#ffffff", radius: 4 } },
 					},
 				}),
 			),
 		).toThrow();
 		expect(() =>
-			parseConfig(
+			parseSettings(
 				JSON.stringify({
-					...config,
+					...settings,
 					rules: [{ ...defaultRule, enterThreshold: 100 }],
 				}),
 			),

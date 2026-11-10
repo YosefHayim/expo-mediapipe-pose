@@ -60,26 +60,34 @@ describe("evaluatePoseRule", () => {
 
 describe("advancePoseRule", () => {
 	test("requires a sustained condition and resets the hold on flicker", () => {
-		let state = advancePoseRule(initialPoseRuleState(), "pass", 0, 250);
-		state = advancePoseRule(state, "pass", 200, 250);
-		assert.equal(state.status, "unknown");
+		let ruleSnapshot = advancePoseRule(initialPoseRuleState(), "pass", 0, 250);
+		ruleSnapshot = advancePoseRule(ruleSnapshot, "pass", 200, 250);
+		assert.equal(ruleSnapshot.status, "unknown");
 
-		state = advancePoseRule(state, "fail", 210, 250);
-		state = advancePoseRule(state, "pass", 220, 250);
-		state = advancePoseRule(state, "pass", 469, 250);
-		assert.equal(state.status, "unknown");
+		ruleSnapshot = advancePoseRule(ruleSnapshot, "fail", 210, 250);
+		ruleSnapshot = advancePoseRule(ruleSnapshot, "pass", 220, 250);
+		ruleSnapshot = advancePoseRule(ruleSnapshot, "pass", 469, 250);
+		assert.equal(ruleSnapshot.status, "unknown");
 
-		state = advancePoseRule(state, "pass", 470, 250);
-		assert.equal(state.status, "pass");
-		assert.equal(advancePoseRule(state, "unknown", 471, 250).status, "unknown");
+		ruleSnapshot = advancePoseRule(ruleSnapshot, "pass", 470, 250);
+		assert.equal(ruleSnapshot.status, "pass");
+		assert.equal(
+			advancePoseRule(ruleSnapshot, "unknown", 471, 250).status,
+			"unknown",
+		);
 	});
 
 	test("does not count elapsed time from a previous clock/session", () => {
-		const oldState = advancePoseRule(initialPoseRuleState(), "pass", 9000, 250);
-		const newState = advancePoseRule(oldState, "pass", 1, 250);
+		const oldStatus = advancePoseRule(
+			initialPoseRuleState(),
+			"pass",
+			9000,
+			250,
+		);
+		const newStatus = advancePoseRule(oldStatus, "pass", 1, 250);
 
-		assert.equal(newState.status, "unknown");
-		assert.equal(newState.since, 1);
+		assert.equal(newStatus.status, "unknown");
+		assert.equal(newStatus.since, 1);
 	});
 });
 
