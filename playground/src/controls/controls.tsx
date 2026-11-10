@@ -23,6 +23,8 @@ type DetectionThresholdKey =
 
 type TimingKey = "previewFps" | "frameLimit" | "callbackFps";
 
+const isBodyPart = (name: string): name is BodyPart => name in BODY_PARTS;
+
 interface ControlsProps {
 	config: Settings;
 	setConfig: (settings: Settings) => void;
@@ -251,18 +253,19 @@ export const Controls = ({
 					<fieldset>
 						<legend>Body regions</legend>
 						<div className="chips">
-							{Object.keys(BODY_PARTS).map((name) => {
-								const part = name as BodyPart;
-								const isSelected = c.skeleton.bodyParts.includes(part);
-								return (
-									<BodyPartChip
-										key={part}
-										part={part}
-										isSelected={isSelected}
-										onToggle={handleBodyPartToggle}
-									/>
-								);
-							})}
+							{Object.keys(BODY_PARTS)
+								.filter(isBodyPart)
+								.map((part) => {
+									const isSelected = c.skeleton.bodyParts.includes(part);
+									return (
+										<BodyPartChip
+											key={part}
+											part={part}
+											isSelected={isSelected}
+											onToggle={handleBodyPartToggle}
+										/>
+									);
+								})}
 						</div>
 					</fieldset>
 					<details>
