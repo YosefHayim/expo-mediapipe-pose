@@ -1,3 +1,5 @@
+import type { ChangeEvent } from "react";
+
 interface ToggleProps {
 	label: string;
 	value: boolean;
@@ -5,12 +7,15 @@ interface ToggleProps {
 }
 
 export const Toggle = ({ label, value, onChange }: ToggleProps) => {
+	const handleToggleInputChange = (event: ChangeEvent<HTMLInputElement>) =>
+		onChange(event.target.checked);
+
 	return (
 		<label className="toggle">
 			<input
 				type="checkbox"
 				checked={value}
-				onChange={(event) => onChange(event.target.checked)}
+				onChange={handleToggleInputChange}
 			/>
 			{label}
 		</label>

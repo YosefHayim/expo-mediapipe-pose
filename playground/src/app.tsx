@@ -70,6 +70,8 @@ export const App = () => {
 		video,
 		videoProgress,
 	} = usePlayground();
+	const handleMessageDismissClick = () => setMessage(null);
+
 	return (
 		<>
 			<a className="skip-link" href="#workspace">
@@ -84,7 +86,7 @@ export const App = () => {
 						<button
 							type="button"
 							aria-label="Dismiss message"
-							onClick={() => setMessage(null)}
+							onClick={handleMessageDismissClick}
 						>
 							×
 						</button>

@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { type ChangeEvent, useId } from "react";
 
 interface RangeProps {
 	label: string;
@@ -20,6 +20,9 @@ export const Range = ({
 	hint,
 }: RangeProps) => {
 	const id = useId();
+	const handleRangeInputChange = (event: ChangeEvent<HTMLInputElement>) =>
+		onChange(Number(event.target.value));
+
 	return (
 		<div className="field">
 			<label htmlFor={id}>
@@ -33,7 +36,7 @@ export const Range = ({
 				max={max}
 				step={step}
 				value={value}
-				onChange={(event) => onChange(Number(event.target.value))}
+				onChange={handleRangeInputChange}
 			/>
 			{hint && <small>{hint}</small>}
 		</div>

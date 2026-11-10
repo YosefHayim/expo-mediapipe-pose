@@ -4,7 +4,8 @@ import {
 	getCameraCapabilities,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import { Button, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { CameraSelectButton } from "./camera-select-button";
 
 export type CameraSelection = {
 	facing: "front" | "back";
@@ -87,17 +88,16 @@ export const CameraControls = ({
 					? selection.previewFps
 					: initialMode.previewFps;
 				return (
-					<Button
+					<CameraSelectButton
 						key={`${camera.facing}-${camera.lens}`}
-						disabled={selectedCamera === camera}
 						title={`${camera.facing} / ${camera.lens} · ${displayedFps} fps`}
-						onPress={() =>
-							onSelect({
-								facing: camera.facing,
-								lens: camera.lens,
-								previewFps: initialMode.previewFps,
-							})
-						}
+						isSelected={selectedCamera === camera}
+						selection={{
+							facing: camera.facing,
+							lens: camera.lens,
+							previewFps: initialMode.previewFps,
+						}}
+						onSelect={onSelect}
 					/>
 				);
 			})}
@@ -110,17 +110,16 @@ export const CameraControls = ({
 			{selectedCamera && (
 				<ScrollView horizontal>
 					{selectedCamera.modes.map((mode) => (
-						<Button
+						<CameraSelectButton
 							key={mode.previewFps}
 							title={`${mode.previewFps} fps`}
-							disabled={selection?.previewFps === mode.previewFps}
-							onPress={() =>
-								onSelect({
-									facing: selectedCamera.facing,
-									lens: selectedCamera.lens,
-									previewFps: mode.previewFps,
-								})
-							}
+							isSelected={selection?.previewFps === mode.previewFps}
+							selection={{
+								facing: selectedCamera.facing,
+								lens: selectedCamera.lens,
+								previewFps: mode.previewFps,
+							}}
+							onSelect={onSelect}
 						/>
 					))}
 				</ScrollView>

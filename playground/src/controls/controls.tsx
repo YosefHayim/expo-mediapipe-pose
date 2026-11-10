@@ -5,14 +5,25 @@ import {
 	type LandmarkName,
 	POSE_CONNECTIONS,
 } from "expo-mediapipe-pose/core";
-import { useState } from "react";
-import { defaultRule, type Settings } from "@/config";
+import { type ChangeEvent, useState } from "react";
+import { defaultRule, type Rule, type Settings } from "@/config";
+import { type BodyPart, BodyPartChip } from "./body-part-chip";
 import { Color } from "./color";
 import { createReadableLabel } from "./humanize";
+import { KeyedRange } from "./keyed-range";
 import { Range } from "./range";
 import { RuleEditor } from "./rule-editor";
 import { Select } from "./select";
 import { Toggle } from "./toggle";
+
+type DetectionThresholdKey =
+	| "minPoseDetectionConfidence"
+	| "minPosePresenceConfidence"
+	| "minTrackingConfidence";
+
+type TimingKey = "previewFps" | "frameLimit" | "callbackFps";
+
+const isBodyPart = (name: string): name is BodyPart => name in BODY_PARTS;
 
 interface ControlsProps {
 	config: Settings;
@@ -39,6 +50,165 @@ export const Controls = ({
 		color: c.skeleton.color,
 		width: c.skeleton.lineWidth,
 	};
+	const handleSkeletonEnabledChange = (enabled: boolean) =>
+		updateSkeleton({ enabled });
+
+	const handleSkeletonColorChange = (color: string) =>
+		updateSkeleton({ color });
+
+	const handleSkeletonJointRadiusChange = (jointRadius: number) =>
+		updateSkeleton({ jointRadius });
+
+	const handleSkeletonLineWidthChange = (lineWidth: number) =>
+		updateSkeleton({ lineWidth });
+
+	const handleSkeletonMinVisibilityChange = (minVisibility: number) =>
+		updateSkeleton({ minVisibility });
+
+	const handleJointLandmarkChange = (landmark: LandmarkName) =>
+		setJoint(landmark);
+
+	const handleJointLandmarkVisibleChange = (choice: boolean) =>
+		updateSkeleton({
+			landmarks: choice
+				? [...c.skeleton.landmarks, joint]
+				: c.skeleton.landmarks.filter((name) => name !== joint),
+		});
+
+	const handleJointColorChange = (color: string) =>
+		updateSkeleton({
+			joints: {
+				...c.skeleton.joints,
+				[joint]: { ...jointStyle, color },
+			},
+		});
+
+	const handleJointRadiusChange = (radius: number) =>
+		updateSkeleton({
+			joints: {
+				...c.skeleton.joints,
+				[joint]: { ...jointStyle, radius },
+			},
+		});
+
+	const handleJointResetClick = () => {
+		const joints = { ...c.skeleton.joints };
+		delete joints[joint];
+		updateSkeleton({ joints });
+	};
+
+	const handleEdgeConnectionChange = (connection: ConnectionName) =>
+		setEdge(connection);
+
+	const handleEdgeColorChange = (color: string) =>
+		updateSkeleton({
+			connections: {
+				...c.skeleton.connections,
+				[edge]: { ...edgeStyle, color },
+			},
+		});
+
+	const handleEdgeWidthChange = (width: number) =>
+		updateSkeleton({
+			connections: {
+				...c.skeleton.connections,
+				[edge]: { ...edgeStyle, width },
+			},
+		});
+
+	const handleEdgeResetClick = () => {
+		const connections = { ...c.skeleton.connections };
+		delete connections[edge];
+		updateSkeleton({ connections });
+	};
+
+	const handleBodyPartToggle = (part: BodyPart) => {
+		const isPartSelected = c.skeleton.bodyParts.includes(part);
+		const bodyParts = isPartSelected
+			? c.skeleton.bodyParts.filter((p) => p !== part)
+			: [...c.skeleton.bodyParts, part];
+		updateSkeleton({ bodyParts });
+	};
+
+	const handleDetectionThresholdChange = (
+		key: DetectionThresholdKey,
+		amount: number,
+	) => updateDetection({ [key]: amount });
+
+	const handleTimingChange = (key: TimingKey, amount: number) =>
+		setSettings({ ...c, timing: { ...c.timing, [key]: amount } });
+
+	const handleRuleChange = (index: number, next: Rule) =>
+		setSettings({
+			...c,
+			rules: c.rules.map((r, i) => {
+				const isSameIndex = i === index;
+				return isSameIndex ? next : r;
+			}),
+		});
+
+	const handleRuleRemove = (index: number) =>
+		setSettings({
+			...c,
+			rules: c.rules.filter((_, i) => i !== index),
+		});
+
+	const handleMaxPosesChange = (maxPoses: number) =>
+		updateDetection({ maxPoses });
+
+	const handlePoseIndexChange = (poseIndex: number) =>
+		updateSkeleton({ poseIndex });
+
+	const handleModelVariantChange = (
+		modelVariant: Settings["detection"]["modelVariant"],
+	) => updateDetection({ modelVariant });
+
+	const handleModelFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) onModel(file);
+	};
+
+	const handleSegmentationEnabledChange = (segmentationEnabled: boolean) =>
+		updateDetection({ segmentationEnabled });
+
+	const handleMaskMaxDimensionChange = (maskMaxDimension: number) =>
+		updateDetection({ maskMaxDimension });
+
+	const handleMaskColorChange = (color: string) =>
+		setSettings({ ...c, mask: { ...c.mask, color } });
+
+	const handleMaskOpacityChange = (opacity: number) =>
+		setSettings({ ...c, mask: { ...c.mask, opacity } });
+
+	const handleRuleAddClick = () =>
+		setSettings({
+			...c,
+			rules: [...c.rules, { ...defaultRule, id: crypto.randomUUID() }],
+		});
+
+	const handleCameraFacingChange = (choice: string) =>
+		setSettings({
+			...c,
+			native: {
+				...c.native,
+				cameraFacing: choice as "front" | "back",
+			},
+		});
+
+	const handleCameraLensChange = (
+		cameraLens: Settings["native"]["cameraLens"],
+	) =>
+		setSettings({
+			...c,
+			native: {
+				...c.native,
+				cameraLens,
+			},
+		});
+
+	const handleCameraZoomFactorChange = (cameraZoomFactor: number) =>
+		setSettings({ ...c, native: { ...c.native, cameraZoomFactor } });
+
 	return (
 		<div className="control-groups">
 			<details open>
@@ -49,12 +219,12 @@ export const Controls = ({
 					<Toggle
 						label="Show skeleton"
 						value={c.skeleton.enabled}
-						onChange={(enabled) => updateSkeleton({ enabled })}
+						onChange={handleSkeletonEnabledChange}
 					/>
 					<Color
 						label="Skeleton color"
 						value={c.skeleton.color}
-						onChange={(color) => updateSkeleton({ color })}
+						onChange={handleSkeletonColorChange}
 					/>
 					<div className="two-fields">
 						<Range
@@ -62,14 +232,14 @@ export const Controls = ({
 							value={c.skeleton.jointRadius}
 							min={0}
 							max={20}
-							onChange={(jointRadius) => updateSkeleton({ jointRadius })}
+							onChange={handleSkeletonJointRadiusChange}
 						/>
 						<Range
 							label="Line width"
 							value={c.skeleton.lineWidth}
 							min={0}
 							max={15}
-							onChange={(lineWidth) => updateSkeleton({ lineWidth })}
+							onChange={handleSkeletonLineWidthChange}
 						/>
 					</div>
 					<Range
@@ -78,31 +248,24 @@ export const Controls = ({
 						min={0}
 						max={1}
 						step={0.05}
-						onChange={(minVisibility) => updateSkeleton({ minVisibility })}
+						onChange={handleSkeletonMinVisibilityChange}
 					/>
 					<fieldset>
 						<legend>Body regions</legend>
 						<div className="chips">
-							{Object.keys(BODY_PARTS).map((name) => {
-								const part = name as keyof typeof BODY_PARTS;
-								const selected = c.skeleton.bodyParts.includes(part);
-								return (
-									<button
-										type="button"
-										key={part}
-										aria-pressed={selected}
-										onClick={() =>
-											updateSkeleton({
-												bodyParts: selected
-													? c.skeleton.bodyParts.filter((p) => p !== part)
-													: [...c.skeleton.bodyParts, part],
-											})
-										}
-									>
-										{createReadableLabel(part)}
-									</button>
-								);
-							})}
+							{Object.keys(BODY_PARTS)
+								.filter(isBodyPart)
+								.map((part) => {
+									const isSelected = c.skeleton.bodyParts.includes(part);
+									return (
+										<BodyPartChip
+											key={part}
+											part={part}
+											isSelected={isSelected}
+											onToggle={handleBodyPartToggle}
+										/>
+									);
+								})}
 						</div>
 					</fieldset>
 					<details>
@@ -111,7 +274,7 @@ export const Controls = ({
 							<Select
 								label="Joint to customize"
 								value={joint}
-								onChange={(landmark) => setJoint(landmark as LandmarkName)}
+								onChange={handleJointLandmarkChange}
 							>
 								{LANDMARK_NAMES.map((name) => (
 									<option key={name}>{name}</option>
@@ -120,54 +283,27 @@ export const Controls = ({
 							<Toggle
 								label="Include this landmark"
 								value={c.skeleton.landmarks.includes(joint)}
-								onChange={(choice) =>
-									updateSkeleton({
-										landmarks: choice
-											? [...c.skeleton.landmarks, joint]
-											: c.skeleton.landmarks.filter((name) => name !== joint),
-									})
-								}
+								onChange={handleJointLandmarkVisibleChange}
 							/>
 							<Color
 								label="Joint override color"
 								value={jointStyle.color}
-								onChange={(color) =>
-									updateSkeleton({
-										joints: {
-											...c.skeleton.joints,
-											[joint]: { ...jointStyle, color },
-										},
-									})
-								}
+								onChange={handleJointColorChange}
 							/>
 							<Range
 								label="Joint override radius"
 								value={jointStyle.radius}
 								min={0}
 								max={20}
-								onChange={(radius) =>
-									updateSkeleton({
-										joints: {
-											...c.skeleton.joints,
-											[joint]: { ...jointStyle, radius },
-										},
-									})
-								}
+								onChange={handleJointRadiusChange}
 							/>
-							<button
-								type="button"
-								onClick={() => {
-									const joints = { ...c.skeleton.joints };
-									delete joints[joint];
-									updateSkeleton({ joints });
-								}}
-							>
+							<button type="button" onClick={handleJointResetClick}>
 								Clear joint override
 							</button>
 							<Select
 								label="Connection to customize"
 								value={edge}
-								onChange={(connection) => setEdge(connection as ConnectionName)}
+								onChange={handleEdgeConnectionChange}
 							>
 								{POSE_CONNECTIONS.map(([a, b]) => (
 									<option key={`${a}:${b}`}>{`${a}:${b}`}</option>
@@ -176,37 +312,16 @@ export const Controls = ({
 							<Color
 								label="Connection override color"
 								value={edgeStyle.color}
-								onChange={(color) =>
-									updateSkeleton({
-										connections: {
-											...c.skeleton.connections,
-											[edge]: { ...edgeStyle, color },
-										},
-									})
-								}
+								onChange={handleEdgeColorChange}
 							/>
 							<Range
 								label="Connection override width"
 								value={edgeStyle.width}
 								min={0}
 								max={15}
-								onChange={(width) =>
-									updateSkeleton({
-										connections: {
-											...c.skeleton.connections,
-											[edge]: { ...edgeStyle, width },
-										},
-									})
-								}
+								onChange={handleEdgeWidthChange}
 							/>
-							<button
-								type="button"
-								onClick={() => {
-									const connections = { ...c.skeleton.connections };
-									delete connections[edge];
-									updateSkeleton({ connections });
-								}}
-							>
+							<button type="button" onClick={handleEdgeResetClick}>
 								Clear connection override
 							</button>
 						</div>
@@ -223,14 +338,14 @@ export const Controls = ({
 						value={c.detection.maxPoses}
 						min={1}
 						max={6}
-						onChange={(maxPoses) => updateDetection({ maxPoses })}
+						onChange={handleMaxPosesChange}
 					/>
 					<Range
 						label="Selected pose index"
 						value={c.skeleton.poseIndex}
 						min={0}
 						max={5}
-						onChange={(poseIndex) => updateSkeleton({ poseIndex })}
+						onChange={handlePoseIndexChange}
 						hint="A result index, not a persistent person identity. Missing selections remain empty."
 					/>
 					{(
@@ -240,24 +355,21 @@ export const Controls = ({
 							"minTrackingConfidence",
 						] as const
 					).map((key) => (
-						<Range
+						<KeyedRange
 							key={key}
+							fieldKey={key}
 							label={createReadableLabel(key)}
 							value={c.detection[key]}
 							min={0}
 							max={1}
 							step={0.05}
-							onChange={(choice) => updateDetection({ [key]: choice })}
+							onFieldChange={handleDetectionThresholdChange}
 						/>
 					))}
 					<Select
 						label="Pose model"
 						value={c.detection.modelVariant}
-						onChange={(choice) =>
-							updateDetection({
-								modelVariant: choice as Settings["detection"]["modelVariant"],
-							})
-						}
+						onChange={handleModelVariantChange}
 					>
 						<option value="full">Full · bundled</option>
 						<option value="lite">Lite · local .task required</option>
@@ -268,10 +380,7 @@ export const Controls = ({
 						<input
 							type="file"
 							accept=".task"
-							onChange={(event) => {
-								const file = event.target.files?.[0];
-								if (file) onModel(file);
-							}}
+							onChange={handleModelFileChange}
 						/>
 					</label>
 					<small>
@@ -287,8 +396,9 @@ export const Controls = ({
 				<div className="group-body">
 					{(["previewFps", "frameLimit", "callbackFps"] as const).map(
 						(key, i) => (
-							<Range
+							<KeyedRange
 								key={key}
+								fieldKey={key}
 								label={
 									[
 										"Capture target FPS",
@@ -299,9 +409,7 @@ export const Controls = ({
 								value={c.timing[key]}
 								min={1}
 								max={60}
-								onChange={(choice) =>
-									setSettings({ ...c, timing: { ...c.timing, [key]: choice } })
-								}
+								onFieldChange={handleTimingChange}
 							/>
 						),
 					)}
@@ -319,9 +427,7 @@ export const Controls = ({
 					<Toggle
 						label="Enable segmentation"
 						value={c.detection.segmentationEnabled}
-						onChange={(segmentationEnabled) =>
-							updateDetection({ segmentationEnabled })
-						}
+						onChange={handleSegmentationEnabledChange}
 					/>
 					<Range
 						label="Mask maximum dimension"
@@ -329,16 +435,12 @@ export const Controls = ({
 						min={64}
 						max={512}
 						step={16}
-						onChange={(maskMaxDimension) =>
-							updateDetection({ maskMaxDimension })
-						}
+						onChange={handleMaskMaxDimensionChange}
 					/>
 					<Color
 						label="Mask tint"
 						value={c.mask.color}
-						onChange={(color) =>
-							setSettings({ ...c, mask: { ...c.mask, color } })
-						}
+						onChange={handleMaskColorChange}
 					/>
 					<Range
 						label="Mask opacity"
@@ -346,9 +448,7 @@ export const Controls = ({
 						min={0}
 						max={1}
 						step={0.05}
-						onChange={(opacity) =>
-							setSettings({ ...c, mask: { ...c.mask, opacity } })
-						}
+						onChange={handleMaskOpacityChange}
 					/>
 					<small>
 						Shows the selected pose's mask. Browser masks do not test native
@@ -370,35 +470,14 @@ export const Controls = ({
 							key={rule.id}
 							rule={rule}
 							index={index}
-							onChange={(next) =>
-								setSettings({
-									...c,
-									rules: c.rules.map((r, i) => {
-										const isSameIndex = i === index;
-										return isSameIndex ? next : r;
-									}),
-								})
-							}
-							onRemove={() =>
-								setSettings({
-									...c,
-									rules: c.rules.filter((_, i) => i !== index),
-								})
-							}
+							onChange={handleRuleChange}
+							onRemove={handleRuleRemove}
 						/>
 					))}
 					<button
 						type="button"
 						disabled={c.rules.length >= 6}
-						onClick={() =>
-							setSettings({
-								...c,
-								rules: [
-									...c.rules,
-									{ ...defaultRule, id: crypto.randomUUID() },
-								],
-							})
-						}
+						onClick={handleRuleAddClick}
 					>
 						+ Add a rule
 					</button>
@@ -416,15 +495,7 @@ export const Controls = ({
 					<Select
 						label="Native camera facing"
 						value={c.native.cameraFacing}
-						onChange={(choice) =>
-							setSettings({
-								...c,
-								native: {
-									...c.native,
-									cameraFacing: choice as "front" | "back",
-								},
-							})
-						}
+						onChange={handleCameraFacingChange}
 					>
 						<option value="front">Front</option>
 						<option value="back">Back</option>
@@ -432,15 +503,7 @@ export const Controls = ({
 					<Select
 						label="Native lens"
 						value={c.native.cameraLens}
-						onChange={(choice) =>
-							setSettings({
-								...c,
-								native: {
-									...c.native,
-									cameraLens: choice as Settings["native"]["cameraLens"],
-								},
-							})
-						}
+						onChange={handleCameraLensChange}
 					>
 						<option value="auto">Auto</option>
 						<option value="wide">Wide</option>
@@ -454,9 +517,7 @@ export const Controls = ({
 						min={1}
 						max={10}
 						step={0.1}
-						onChange={(cameraZoomFactor) =>
-							setSettings({ ...c, native: { ...c.native, cameraZoomFactor } })
-						}
+						onChange={handleCameraZoomFactorChange}
 					/>
 					<small>
 						Requested zoom is clamped by the device. Android rejects ultra wide.

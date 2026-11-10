@@ -7,7 +7,16 @@ import {
 	releasePoseSegmentation,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import { Button, Image, Text, TextInput, View } from "react-native";
+import {
+	Button,
+	Image,
+	type LayoutChangeEvent,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
+import { PoseIndexButton } from "./pose-index-button";
 
 const releaseMasks = async (detection: PoseDetection | undefined) => {
 	const isDetectionSegmentationUnavailable =
@@ -110,12 +119,23 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 	const segmentationStatusLabel = segmentationEnabled ? "on" : "off";
 	const analyzeButtonLabel = busy ? "Analyzing…" : "Analyze";
 
+	const handleSegmentationTogglePress = () =>
+		setSegmentationEnabled((isEnabled) => !isEnabled);
+
+	const handleMaxPosesTogglePress = () => {
+		const isSinglePose = maxPoses === 1;
+		return setMaxPoses(isSinglePose ? 2 : 1);
+	};
+
+	const handlePhotoFrameLayout = (event: LayoutChangeEvent) =>
+		setSize(event.nativeEvent.layout);
+
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
 			<Text style={{ color: "white" }}>Analyze a local photo</Text>
 			<Button
 				title={`Segmentation: ${segmentationStatusLabel}`}
-				onPress={() => setSegmentationEnabled((isEnabled) => !isEnabled)}
+				onPress={handleSegmentationTogglePress}
 				disabled={busy}
 			/>
 			<Button
@@ -125,18 +145,15 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 			/>
 			<Button
 				title={`Maximum poses: ${maxPoses}`}
-				onPress={() => {
-					const isSinglePose = maxPoses === 1;
-					return setMaxPoses(isSinglePose ? 2 : 1);
-				}}
+				onPress={handleMaxPosesTogglePress}
 				disabled={busy}
 			/>
 			{poseIndices.map((index) => (
-				<Button
+				<PoseIndexButton
 					key={index}
-					title={`Show pose ${index + 1}`}
-					onPress={() => setPoseIndex(index)}
-					disabled={poseIndex === index}
+					index={index}
+					isSelected={poseIndex === index}
+					onSelect={setPoseIndex}
 				/>
 			))}
 			<TextInput
@@ -167,10 +184,7 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 					{report.detection.inferenceDurationMs.toFixed(1)} ms inference
 				</Text>
 			)}
-			<View
-				style={{ flex: 1 }}
-				onLayout={(event) => setSize(event.nativeEvent.layout)}
-			>
+			<View style={styles.fillArea} onLayout={handlePhotoFrameLayout}>
 				{report && (
 					<>
 						<Image
@@ -201,3 +215,9 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 		</View>
 	);
 };
+
+const styles = StyleSheet.create({
+	fillArea: {
+		flex: 1,
+	},
+});
