@@ -18,7 +18,6 @@ export type PoseSkeletonProps = SkeletonOptions &
 		  }
 	);
 
-/** Optional overlay for an aspect-fill preview. Coordinates are not mirrored a second time. */
 export const PoseSkeleton = React.memo((props: PoseSkeletonProps) => {
 	const { width, height } = props;
 

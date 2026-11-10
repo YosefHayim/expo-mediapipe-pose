@@ -6,7 +6,6 @@ export type SelectablePose = {
 	readonly poses?: readonly PoseLandmarks[] | undefined;
 };
 
-/** A view of one result index, never a persistent person identity. Missing indices have empty landmarks. */
 export const selectPose = <Frame extends SelectablePose>(
 	frame: Frame,
 	poseIndex: number,

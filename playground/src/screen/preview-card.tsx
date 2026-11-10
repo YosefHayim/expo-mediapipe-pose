@@ -110,7 +110,7 @@ export const PreviewCard = ({
 	const mediaStageMirrorClass = isMirroredCamera ? "mirrored" : "";
 	const fileChoiceLabel = isPhotoMode ? "an image" : "a video";
 	const fileAccept = isPhotoMode ? "image/*" : "video/*";
-	const imageAltString = isSampleMode
+	const imageAltLabel = isSampleMode
 		? "Public MediaPipe evaluation sample"
 		: "Your selected local image";
 	const videoMediaUrl = isVideoMode ? upload || undefined : undefined;
@@ -243,7 +243,7 @@ export const PreviewCard = ({
 							ref={image}
 							key={mediaUrl}
 							src={mediaUrl}
-							alt={imageAltString}
+							alt={imageAltLabel}
 							onError={() =>
 								setMessage(
 									"This image could not be decoded. Try a JPEG or PNG.",

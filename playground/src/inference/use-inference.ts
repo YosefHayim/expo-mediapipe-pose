@@ -320,7 +320,6 @@ export const useInference = (hookSettings: UseInferenceSettings) => {
 				}
 			}
 
-			// Finish any in-flight inference, close on the worker, then reclaim WASM memory.
 			send({ type: "close" });
 			setTimeout(() => worker.terminate(), 100);
 		};
