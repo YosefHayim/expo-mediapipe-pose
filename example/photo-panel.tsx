@@ -11,11 +11,11 @@ import {
 	Button,
 	Image,
 	type LayoutChangeEvent,
-	StyleSheet,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
+import { panelStyles } from "./panel-styles";
 import { PoseIndexButton } from "./pose-index-button";
 
 const releaseMasks = async (detection: PoseDetection | undefined) => {
@@ -130,9 +130,11 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 	const handlePhotoFrameLayout = (event: LayoutChangeEvent) =>
 		setSize(event.nativeEvent.layout);
 
+	const hasError = error != null;
+
 	return (
-		<View style={styles.panel}>
-			<Text style={styles.text}>Analyze a local photo</Text>
+		<View style={panelStyles.panel}>
+			<Text style={panelStyles.label}>Analyze a local photo</Text>
 			<Button
 				title={`Segmentation: ${segmentationStatusLabel}`}
 				onPress={handleSegmentationTogglePress}
@@ -163,23 +165,23 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 				autoCapitalize="none"
 				placeholder="file:///… (copy picker results into app storage)"
 				placeholderTextColor="#94a3b8"
-				style={styles.input}
+				style={panelStyles.input}
 			/>
 			<Button
 				title={analyzeButtonLabel}
 				onPress={analyze}
 				disabled={!canAnalyze}
 			/>
-			{error && <Text style={styles.errorText}>{error}</Text>}
+			{hasError && <Text style={panelStyles.errorLabel}>{error}</Text>}
 			{report && (
-				<Text style={styles.text}>
+				<Text style={panelStyles.label}>
 					{report.detection.segmentation &&
 						`Masks: ${report.detection.segmentation.status} · `}
 					{report.detection.landmarks.length} landmarks ·{" "}
 					{report.detection.inferenceDurationMs.toFixed(1)} ms inference
 				</Text>
 			)}
-			<View style={styles.fillArea} onLayout={handlePhotoFrameLayout}>
+			<View style={panelStyles.fillArea} onLayout={handlePhotoFrameLayout}>
 				{report && (
 					<>
 						<Image
@@ -210,25 +212,3 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 		</View>
 	);
 };
-
-const styles = StyleSheet.create({
-	fillArea: {
-		flex: 1,
-	},
-	panel: {
-		flex: 1,
-		gap: 12,
-	},
-	text: {
-		color: "white",
-	},
-	errorText: {
-		color: "#fca5a5",
-	},
-	input: {
-		color: "white",
-		borderColor: "#64748b",
-		borderWidth: 1,
-		padding: 12,
-	},
-});

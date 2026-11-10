@@ -7,14 +7,9 @@ import {
 	usePoseTracking,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import {
-	Button,
-	type LayoutChangeEvent,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
+import { Button, type LayoutChangeEvent, Text, View } from "react-native";
 import { raisedArmRule } from "@/rules/pose-rules";
+import { panelStyles } from "./panel-styles";
 
 export const ReplayPanel = ({
 	recording,
@@ -53,20 +48,22 @@ export const ReplayPanel = ({
 		return replay.setSpeed(isNormalSpeed ? 2 : 1);
 	};
 
+	const hasNotice = notice != null;
+
 	return (
-		<View style={styles.panel}>
-			{notice && <Text style={styles.errorText}>{notice}</Text>}
-			<Text style={styles.text}>
+		<View style={panelStyles.panel}>
+			{hasNotice && <Text style={panelStyles.errorLabel}>{notice}</Text>}
+			<Text style={panelStyles.label}>
 				Landmark replay · {recording.frames.length} frames
 			</Text>
-			<Text style={styles.text}>
+			<Text style={panelStyles.label}>
 				{replay.status} · {replay.positionMs.toFixed(0)} /{" "}
 				{replay.durationMs.toFixed(0)} ms
 			</Text>
-			<Text style={styles.text}>
+			<Text style={panelStyles.label}>
 				Tracking: {tracking.status} · Arm: {rule.status}
 			</Text>
-			<View style={styles.fillArea} onLayout={handleReplayFrameLayout}>
+			<View style={panelStyles.fillArea} onLayout={handleReplayFrameLayout}>
 				{frame && <PoseSkeleton frame={frame} {...size} color="#38bdf8" />}
 			</View>
 			<Button
@@ -89,19 +86,3 @@ export const ReplayPanel = ({
 		</View>
 	);
 };
-
-const styles = StyleSheet.create({
-	fillArea: {
-		flex: 1,
-	},
-	panel: {
-		flex: 1,
-		gap: 12,
-	},
-	text: {
-		color: "white",
-	},
-	errorText: {
-		color: "#fca5a5",
-	},
-});

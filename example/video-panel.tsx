@@ -10,11 +10,11 @@ import * as React from "react";
 import {
 	Button,
 	type LayoutChangeEvent,
-	StyleSheet,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
+import { panelStyles } from "./panel-styles";
 
 const createVideoFailureMessage = (error: unknown): string => {
 	const isAggregateError = error instanceof AggregateError;
@@ -110,8 +110,10 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 		setSize(event.nativeEvent.layout);
 
 	return (
-		<View style={styles.panel}>
-			<Text style={styles.text}>Analyze a local video (up to 60 seconds)</Text>
+		<View style={panelStyles.panel}>
+			<Text style={panelStyles.label}>
+				Analyze a local video (up to 60 seconds)
+			</Text>
 			<TextInput
 				value={location}
 				onChangeText={setLocation}
@@ -119,7 +121,7 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 				autoCapitalize="none"
 				placeholder="file:///…"
 				placeholderTextColor="#94a3b8"
-				style={styles.input}
+				style={panelStyles.input}
 			/>
 			<Button
 				title="Load public test video"
@@ -132,36 +134,17 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 				onPress={handleVideoAbortPress}
 				disabled={!running}
 			/>
-			<Text style={styles.text}>{status}</Text>
+			<Text style={panelStyles.label}>{status}</Text>
 			{progress && (
-				<Text style={styles.text}>
+				<Text style={panelStyles.label}>
 					{progress.completedFrames}/{progress.totalFrames} samples ·{" "}
 					{progress.timestampMs} ms
 				</Text>
 			)}
-			<View style={styles.fillArea} onLayout={handleVideoFrameLayout}>
+			<View style={panelStyles.fillArea} onLayout={handleVideoFrameLayout}>
 				{report && <PoseSkeleton detection={report.detection} {...size} />}
 			</View>
 			<Button title="Return to camera" onPress={onClose} />
 		</View>
 	);
 };
-
-const styles = StyleSheet.create({
-	fillArea: {
-		flex: 1,
-	},
-	panel: {
-		flex: 1,
-		gap: 12,
-	},
-	text: {
-		color: "white",
-	},
-	input: {
-		color: "white",
-		borderColor: "#64748b",
-		borderWidth: 1,
-		padding: 12,
-	},
-});
