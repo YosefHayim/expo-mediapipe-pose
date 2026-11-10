@@ -154,6 +154,9 @@ export const PreviewCard = ({
 	};
 
 	const handleRecordingReplayClick = () => {
+		const isRecordingMissing = recorded == null;
+		if (isRecordingMissing) return;
+
 		setReplay(recorded);
 		setPosition(0);
 		setFrame(readFrameAt(recorded, 0));
@@ -197,6 +200,9 @@ export const PreviewCard = ({
 	};
 
 	const handleReplaySeekChange = (choice: number) => {
+		const isReplayMissing = replay == null;
+		if (isReplayMissing) return;
+
 		setPlaying(false);
 		setPosition(choice);
 		setFrame(readFrameAt(replay, choice));

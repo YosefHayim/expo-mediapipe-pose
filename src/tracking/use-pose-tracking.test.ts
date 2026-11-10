@@ -41,7 +41,7 @@ describe("usePoseTracking", () => {
 		const root = createRoot(container);
 		let now = 1000;
 		vi.spyOn(performance, "now").mockImplementation(() => now);
-		vi.useFakeTimers({ toFake: ["setTimeout"] });
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 		let tracking: ReturnType<typeof usePoseTracking> | null = null;
 		const readCurrentTracking = () => {
 			assert.ok(tracking);

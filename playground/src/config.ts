@@ -27,7 +27,7 @@ const BODY_PART_NAMES = [
 	"rightAnkle",
 ] as const satisfies readonly (keyof typeof BODY_PARTS)[];
 const bodyPart = z.enum(BODY_PART_NAMES);
-export const RuleSchema = z
+const RuleSchema = z
 	.strictObject({
 		id: z.string().regex(/^[a-zA-Z0-9-]{1,64}$/),
 		kind: z.enum(["angle", "distance", "height"]),
@@ -52,7 +52,7 @@ export const RuleSchema = z
 			? rule.enterThreshold > rule.exitThreshold
 			: rule.enterThreshold < rule.exitThreshold;
 	});
-export const SettingsSchema = z.strictObject({
+const SettingsSchema = z.strictObject({
 	version: z.literal(1),
 	detection: z.strictObject({
 		minPoseDetectionConfidence: createNumberSchema(0, 1),

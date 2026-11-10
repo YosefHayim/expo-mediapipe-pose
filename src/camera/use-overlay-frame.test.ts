@@ -41,7 +41,7 @@ describe("usePoseOverlayFrame", () => {
 		const root = createRoot(container);
 		let now = 1000;
 		vi.spyOn(performance, "now").mockImplementation(() => now);
-		vi.useFakeTimers({ toFake: ["setTimeout"] });
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 		let overlay: ReturnType<typeof usePoseOverlayFrame> | null = null;
 		const readCurrentOverlay = () => {
 			assert.ok(overlay);

@@ -4,7 +4,7 @@ import {
 	getCameraCapabilities,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Button, ScrollView, Text, View } from "react-native";
 import { CameraSelectButton } from "./camera-select-button";
 import { panelStyles } from "./panel-styles";
 

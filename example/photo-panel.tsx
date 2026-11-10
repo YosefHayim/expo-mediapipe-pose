@@ -19,11 +19,11 @@ import { panelStyles } from "./panel-styles";
 import { PoseIndexButton } from "./pose-index-button";
 
 const releaseMasks = async (detection: PoseDetection | undefined) => {
-	const isDetectionSegmentationUnavailable =
-		detection?.segmentation?.status !== "available";
-	if (isDetectionSegmentationUnavailable) return;
+	const segmentation = detection?.segmentation;
+	const isSegmentationAvailable = segmentation?.status === "available";
+	if (!isSegmentationAvailable) return;
 
-	await releasePoseSegmentation(detection.segmentation.leaseId);
+	await releasePoseSegmentation(segmentation.leaseId);
 };
 
 export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
@@ -95,14 +95,15 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 				require("./fixtures/man-woman-okay.jpg"),
 			).downloadAsync();
 
-			const isAssetLocalUriMissing = asset.localUri === null;
+			const assetLocalUri = asset.localUri;
+			const isAssetLocalUriMissing = assetLocalUri === null;
 			if (isAssetLocalUriMissing)
 				throw new Error("Fixture is unavailable locally");
 
 			const isTokenNotEqualsRequestCurrent = token !== request.current;
 			if (isTokenNotEqualsRequestCurrent) return;
 
-			setLocation(asset.localUri);
+			setLocation(assetLocalUri);
 			setMaxPoses(2);
 		} catch (failure) {
 			const isTokenEqualsRequestCurrent = token === request.current;

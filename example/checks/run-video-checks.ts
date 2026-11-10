@@ -1,7 +1,10 @@
 import { File, Paths } from "expo-file-system";
 import { analyzePoseVideo, type PoseDetection } from "expo-mediapipe-pose";
 
-const verify = (condition: boolean, message: string): asserts condition => {
+const verify: (condition: boolean, message: string) => asserts condition = (
+	condition,
+	message,
+) => {
 	const isCheckFailed = !condition;
 	if (isCheckFailed) throw new Error(message);
 };

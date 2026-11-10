@@ -6,7 +6,10 @@ import { runMultiplePoseChecks } from "./run-multiple-pose-checks";
 import { runSegmentationChecks } from "./run-segmentation-checks";
 import { runVideoChecks } from "./run-video-checks";
 
-const verify = (condition: boolean, message: string): asserts condition => {
+const verify: (condition: boolean, message: string) => asserts condition = (
+	condition,
+	message,
+) => {
 	const isCheckFailed = !condition;
 	if (isCheckFailed) throw new Error(message);
 };
@@ -51,7 +54,7 @@ export const runNativeChecks = async () => {
 	try {
 		const capabilities = await getCameraCapabilities();
 		cases.push(`camera discovery: ${capabilities.status}`);
-		const photo = await readLocalAssetUri(require("./fixtures/pose.jpg"));
+		const photo = await readLocalAssetUri(require("../fixtures/pose.jpg"));
 		const report = await analyzePoseImage(photo);
 		verify(
 			report.landmarks.length === 33,
@@ -79,13 +82,13 @@ export const runNativeChecks = async () => {
 		}
 		cases.push("case-insensitive local URI scheme and host");
 		const orientations = [
-			require("./fixtures/pose-exif-2.jpg"),
-			require("./fixtures/pose-exif-3.jpg"),
-			require("./fixtures/pose-exif-4.jpg"),
-			require("./fixtures/pose-exif-5.jpg"),
-			require("./fixtures/pose-exif-6.jpg"),
-			require("./fixtures/pose-exif-7.jpg"),
-			require("./fixtures/pose-exif-8.jpg"),
+			require("../fixtures/pose-exif-2.jpg"),
+			require("../fixtures/pose-exif-3.jpg"),
+			require("../fixtures/pose-exif-4.jpg"),
+			require("../fixtures/pose-exif-5.jpg"),
+			require("../fixtures/pose-exif-6.jpg"),
+			require("../fixtures/pose-exif-7.jpg"),
+			require("../fixtures/pose-exif-8.jpg"),
 		];
 		for (const [index, module] of orientations.entries()) {
 			const oriented = await analyzePoseImage(await readLocalAssetUri(module));
@@ -117,7 +120,7 @@ export const runNativeChecks = async () => {
 		}
 
 		const emptyImage = await readLocalAssetUri(
-			require("./fixtures/burger.jpg"),
+			require("../fixtures/burger.jpg"),
 		);
 		const empty = await analyzePoseImage(emptyImage);
 		verify(
@@ -150,7 +153,7 @@ export const runNativeChecks = async () => {
 		);
 		cases.push("invalid local model rejected");
 		const oversized = await readLocalAssetUri(
-			require("./fixtures/oversized.png"),
+			require("../fixtures/oversized.png"),
 		);
 		await expectNativeFailure(
 			"oversized image",
@@ -166,25 +169,25 @@ export const runNativeChecks = async () => {
 		);
 		cases.push("resources reusable after failure");
 		await runVideoChecks({
-			video: await readLocalAssetUri(require("./fixtures/pose-video.mp4")),
+			video: await readLocalAssetUri(require("../fixtures/pose-video.mp4")),
 			rotated: await readLocalAssetUri(
-				require("./fixtures/pose-video-rotated.mp4"),
+				require("../fixtures/pose-video-rotated.mp4"),
 			),
 			reference: report,
 			cases,
 		});
 		await runMultiplePoseChecks(
-			await readLocalAssetUri(require("./fixtures/man-woman-okay.jpg")),
+			await readLocalAssetUri(require("../fixtures/man-woman-okay.jpg")),
 			cases,
 		);
 		await runSegmentationChecks({
 			photo,
-			rotated: await readLocalAssetUri(require("./fixtures/pose-exif-6.jpg")),
+			rotated: await readLocalAssetUri(require("../fixtures/pose-exif-6.jpg")),
 			empty: emptyImage,
 			multiple: await readLocalAssetUri(
-				require("./fixtures/man-woman-okay.jpg"),
+				require("../fixtures/man-woman-okay.jpg"),
 			),
-			video: await readLocalAssetUri(require("./fixtures/pose-video.mp4")),
+			video: await readLocalAssetUri(require("../fixtures/pose-video.mp4")),
 			cases,
 		});
 		return writeReport({
