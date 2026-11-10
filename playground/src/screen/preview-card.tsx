@@ -1,9 +1,11 @@
 import { initialPoseRuleState } from "expo-mediapipe-pose/core";
+import type { ChangeEvent, SyntheticEvent } from "react";
 import { Range } from "@/controls/range";
 import { Select } from "@/controls/select";
 import { readFrameAt } from "@/recording";
 import { base } from "@/site";
 import { MaskCanvas } from "./mask-canvas";
+import { TabButton } from "./tab-button";
 import type { PlaygroundScreen } from "./use-playground";
 
 type PreviewCardProps = Pick<
@@ -133,23 +135,89 @@ export const PreviewCard = ({
 	const durationLabel = isDurationKnown
 		? videoProgress.duration.toFixed(1)
 		: "—";
+	const handleMirroredInputChange = (event: ChangeEvent<HTMLInputElement>) =>
+		setMirrored(event.target.checked);
+
+	const handleMediaFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) void loadFile(file, "media");
+	};
+
+	const handleSampleVideoClick = () => {
+		setUpload(`${base}pose-video.mp4`);
+		setPaused(false);
+	};
+
+	const handleRecordingFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) void loadFile(file, "recording");
+	};
+
+	const handleRecordingReplayClick = () => {
+		setReplay(recorded);
+		setPosition(0);
+		setFrame(readFrameAt(recorded, 0));
+	};
+
+	const handleImageError = () =>
+		setMessage("This image could not be decoded. Try a JPEG or PNG.");
+
+	const handleVideoTimeUpdate = (event: SyntheticEvent<HTMLVideoElement>) =>
+		setVideoProgress({
+			position: event.currentTarget.currentTime,
+			duration: event.currentTarget.duration || 0,
+		});
+
+	const handleVideoError = () =>
+		setMessage("This video format could not be decoded. Try an H.264 MP4.");
+
+	const handleVideoSeeked = () => {
+		ruleRef.current = settings.rules.map(() => initialPoseRuleState());
+		setFrame(null);
+		setMasks([]);
+	};
+
+	const handlePauseToggleClick = () => {
+		finishRecording();
+		setPaused((isPaused) => !isPaused);
+	};
+
+	const handleSampleModeClick = () => changeMode("sample");
+
+	const handlePauseClick = () => {
+		finishRecording();
+		setPaused(true);
+	};
+
+	const handleReplayButtonClick = () => {
+		const isPositionPastDuration = position >= duration;
+		if (isPositionPastDuration) setPosition(0);
+
+		setPlaying((isPlaying) => !isPlaying);
+	};
+
+	const handleReplaySeekChange = (choice: number) => {
+		setPlaying(false);
+		setPosition(choice);
+		setFrame(readFrameAt(replay, choice));
+		ruleRef.current = settings.rules.map(() => initialPoseRuleState());
+	};
+
+	const handleReplaySpeedChange = (amount: string) => setSpeed(Number(amount));
+
 	return (
 		<section className="preview-card">
 			<nav className="source-tabs" aria-label="Input source">
 				{(["sample", "camera", "photo", "video", "replay"] as const).map(
-					(element) => {
-						const isTabSelected = mode === element;
-						return (
-							<button
-								type="button"
-								key={element}
-								aria-pressed={isTabSelected}
-								onClick={() => changeMode(element)}
-							>
-								{pickTabLabel(element)}
-							</button>
-						);
-					},
+					(element) => (
+						<TabButton
+							key={element}
+							tab={element}
+							label={pickTabLabel(element)}
+							isSelected={mode === element}
+							onSelect={changeMode}
+						/>
+					),
 				)}
 			</nav>
 			<div className="source-toolbar">
@@ -174,7 +242,7 @@ export const PreviewCard = ({
 							<input
 								type="checkbox"
 								checked={mirrored}
-								onChange={(event) => setMirrored(event.target.checked)}
+								onChange={handleMirroredInputChange}
 							/>
 							Mirror preview
 						</label>
@@ -187,21 +255,12 @@ export const PreviewCard = ({
 							key={mode}
 							type="file"
 							accept={fileAccept}
-							onChange={(event) => {
-								const file = event.target.files?.[0];
-								if (file) void loadFile(file, "media");
-							}}
+							onChange={handleMediaFileChange}
 						/>
 					</label>
 				)}
 				{isVideoMode && (
-					<button
-						type="button"
-						onClick={() => {
-							setUpload(`${base}pose-video.mp4`);
-							setPaused(false);
-						}}
-					>
+					<button type="button" onClick={handleSampleVideoClick}>
 						Try sample video
 					</button>
 				)}
@@ -212,21 +271,11 @@ export const PreviewCard = ({
 							<input
 								type="file"
 								accept=".json,application/json"
-								onChange={(event) => {
-									const file = event.target.files?.[0];
-									if (file) void loadFile(file, "recording");
-								}}
+								onChange={handleRecordingFileChange}
 							/>
 						</label>
 						{recorded && (
-							<button
-								type="button"
-								onClick={() => {
-									setReplay(recorded);
-									setPosition(0);
-									setFrame(readFrameAt(recorded, 0));
-								}}
-							>
+							<button type="button" onClick={handleRecordingReplayClick}>
 								Use last recording
 							</button>
 						)}
@@ -244,11 +293,7 @@ export const PreviewCard = ({
 							key={mediaUrl}
 							src={mediaUrl}
 							alt={imageAltLabel}
-							onError={() =>
-								setMessage(
-									"This image could not be decoded. Try a JPEG or PNG.",
-								)
-							}
+							onError={handleImageError}
 						/>
 					)}
 					{isMovingMode && (
@@ -259,24 +304,9 @@ export const PreviewCard = ({
 							muted
 							playsInline
 							controls={isVideoMode}
-							onTimeUpdate={(event) =>
-								setVideoProgress({
-									position: event.currentTarget.currentTime,
-									duration: event.currentTarget.duration || 0,
-								})
-							}
-							onError={() =>
-								setMessage(
-									"This video format could not be decoded. Try an H.264 MP4.",
-								)
-							}
-							onSeeked={() => {
-								ruleRef.current = settings.rules.map(() =>
-									initialPoseRuleState(),
-								);
-								setFrame(null);
-								setMasks([]);
-							}}
+							onTimeUpdate={handleVideoTimeUpdate}
+							onError={handleVideoError}
+							onSeeked={handleVideoSeeked}
 						/>
 					)}
 					{frame && (
@@ -339,13 +369,7 @@ export const PreviewCard = ({
 					{engine.status}
 				</span>
 				{isNotReplayMode && (
-					<button
-						type="button"
-						onClick={() => {
-							finishRecording();
-							setPaused((isPaused) => !isPaused);
-						}}
-					>
+					<button type="button" onClick={handlePauseToggleClick}>
 						{pauseButtonLabel}
 					</button>
 				)}
@@ -357,7 +381,7 @@ export const PreviewCard = ({
 					<button type="button" onClick={engine.retry}>
 						Retry
 					</button>
-					<button type="button" onClick={() => changeMode("sample")}>
+					<button type="button" onClick={handleSampleModeClick}>
 						Use a sample
 					</button>
 				</div>
@@ -371,13 +395,7 @@ export const PreviewCard = ({
 						Press play to sample at the inference limit. Sampling follows
 						playback; frames may be skipped.
 					</small>
-					<button
-						type="button"
-						onClick={() => {
-							finishRecording();
-							setPaused(true);
-						}}
-					>
+					<button type="button" onClick={handlePauseClick}>
 						Cancel analysis
 					</button>
 				</div>
@@ -387,12 +405,7 @@ export const PreviewCard = ({
 					<button
 						type="button"
 						disabled={replay.frames.length === 0}
-						onClick={() => {
-							const isPositionPastDuration = position >= duration;
-							if (isPositionPastDuration) setPosition(0);
-
-							setPlaying((isPlaying) => !isPlaying);
-						}}
+						onClick={handleReplayButtonClick}
 					>
 						{replayButtonLabel}
 					</button>
@@ -401,19 +414,12 @@ export const PreviewCard = ({
 						value={position}
 						min={0}
 						max={duration}
-						onChange={(choice) => {
-							setPlaying(false);
-							setPosition(choice);
-							setFrame(readFrameAt(replay, choice));
-							ruleRef.current = settings.rules.map(() =>
-								initialPoseRuleState(),
-							);
-						}}
+						onChange={handleReplaySeekChange}
 					/>
 					<Select
 						label="Playback speed"
 						value={String(speed)}
-						onChange={(amount) => setSpeed(Number(amount))}
+						onChange={handleReplaySpeedChange}
 					>
 						{[0.25, 0.5, 1, 2, 4].map((speed) => (
 							<option value={speed} key={speed}>

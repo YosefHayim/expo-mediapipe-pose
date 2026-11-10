@@ -1,16 +1,19 @@
-import { LANDMARK_NAMES } from "expo-mediapipe-pose/core";
 import { useEffect, useState } from "react";
 import type { Rule } from "@/config";
 import { Color } from "./color";
-import { createReadableLabel } from "./humanize";
 import { Range } from "./range";
+import {
+	type RuleLandmarkKey,
+	RuleLandmarkSelect,
+} from "./rule-landmark-select";
 import { Select } from "./select";
+import { ThresholdInput } from "./threshold-input";
 
 interface RuleEditorProps {
 	rule: Rule;
 	index: number;
-	onChange: (rule: Rule) => void;
-	onRemove: () => void;
+	onChange: (index: number, rule: Rule) => void;
+	onRemove: (index: number) => void;
 }
 
 export const RuleEditor = ({
@@ -31,7 +34,13 @@ export const RuleEditor = ({
 		});
 		setThresholdError("");
 	}, [rule.enterThreshold, rule.exitThreshold]);
-	const update = (patch: Partial<Rule>) => onChange({ ...rule, ...patch });
+	const update = (patch: Partial<Rule>) =>
+		onChange(index, { ...rule, ...patch });
+	const handleRuleRemoveClick = () => onRemove(index);
+
+	const handleRuleLandmarkChange = (key: RuleLandmarkKey, landmark: string) =>
+		update({ [key]: landmark });
+
 	const updateThreshold = (
 		key: "enterThreshold" | "exitThreshold",
 		choice: string,
@@ -69,10 +78,45 @@ export const RuleEditor = ({
 		}
 
 		setThresholdError("");
-		onChange({ ...rule, enterThreshold, exitThreshold });
+		onChange(index, { ...rule, enterThreshold, exitThreshold });
 	};
 
 	const isRuleKindNotHeight = rule.kind !== "height";
+
+	const handleRuleKindChange = (kind: string) => {
+		const isKindHeight = kind === "height";
+		return update({
+			kind: kind as Rule["kind"],
+			space: isKindHeight ? "image" : rule.space,
+		});
+	};
+
+	const handleRuleSpaceChange = (space: string) =>
+		update({ space: space as Rule["space"] });
+
+	const handleRuleDirectionChange = (choice: string) =>
+		update({
+			direction: choice as Rule["direction"],
+			enterThreshold: rule.exitThreshold,
+			exitThreshold: rule.enterThreshold,
+		});
+
+	const handleRuleMinVisibilityChange = (minVisibility: number) =>
+		update({ minVisibility });
+
+	const handleRuleHoldMsChange = (holdMs: number) => update({ holdMs });
+
+	const handleRuleStaleAfterMsChange = (staleAfterMs: number) =>
+		update({ staleAfterMs });
+
+	const handleRulePassColorChange = (passColor: string) =>
+		update({ passColor });
+
+	const handleRuleFailColorChange = (failColor: string) =>
+		update({ failColor });
+
+	const handleRuleUnknownColorChange = (unknownColor: string) =>
+		update({ unknownColor });
 
 	return (
 		<fieldset className="rule-editor">
@@ -80,13 +124,7 @@ export const RuleEditor = ({
 			<Select
 				label={`Rule ${index + 1} measurement`}
 				value={rule.kind}
-				onChange={(kind) => {
-					const isKindHeight = kind === "height";
-					return update({
-						kind: kind as Rule["kind"],
-						space: isKindHeight ? "image" : rule.space,
-					});
-				}}
+				onChange={handleRuleKindChange}
 			>
 				<option value="angle">Joint angle</option>
 				<option value="distance">Distance</option>
@@ -96,52 +134,37 @@ export const RuleEditor = ({
 				<Select
 					label="Coordinate space"
 					value={rule.space}
-					onChange={(space) => update({ space: space as Rule["space"] })}
+					onChange={handleRuleSpaceChange}
 				>
 					<option value="image">Image · pixels / degrees</option>
 					<option value="world">World · estimated meters / degrees</option>
 				</Select>
 			)}
 			{(["start", "vertex", "end"] as const).map((key) => (
-				<Select
+				<RuleLandmarkSelect
 					key={key}
-					label={createReadableLabel(key)}
+					fieldKey={key}
 					value={rule[key]}
-					onChange={(name) => update({ [key]: name })}
-				>
-					{LANDMARK_NAMES.map((name) => (
-						<option key={name}>{name}</option>
-					))}
-				</Select>
+					onFieldChange={handleRuleLandmarkChange}
+				/>
 			))}
 			<small>Vertex also selects the joint colored by this rule.</small>
 			<Select
 				label="Pass direction"
 				value={rule.direction}
-				onChange={(choice) =>
-					update({
-						direction: choice as Rule["direction"],
-						enterThreshold: rule.exitThreshold,
-						exitThreshold: rule.enterThreshold,
-					})
-				}
+				onChange={handleRuleDirectionChange}
 			>
 				<option value="below">Below</option>
 				<option value="above">Above</option>
 			</Select>
 			<div className="two-fields">
 				{(["enterThreshold", "exitThreshold"] as const).map((key) => (
-					<label className="field" key={key}>
-						{createReadableLabel(key)}
-						<input
-							type="number"
-							step="any"
-							min={-10000}
-							max={10000}
-							value={draft[key]}
-							onChange={(event) => updateThreshold(key, event.target.value)}
-						/>
-					</label>
+					<ThresholdInput
+						key={key}
+						fieldKey={key}
+						value={draft[key]}
+						onFieldChange={updateThreshold}
+					/>
 				))}
 			</div>
 			{thresholdError && <small role="alert">{thresholdError}</small>}
@@ -151,7 +174,7 @@ export const RuleEditor = ({
 				min={0}
 				max={1}
 				step={0.05}
-				onChange={(minVisibility) => update({ minVisibility })}
+				onChange={handleRuleMinVisibilityChange}
 			/>
 			<Range
 				label="Hold duration (ms)"
@@ -159,7 +182,7 @@ export const RuleEditor = ({
 				min={0}
 				max={2000}
 				step={50}
-				onChange={(holdMs) => update({ holdMs })}
+				onChange={handleRuleHoldMsChange}
 			/>
 			<Range
 				label="Stale after (ms)"
@@ -167,24 +190,24 @@ export const RuleEditor = ({
 				min={100}
 				max={5000}
 				step={100}
-				onChange={(staleAfterMs) => update({ staleAfterMs })}
+				onChange={handleRuleStaleAfterMsChange}
 			/>
 			<Color
 				label="Pass color"
 				value={rule.passColor}
-				onChange={(passColor) => update({ passColor })}
+				onChange={handleRulePassColorChange}
 			/>
 			<Color
 				label="Fail color"
 				value={rule.failColor}
-				onChange={(failColor) => update({ failColor })}
+				onChange={handleRuleFailColorChange}
 			/>
 			<Color
 				label="Unknown color"
 				value={rule.unknownColor}
-				onChange={(unknownColor) => update({ unknownColor })}
+				onChange={handleRuleUnknownColorChange}
 			/>
-			<button type="button" onClick={onRemove}>
+			<button type="button" onClick={handleRuleRemoveClick}>
 				Remove rule
 			</button>
 		</fieldset>

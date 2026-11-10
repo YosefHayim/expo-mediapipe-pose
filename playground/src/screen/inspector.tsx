@@ -1,3 +1,4 @@
+import type { ChangeEvent } from "react";
 import { createConfigurationLink, createDefaultSettings } from "@/config";
 import { Controls } from "@/controls/controls";
 import { download } from "@/recording";
@@ -27,6 +28,42 @@ export const Inspector = ({
 	setModel,
 	setModelName,
 }: InspectorProps) => {
+	const handleSettingsResetClick = () => {
+		setSettings(createDefaultSettings());
+		setModel(null);
+		setModelName("");
+		setMessage("Restored documented library defaults.");
+	};
+
+	const handleFullPresetClick = () => choosePreset("full");
+
+	const handleArmsPresetClick = () => choosePreset("arms");
+
+	const handleMultiplePresetClick = () => choosePreset("multiple");
+
+	const handleMaskPresetClick = () => choosePreset("mask");
+
+	const handleModelClearClick = () => {
+		setModel(null);
+		setModelName("");
+	};
+
+	const handleModelFileChange = (file: File) => void loadFile(file, "model");
+
+	const handleConfigLinkCopyClick = () =>
+		void copy(
+			createConfigurationLink(settings),
+			"Configuration link copied. Media and model files are not included.",
+		);
+
+	const handleConfigDownloadClick = () =>
+		download("pose-config.json", JSON.stringify(settings, null, 2));
+
+	const handleConfigFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) void loadFile(file, "config");
+	};
+
 	return (
 		<aside className="inspector" aria-label="Configuration">
 			<div className="inspector-heading">
@@ -37,12 +74,7 @@ export const Inspector = ({
 				<button
 					type="button"
 					className="text-button"
-					onClick={() => {
-						setSettings(createDefaultSettings());
-						setModel(null);
-						setModelName("");
-						setMessage("Restored documented library defaults.");
-					}}
+					onClick={handleSettingsResetClick}
 				>
 					Reset
 				</button>
@@ -50,16 +82,16 @@ export const Inspector = ({
 			<div className="presets">
 				<p>Start with a use case</p>
 				<div className="preset-grid">
-					<button type="button" onClick={() => choosePreset("full")}>
+					<button type="button" onClick={handleFullPresetClick}>
 						◎ <span>Full body</span>
 					</button>
-					<button type="button" onClick={() => choosePreset("arms")}>
+					<button type="button" onClick={handleArmsPresetClick}>
 						⌁ <span>Arm feedback</span>
 					</button>
-					<button type="button" onClick={() => choosePreset("multiple")}>
+					<button type="button" onClick={handleMultiplePresetClick}>
 						◉ <span>Multiple poses</span>
 					</button>
-					<button type="button" onClick={() => choosePreset("mask")}>
+					<button type="button" onClick={handleMaskPresetClick}>
 						◐ <span>Segmentation</span>
 					</button>
 				</div>
@@ -67,13 +99,7 @@ export const Inspector = ({
 			{modelName && (
 				<p className="model-note">
 					Local model: {modelName}
-					<button
-						type="button"
-						onClick={() => {
-							setModel(null);
-							setModelName("");
-						}}
-					>
+					<button type="button" onClick={handleModelClearClick}>
 						Clear
 					</button>
 				</p>
@@ -81,26 +107,13 @@ export const Inspector = ({
 			<Controls
 				config={settings}
 				setConfig={setSettings}
-				onModel={(file) => void loadFile(file, "model")}
+				onModel={handleModelFileChange}
 			/>
 			<div className="config-actions">
-				<button
-					type="button"
-					onClick={() =>
-						void copy(
-							createConfigurationLink(settings),
-							"Configuration link copied. Media and model files are not included.",
-						)
-					}
-				>
+				<button type="button" onClick={handleConfigLinkCopyClick}>
 					Copy share link ↗
 				</button>
-				<button
-					type="button"
-					onClick={() =>
-						download("pose-config.json", JSON.stringify(settings, null, 2))
-					}
-				>
+				<button type="button" onClick={handleConfigDownloadClick}>
 					Export JSON
 				</button>
 				<label className="file-label">
@@ -108,10 +121,7 @@ export const Inspector = ({
 					<input
 						type="file"
 						accept=".json,application/json"
-						onChange={(event) => {
-							const file = event.target.files?.[0];
-							if (file) void loadFile(file, "config");
-						}}
+						onChange={handleConfigFileChange}
 					/>
 				</label>
 			</div>

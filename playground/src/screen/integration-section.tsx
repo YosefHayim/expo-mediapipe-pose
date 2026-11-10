@@ -14,6 +14,11 @@ export const IntegrationSection = ({
 	copy,
 	setCodeMode,
 }: IntegrationSectionProps) => {
+	const handleCodeModeChange = (mode: string) => setCodeMode(mode as MediaMode);
+
+	const handleCodeCopyClick = () =>
+		void copy(code, "Expo integration code copied.");
+
 	return (
 		<section id="integration" className="integration">
 			<div className="integration-copy">
@@ -30,17 +35,13 @@ export const IntegrationSection = ({
 				<Select
 					label="Integration type"
 					value={codeMode}
-					onChange={(mode) => setCodeMode(mode as MediaMode)}
+					onChange={handleCodeModeChange}
 				>
 					<option value="camera">Live camera + feedback rules</option>
 					<option value="photo">Local photo analysis</option>
 					<option value="video">Local video analysis</option>
 				</Select>
-				<button
-					type="button"
-					className="primary"
-					onClick={() => void copy(code, "Expo integration code copied.")}
-				>
+				<button type="button" className="primary" onClick={handleCodeCopyClick}>
 					Copy Expo code ↗
 				</button>
 				<p className="caption">

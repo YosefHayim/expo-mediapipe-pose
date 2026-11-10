@@ -143,18 +143,22 @@ const App = () => {
 	}, []);
 
 	const isMediaModeVideo = mediaMode === "video";
+	const handleVideoPanelClose = () => setMediaMode("camera");
+
 	if (isMediaModeVideo)
 		return (
 			<View style={styles.screen}>
-				<VideoPanel onClose={() => setMediaMode("camera")} />
+				<VideoPanel onClose={handleVideoPanelClose} />
 			</View>
 		);
 
 	const isMediaModePhoto = mediaMode === "photo";
+	const handlePhotoPanelClose = () => setMediaMode("camera");
+
 	if (isMediaModePhoto)
 		return (
 			<View style={styles.screen}>
-				<PhotoPanel onClose={() => setMediaMode("camera")} />
+				<PhotoPanel onClose={handlePhotoPanelClose} />
 			</View>
 		);
 
@@ -167,6 +171,10 @@ const App = () => {
 		);
 
 	const isPermissionDenied = !permission.granted;
+	const handleNoCameraVideoPress = () => setMediaMode("video");
+
+	const handleNoCameraPhotoPress = () => setMediaMode("photo");
+
 	if (isPermissionDenied) {
 		const permissionAction = permission.canAskAgain
 			? requestPermission
@@ -183,17 +191,19 @@ const App = () => {
 				<Button
 					title="Analyze a local video"
 					disabled={recordingActive}
-					onPress={() => setMediaMode("video")}
+					onPress={handleNoCameraVideoPress}
 				/>
 				<Button title={permissionLabel} onPress={permissionAction} />
 				<Button
 					title="Analyze a local photo"
 					disabled={recordingActive}
-					onPress={() => setMediaMode("photo")}
+					onPress={handleNoCameraPhotoPress}
 				/>
 			</View>
 		);
 	}
+
+	const handleRecordingClose = () => setRecording(null);
 
 	if (recording)
 		return (
@@ -201,7 +211,7 @@ const App = () => {
 				<ReplayPanel
 					notice={recordingError}
 					recording={recording}
-					onClose={() => setRecording(null)}
+					onClose={handleRecordingClose}
 				/>
 			</View>
 		);
@@ -250,18 +260,30 @@ const App = () => {
 
 	const pauseButtonLabel = paused ? "Resume" : "Pause";
 
+	const handleAnalyzePhotoPress = () => setMediaMode("photo");
+
+	const handleAnalyzeVideoPress = () => setMediaMode("video");
+
+	const handleFrameLimitPress = () =>
+		setFrameLimit((previous) => {
+			const isPreviousSkipFifteen = previous === 15;
+			return isPreviousSkipFifteen ? 30 : 15;
+		});
+
+	const handlePauseTogglePress = () => setPaused((isPaused) => !isPaused);
+
 	return (
 		<View style={styles.screen}>
 			<Text style={styles.title}>MediaPipe Pose</Text>
 			<Button
 				title="Analyze a local photo"
 				disabled={recordingActive}
-				onPress={() => setMediaMode("photo")}
+				onPress={handleAnalyzePhotoPress}
 			/>
 			<Button
 				title="Analyze a local video"
 				disabled={recordingActive}
-				onPress={() => setMediaMode("video")}
+				onPress={handleAnalyzeVideoPress}
 			/>
 			<Text style={styles.text}>{trackingLabels[tracking.status]}</Text>
 			<Text style={styles.text}>
@@ -300,12 +322,7 @@ const App = () => {
 			)}
 			<Button
 				title={`Inference limit: ${frameLimit} fps`}
-				onPress={() =>
-					setFrameLimit((previous) => {
-						const isPreviousSkipFifteen = previous === 15;
-						return isPreviousSkipFifteen ? 30 : 15;
-					})
-				}
+				onPress={handleFrameLimitPress}
 			/>
 			<Button
 				title={
@@ -324,10 +341,7 @@ const App = () => {
 			)}
 			<CameraControls selection={cameraSelection} onSelect={selectCamera} />
 			<View style={styles.actions}>
-				<Button
-					title={pauseButtonLabel}
-					onPress={() => setPaused((isPaused) => !isPaused)}
-				/>
+				<Button title={pauseButtonLabel} onPress={handlePauseTogglePress} />
 			</View>
 		</View>
 	);

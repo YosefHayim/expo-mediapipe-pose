@@ -1,3 +1,5 @@
+import type { ChangeEvent } from "react";
+
 interface ColorProps {
 	label: string;
 	value: string;
@@ -5,6 +7,9 @@ interface ColorProps {
 }
 
 export const Color = ({ label, value, onChange }: ColorProps) => {
+	const handleColorInputChange = (event: ChangeEvent<HTMLInputElement>) =>
+		onChange(event.target.value);
+
 	return (
 		<label className="color-field">
 			<span>{label}</span>
@@ -12,7 +17,7 @@ export const Color = ({ label, value, onChange }: ColorProps) => {
 				aria-label={label}
 				type="color"
 				value={value}
-				onChange={(event) => onChange(event.target.value)}
+				onChange={handleColorInputChange}
 			/>
 			<code>{value}</code>
 		</label>

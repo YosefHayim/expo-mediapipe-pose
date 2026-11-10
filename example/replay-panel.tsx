@@ -7,7 +7,7 @@ import {
 	usePoseTracking,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import { Button, Text, View } from "react-native";
+import { Button, type LayoutChangeEvent, Text, View } from "react-native";
 import { raisedArmRule } from "@/rules/pose-rules";
 
 export const ReplayPanel = ({
@@ -37,6 +37,16 @@ export const ReplayPanel = ({
 			tracking.reset();
 		},
 	});
+	const handleReplayFrameLayout = (event: LayoutChangeEvent) =>
+		setSize(event.nativeEvent.layout);
+
+	const handleReplaySeekMiddlePress = () => replay.seek(replay.durationMs / 2);
+
+	const handleReplaySpeedTogglePress = () => {
+		const isNormalSpeed = replay.speed === 1;
+		return replay.setSpeed(isNormalSpeed ? 2 : 1);
+	};
+
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
 			{notice && <Text style={{ color: "#fca5a5" }}>{notice}</Text>}
@@ -50,10 +60,7 @@ export const ReplayPanel = ({
 			<Text style={{ color: "white" }}>
 				Tracking: {tracking.status} · Arm: {rule.status}
 			</Text>
-			<View
-				style={{ flex: 1 }}
-				onLayout={(event) => setSize(event.nativeEvent.layout)}
-			>
+			<View style={{ flex: 1 }} onLayout={handleReplayFrameLayout}>
 				{frame && <PoseSkeleton frame={frame} {...size} color="#38bdf8" />}
 			</View>
 			<Button
@@ -67,16 +74,10 @@ export const ReplayPanel = ({
 				disabled={replay.status !== "playing"}
 			/>
 			<Button title="Reset" onPress={replay.reset} />
-			<Button
-				title="Seek halfway"
-				onPress={() => replay.seek(replay.durationMs / 2)}
-			/>
+			<Button title="Seek halfway" onPress={handleReplaySeekMiddlePress} />
 			<Button
 				title={`Speed: ${replay.speed}×`}
-				onPress={() => {
-					const isNormalSpeed = replay.speed === 1;
-					return replay.setSpeed(isNormalSpeed ? 2 : 1);
-				}}
+				onPress={handleReplaySpeedTogglePress}
 			/>
 			<Button title="Return to camera" onPress={onClose} />
 		</View>

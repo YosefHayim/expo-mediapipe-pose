@@ -7,7 +7,13 @@ import {
 	type PoseVideoProgress,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import { Button, Text, TextInput, View } from "react-native";
+import {
+	Button,
+	type LayoutChangeEvent,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
 
 const createVideoFailureMessage = (error: unknown): string => {
 	const isAggregateError = error instanceof AggregateError;
@@ -97,6 +103,11 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 			setStatus(String(error));
 		}
 	};
+	const handleVideoAbortPress = () => controller.current?.abort();
+
+	const handleVideoFrameLayout = (event: LayoutChangeEvent) =>
+		setSize(event.nativeEvent.layout);
+
 	return (
 		<View style={{ flex: 1, gap: 12 }}>
 			<Text style={{ color: "white" }}>
@@ -124,7 +135,7 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 			<Button title="Analyze" onPress={analyze} disabled={!canAnalyze} />
 			<Button
 				title="Cancel"
-				onPress={() => controller.current?.abort()}
+				onPress={handleVideoAbortPress}
 				disabled={!running}
 			/>
 			<Text style={{ color: "white" }}>{status}</Text>
@@ -134,10 +145,7 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 					{progress.timestampMs} ms
 				</Text>
 			)}
-			<View
-				style={{ flex: 1 }}
-				onLayout={(event) => setSize(event.nativeEvent.layout)}
-			>
+			<View style={{ flex: 1 }} onLayout={handleVideoFrameLayout}>
 				{report && <PoseSkeleton detection={report.detection} {...size} />}
 			</View>
 			<Button title="Return to camera" onPress={onClose} />

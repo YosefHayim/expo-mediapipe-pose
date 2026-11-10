@@ -1,6 +1,7 @@
 import { LANDMARK_NAMES } from "expo-mediapipe-pose/core";
 import { download, RECORDING_ENVELOPE_BYTES } from "@/recording";
 import { measureRule } from "@/rules";
+import { TabButton } from "./tab-button";
 import type { PlaygroundScreen } from "./use-playground";
 
 type ReportsCardProps = Pick<
@@ -48,6 +49,23 @@ export const ReportsCard = ({
 	const isRecordingTab = reportTab === "record";
 	const isRuleListEmpty = settings.rules.length === 0;
 
+	const handleArmsPresetClick = () => choosePreset("arms");
+
+	const handleRecordingToggleClick = () => {
+		if (recording) {
+			finishRecording();
+			return;
+		}
+
+		recordingRef.current = [];
+		recordingSize.current = RECORDING_ENVELOPE_BYTES;
+		setRecordingCount(0);
+		setRecording(true);
+	};
+
+	const handleRecordingDownloadClick = () =>
+		download("pose-recording.json", JSON.stringify(recorded));
+
 	return (
 		<section className="results-card">
 			<div className="section-heading">
@@ -55,15 +73,14 @@ export const ReportsCard = ({
 				<span className="tag">LIVE RESULTS</span>
 			</div>
 			<div className="result-tabs">
-				{["feedback", "landmarks", "record"].map((tab) => (
-					<button
-						type="button"
+				{(["feedback", "landmarks", "record"] as const).map((tab) => (
+					<TabButton
 						key={tab}
-						aria-pressed={reportTab === tab}
-						onClick={() => setReportTab(tab)}
-					>
-						{tab[0]?.toUpperCase() + tab.slice(1)}
-					</button>
+						tab={tab}
+						label={tab[0]?.toUpperCase() + tab.slice(1)}
+						isSelected={reportTab === tab}
+						onSelect={setReportTab}
+					/>
 				))}
 			</div>
 			{isFeedbackTab && (
@@ -75,7 +92,7 @@ export const ReportsCard = ({
 								Add a rule to measure an angle, distance, or relative height.
 								Try the arm-feedback preset to see independent joint colors.
 							</p>
-							<button type="button" onClick={() => choosePreset("arms")}>
+							<button type="button" onClick={handleArmsPresetClick}>
 								Try arm feedback ↗
 							</button>
 						</>
@@ -154,28 +171,13 @@ export const ReportsCard = ({
 						<button
 							type="button"
 							disabled={mode === "replay" || !frame || paused}
-							onClick={() => {
-								if (recording) {
-									finishRecording();
-									return;
-								}
-
-								recordingRef.current = [];
-								recordingSize.current = RECORDING_ENVELOPE_BYTES;
-								setRecordingCount(0);
-								setRecording(true);
-							}}
+							onClick={handleRecordingToggleClick}
 						>
 							{" "}
 							{recording ? "Stop recording" : "Record landmarks"}
 						</button>
 						{recorded && (
-							<button
-								type="button"
-								onClick={() =>
-									download("pose-recording.json", JSON.stringify(recorded))
-								}
-							>
+							<button type="button" onClick={handleRecordingDownloadClick}>
 								Download recording
 							</button>
 						)}
