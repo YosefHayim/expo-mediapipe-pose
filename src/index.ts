@@ -109,3 +109,4 @@ export { PoseSegmentationOverlay } from "./segmentation/overlay";
 export type { PoseSkeletonProps } from "./skeleton/view";
 export { PoseSkeleton } from "./skeleton/view";
 export { usePoseTracking } from "./tracking/use-pose-tracking";
+export { analyzePoseVideo } from "./video/native";

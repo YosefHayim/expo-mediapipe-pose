@@ -45,7 +45,7 @@ describe("analyzePoseVideo", () => {
 		let failRead = false;
 		let invalidSession = false;
 		let closeFailure: Error | null = null;
-		let releaseRead: (() => void) | null = null;
+		const readGate: { release: (() => void) | null } = { release: null };
 		let blockRead = false;
 		let opened = false;
 		const mockKey = Symbol.for("pose.nativeVideoTest");
@@ -68,7 +68,7 @@ describe("analyzePoseVideo", () => {
 
 					if (blockRead)
 						await new Promise<void>((done) => {
-							releaseRead = done;
+							readGate.release = done;
 						});
 
 					if (failRead) throw new Error("decode failed");
@@ -200,8 +200,8 @@ describe("analyzePoseVideo", () => {
 			const pending = inFlight.next();
 			await new Promise((done) => setTimeout(done, 5));
 			inFlightAbort.abort();
-			assert.ok(releaseRead);
-			releaseRead();
+			assert.ok(readGate.release);
+			readGate.release();
 			await assert.rejects(pending, { name: "AbortError" });
 			assert.equal(opened, false);
 		} finally {

@@ -65,7 +65,7 @@ describe("CameraCapabilities", () => {
 		};
 
 		assert.equal(
-			findCameraCapability(decode(details), "front")?.modes[0].resolution,
+			findCameraCapability(decode(details), "front")?.modes[0]?.resolution,
 			null,
 		);
 		assert.equal(

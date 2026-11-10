@@ -95,11 +95,12 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 				require("./fixtures/pose-video.mp4"),
 			).downloadAsync();
 
-			const isAssetLocalUriMissing = asset.localUri === null;
+			const assetLocalUri = asset.localUri;
+			const isAssetLocalUriMissing = assetLocalUri === null;
 			if (isAssetLocalUriMissing)
 				throw new Error("Fixture is not available locally");
 
-			setLocation(asset.localUri);
+			setLocation(assetLocalUri);
 		} catch (error) {
 			setStatus(String(error));
 		}
