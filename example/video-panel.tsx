@@ -110,10 +110,8 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 		setSize(event.nativeEvent.layout);
 
 	return (
-		<View style={{ flex: 1, gap: 12 }}>
-			<Text style={{ color: "white" }}>
-				Analyze a local video (up to 60 seconds)
-			</Text>
+		<View style={styles.panel}>
+			<Text style={styles.text}>Analyze a local video (up to 60 seconds)</Text>
 			<TextInput
 				value={location}
 				onChangeText={setLocation}
@@ -121,12 +119,7 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 				autoCapitalize="none"
 				placeholder="file:///…"
 				placeholderTextColor="#94a3b8"
-				style={{
-					color: "white",
-					borderColor: "#64748b",
-					borderWidth: 1,
-					padding: 12,
-				}}
+				style={styles.input}
 			/>
 			<Button
 				title="Load public test video"
@@ -139,9 +132,9 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 				onPress={handleVideoAbortPress}
 				disabled={!running}
 			/>
-			<Text style={{ color: "white" }}>{status}</Text>
+			<Text style={styles.text}>{status}</Text>
 			{progress && (
-				<Text style={{ color: "white" }}>
+				<Text style={styles.text}>
 					{progress.completedFrames}/{progress.totalFrames} samples ·{" "}
 					{progress.timestampMs} ms
 				</Text>
@@ -157,5 +150,18 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 const styles = StyleSheet.create({
 	fillArea: {
 		flex: 1,
+	},
+	panel: {
+		flex: 1,
+		gap: 12,
+	},
+	text: {
+		color: "white",
+	},
+	input: {
+		color: "white",
+		borderColor: "#64748b",
+		borderWidth: 1,
+		padding: 12,
 	},
 });

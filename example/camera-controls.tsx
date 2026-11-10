@@ -4,7 +4,7 @@ import {
 	getCameraCapabilities,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { CameraSelectButton } from "./camera-select-button";
 
 export type CameraSelection = {
@@ -48,14 +48,14 @@ export const CameraControls = ({
 	if (error)
 		return (
 			<View>
-				<Text style={{ color: "white" }}>Camera discovery failed.</Text>
+				<Text style={styles.text}>Camera discovery failed.</Text>
 				<Button title="Retry discovery" onPress={discover} />
 			</View>
 		);
 
 	const isCapabilitiesMissing = capabilities == null;
 	if (isCapabilitiesMissing)
-		return <Text style={{ color: "white" }}>Discovering cameras…</Text>;
+		return <Text style={styles.text}>Discovering cameras…</Text>;
 
 	const isCapabilitiesUnavailable = capabilities.status !== "available";
 	if (isCapabilitiesUnavailable) {
@@ -65,7 +65,7 @@ export const CameraControls = ({
 			: "No selectable camera is currently available.";
 		return (
 			<View>
-				<Text style={{ color: "white" }}>{message}</Text>
+				<Text style={styles.text}>{message}</Text>
 				<Button title="Retry discovery" onPress={discover} />
 			</View>
 		);
@@ -102,7 +102,7 @@ export const CameraControls = ({
 				);
 			})}
 			{selectedCamera?.zoomRange && (
-				<Text style={{ color: "white" }}>
+				<Text style={styles.text}>
 					Available zoom: {selectedCamera.zoomRange.min}–
 					{selectedCamera.zoomRange.max.toFixed(1)}×
 				</Text>
@@ -127,3 +127,9 @@ export const CameraControls = ({
 		</View>
 	);
 };
+
+const styles = StyleSheet.create({
+	text: {
+		color: "white",
+	},
+});

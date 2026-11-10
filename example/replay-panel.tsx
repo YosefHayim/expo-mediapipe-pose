@@ -54,16 +54,16 @@ export const ReplayPanel = ({
 	};
 
 	return (
-		<View style={{ flex: 1, gap: 12 }}>
-			{notice && <Text style={{ color: "#fca5a5" }}>{notice}</Text>}
-			<Text style={{ color: "white" }}>
+		<View style={styles.panel}>
+			{notice && <Text style={styles.errorText}>{notice}</Text>}
+			<Text style={styles.text}>
 				Landmark replay · {recording.frames.length} frames
 			</Text>
-			<Text style={{ color: "white" }}>
+			<Text style={styles.text}>
 				{replay.status} · {replay.positionMs.toFixed(0)} /{" "}
 				{replay.durationMs.toFixed(0)} ms
 			</Text>
-			<Text style={{ color: "white" }}>
+			<Text style={styles.text}>
 				Tracking: {tracking.status} · Arm: {rule.status}
 			</Text>
 			<View style={styles.fillArea} onLayout={handleReplayFrameLayout}>
@@ -93,5 +93,15 @@ export const ReplayPanel = ({
 const styles = StyleSheet.create({
 	fillArea: {
 		flex: 1,
+	},
+	panel: {
+		flex: 1,
+		gap: 12,
+	},
+	text: {
+		color: "white",
+	},
+	errorText: {
+		color: "#fca5a5",
 	},
 });

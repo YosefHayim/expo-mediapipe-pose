@@ -131,8 +131,8 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 		setSize(event.nativeEvent.layout);
 
 	return (
-		<View style={{ flex: 1, gap: 12 }}>
-			<Text style={{ color: "white" }}>Analyze a local photo</Text>
+		<View style={styles.panel}>
+			<Text style={styles.text}>Analyze a local photo</Text>
 			<Button
 				title={`Segmentation: ${segmentationStatusLabel}`}
 				onPress={handleSegmentationTogglePress}
@@ -163,21 +163,16 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 				autoCapitalize="none"
 				placeholder="file:///… (copy picker results into app storage)"
 				placeholderTextColor="#94a3b8"
-				style={{
-					color: "white",
-					borderColor: "#64748b",
-					borderWidth: 1,
-					padding: 12,
-				}}
+				style={styles.input}
 			/>
 			<Button
 				title={analyzeButtonLabel}
 				onPress={analyze}
 				disabled={!canAnalyze}
 			/>
-			{error && <Text style={{ color: "#fca5a5" }}>{error}</Text>}
+			{error && <Text style={styles.errorText}>{error}</Text>}
 			{report && (
-				<Text style={{ color: "white" }}>
+				<Text style={styles.text}>
 					{report.detection.segmentation &&
 						`Masks: ${report.detection.segmentation.status} · `}
 					{report.detection.landmarks.length} landmarks ·{" "}
@@ -219,5 +214,21 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 const styles = StyleSheet.create({
 	fillArea: {
 		flex: 1,
+	},
+	panel: {
+		flex: 1,
+		gap: 12,
+	},
+	text: {
+		color: "white",
+	},
+	errorText: {
+		color: "#fca5a5",
+	},
+	input: {
+		color: "white",
+		borderColor: "#64748b",
+		borderWidth: 1,
+		padding: 12,
 	},
 });
