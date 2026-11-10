@@ -46,22 +46,22 @@ export const generateCode = (
 	mode: MediaMode,
 	hasLocalModel = false,
 ): string => {
-	const d = settings.detection;
-	const needsModelPath = hasLocalModel || d.modelVariant !== "full";
+	const detection = settings.detection;
+	const needsModelPath = hasLocalModel || detection.modelVariant !== "full";
 
 	const isPhotoVideoOrSampleMode =
 		mode === "photo" || mode === "video" || mode === "sample";
 	if (isPhotoVideoOrSampleMode) {
 		const codeSettings = {
-			minPoseDetectionConfidence: d.minPoseDetectionConfidence,
-			minPosePresenceConfidence: d.minPosePresenceConfidence,
-			maxPoses: d.maxPoses,
-			modelVariant: d.modelVariant,
+			minPoseDetectionConfidence: detection.minPoseDetectionConfidence,
+			minPosePresenceConfidence: detection.minPosePresenceConfidence,
+			maxPoses: detection.maxPoses,
+			modelVariant: detection.modelVariant,
 			...(needsModelPath
 				? { modelPath: "/absolute/path/to/your-model.task" }
 				: {}),
-			segmentationEnabled: d.segmentationEnabled,
-			maskMaxDimension: d.maskMaxDimension,
+			segmentationEnabled: detection.segmentationEnabled,
+			maskMaxDimension: detection.maskMaxDimension,
 		};
 
 		const isModeVideo = mode === "video";
@@ -70,7 +70,7 @@ export const generateCode = (
 
 // Pass an AbortSignal to cancel; delivered masks still belong to this consumer.
 export const analyzeVideo = async (localUri: string, consume: (result: PoseDetection) => Promise<void>, signal: AbortSignal) => {
-  for await (const sample of analyzePoseVideo(localUri, { ...${JSON.stringify(codeSettings, null, 2)}, samplingFps: ${settings.timing.frameLimit}, minTrackingConfidence: ${d.minTrackingConfidence}, signal })) {
+  for await (const sample of analyzePoseVideo(localUri, { ...${JSON.stringify(codeSettings, null, 2)}, samplingFps: ${settings.timing.frameLimit}, minTrackingConfidence: ${detection.minTrackingConfidence}, signal })) {
     try { await consume(sample.detection); }
     finally {
       const masks = sample.detection.segmentation;
@@ -109,7 +109,7 @@ export const analyzePhoto = async (localUri: string, consume: (result: PoseDetec
 		)
 		.join(",\n    ");
 	const isSkeletonWithoutSegmentation =
-		settings.skeleton.enabled && !d.segmentationEnabled;
+		settings.skeleton.enabled && !detection.segmentationEnabled;
 	return `import * as React from "react";
 import { AppState, Button, Linking, Text, View } from "react-native";
 import { useCameraPermissions } from "expo-camera";
@@ -117,7 +117,7 @@ import {
   PoseCameraView, usePoseRules, createThresholdRule, composeSkeletonFeedback,
   getImageJointAngle, getWorldJointAngle, getImageDistance, getWorldDistance,
   getLandmark, selectPose, releasePoseSegmentation, type SkeletonOptions,
-  ${d.segmentationEnabled ? "PoseSegmentationOverlay, PoseSkeleton, type PoseFrame," : ""}
+  ${detection.segmentationEnabled ? "PoseSegmentationOverlay, PoseSkeleton, type PoseFrame," : ""}
 } from "expo-mediapipe-pose";
 
 const baseSkeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(settings), null, 2)};
@@ -132,7 +132,7 @@ export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
     return () => subscription.remove();
   }, []);
   const active = focused && foreground && error === null;
-  ${d.segmentationEnabled ? maskStatusCode(settings) : ""}
+  ${detection.segmentationEnabled ? maskStatusCode(settings) : ""}
   const feedback = usePoseRules({
     ${rules}
   });
@@ -146,16 +146,16 @@ export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
     style={{ flex: 1 }} isActive={active}
     cameraFacing="${settings.native.cameraFacing}" cameraLens="${settings.native.cameraLens}" cameraZoomFactor={${settings.native.cameraZoomFactor}}
     previewFps={${settings.timing.previewFps}} frameLimit={${settings.timing.frameLimit}} callbackFps={${settings.timing.callbackFps}}
-    poseModelVariant="${d.modelVariant}"${needsModelPath ? '\n    poseModelAssetPath="/absolute/path/to/your-model.task"' : ""}
-    minPoseDetectionConfidence={${d.minPoseDetectionConfidence}} minPosePresenceConfidence={${d.minPosePresenceConfidence}} minTrackingConfidence={${d.minTrackingConfidence}}
-    maxPoses={${d.maxPoses}} segmentationEnabled={${d.segmentationEnabled}} maskMaxDimension={${d.maskMaxDimension}}
+    poseModelVariant="${detection.modelVariant}"${needsModelPath ? '\n    poseModelAssetPath="/absolute/path/to/your-model.task"' : ""}
+    minPoseDetectionConfidence={${detection.minPoseDetectionConfidence}} minPosePresenceConfidence={${detection.minPosePresenceConfidence}} minTrackingConfidence={${detection.minTrackingConfidence}}
+    maxPoses={${detection.maxPoses}} segmentationEnabled={${detection.segmentationEnabled}} maskMaxDimension={${detection.maskMaxDimension}}
     skeleton={${isSkeletonWithoutSegmentation ? "skeleton" : "false"}}
-    ${d.segmentationEnabled ? "onLayout={event => setSize(event.nativeEvent.layout)}" : ""}
-    onCameraConfigured={() => { feedback.reset(); ${d.segmentationEnabled ? "setOverlayFrame(null);" : ""} }}
+    ${detection.segmentationEnabled ? "onLayout={event => setSize(event.nativeEvent.layout)}" : ""}
+    onCameraConfigured={() => { feedback.reset(); ${detection.segmentationEnabled ? "setOverlayFrame(null);" : ""} }}
     onInferenceError={event => { feedback.reset(); setError(event.code); }}
     onLandmark={frame => {
       ${
-				d.segmentationEnabled
+				detection.segmentationEnabled
 					? `if (frame.segmentation?.status === "available") leases.current.add(frame.segmentation.leaseId);
       setOverlayFrame(frame);
       feedback.update(selectPose(frame, ${settings.skeleton.poseIndex}));`
@@ -170,7 +170,7 @@ export const PoseScreen = ({ focused = true }: { focused?: boolean }) => {
 			}
     }}
   ${
-		d.segmentationEnabled
+		detection.segmentationEnabled
 			? `>
     {overlayFrame?.segmentation && <PoseSegmentationOverlay segmentation={overlayFrame.segmentation} {...size} poseIndex={${settings.skeleton.poseIndex}} color="${settings.mask.color}" opacity={${settings.mask.opacity}} onError={() => setError("Mask image unavailable")} />}
     ${settings.skeleton.enabled ? "{overlayFrame && <PoseSkeleton frame={overlayFrame} {...size} {...skeleton} />}" : ""}

@@ -31,7 +31,7 @@ const createNativePoseFrame = (): PoseFrame => ({
 	},
 });
 
-const createTwoFrameRecordingString = (): string => {
+const createSerializedTwoFrameRecording = (): string => {
 	const sampleFrame = createSampleBrowserFrame();
 
 	return JSON.stringify({
@@ -46,7 +46,7 @@ const createTwoFrameRecordingString = (): string => {
 
 describe("parseRecording", () => {
 	test("rejects recordings with pixel data or out-of-order frames", () => {
-		const recording = parseRecording(createTwoFrameRecordingString());
+		const recording = parseRecording(createSerializedTwoFrameRecording());
 
 		expect(() =>
 			parseRecording(JSON.stringify({ ...recording, pixels: "private" })),
@@ -89,7 +89,7 @@ describe("parseRecording", () => {
 
 describe("frameAt", () => {
 	test("returns the frame at or before a time and null when there are no frames", () => {
-		const recording = parseRecording(createTwoFrameRecordingString());
+		const recording = parseRecording(createSerializedTwoFrameRecording());
 		const emptyRecording = parseRecording(
 			JSON.stringify({ ...recording, frames: [] }),
 		);

@@ -382,9 +382,9 @@ export const usePlayground = () => {
 			setMessage(isErrorInstanceError ? error.message : String(error));
 		}
 	};
-	const copy = async (stringToCopy: string, success: string) => {
+	const copy = async (snippetToCopy: string, success: string) => {
 		try {
-			await navigator.clipboard.writeText(stringToCopy);
+			await navigator.clipboard.writeText(snippetToCopy);
 			setMessage(success);
 		} catch {
 			setMessage(

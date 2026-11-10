@@ -107,9 +107,9 @@ export const readFrameAt = (recording: Recording, timestampMs: number) => {
 	}
 	return recording.frames[index]?.frame ?? null;
 };
-export const download = (name: string, fileString: string) => {
+export const download = (name: string, serializedFile: string) => {
 	const url = URL.createObjectURL(
-		new Blob([fileString], { type: "application/json" }),
+		new Blob([serializedFile], { type: "application/json" }),
 	);
 	const link = document.createElement("a");
 	link.href = url;
