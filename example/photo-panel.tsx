@@ -132,6 +132,10 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 
 	const hasError = error != null;
 
+	const hasReport = report != null;
+	const reportSegmentation = report?.detection.segmentation;
+	const hasSegmentation = reportSegmentation != null;
+
 	return (
 		<View style={panelStyles.panel}>
 			<Text style={panelStyles.label}>Analyze a local photo</Text>
@@ -173,16 +177,15 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 				disabled={!canAnalyze}
 			/>
 			{hasError && <Text style={panelStyles.errorLabel}>{error}</Text>}
-			{report && (
+			{hasReport && (
 				<Text style={panelStyles.label}>
-					{report.detection.segmentation &&
-						`Masks: ${report.detection.segmentation.status} · `}
+					{hasSegmentation && `Masks: ${reportSegmentation.status} · `}
 					{report.detection.landmarks.length} landmarks ·{" "}
 					{report.detection.inferenceDurationMs.toFixed(1)} ms inference
 				</Text>
 			)}
 			<View style={panelStyles.fillArea} onLayout={handlePhotoFrameLayout}>
-				{report && (
+				{hasReport && (
 					<>
 						<Image
 							source={{ uri: report.location }}
@@ -193,9 +196,9 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 								height: size.height,
 							}}
 						/>
-						{report.detection.segmentation && (
+						{hasSegmentation && (
 							<PoseSegmentationOverlay
-								segmentation={report.detection.segmentation}
+								segmentation={reportSegmentation}
 								poseIndex={poseIndex}
 								{...size}
 							/>

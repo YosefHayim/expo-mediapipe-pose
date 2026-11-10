@@ -76,6 +76,11 @@ export const CameraControls = ({
 	const selectedCamera = hasSelection
 		? findCameraCapability(capabilities, selection.facing, selection.lens)
 		: undefined;
+
+	const selectedZoomRange = selectedCamera?.zoomRange;
+	const hasZoomRange = selectedZoomRange != null;
+	const hasSelectedCamera = selectedCamera != null;
+
 	return (
 		<View>
 			{capabilities.cameras.map((camera) => {
@@ -102,13 +107,13 @@ export const CameraControls = ({
 					/>
 				);
 			})}
-			{selectedCamera?.zoomRange && (
+			{hasZoomRange && (
 				<Text style={panelStyles.label}>
-					Available zoom: {selectedCamera.zoomRange.min}–
-					{selectedCamera.zoomRange.max.toFixed(1)}×
+					Available zoom: {selectedZoomRange.min}–
+					{selectedZoomRange.max.toFixed(1)}×
 				</Text>
 			)}
-			{selectedCamera && (
+			{hasSelectedCamera && (
 				<ScrollView horizontal>
 					{selectedCamera.modes.map((mode) => (
 						<CameraSelectButton

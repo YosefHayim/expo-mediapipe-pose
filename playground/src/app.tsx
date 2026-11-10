@@ -72,6 +72,9 @@ export const App = () => {
 	} = usePlayground();
 	const handleMessageDismissClick = () => setMessage(null);
 
+	const hasMessage = message != null && message !== "";
+	const hasActualCapture = engine.actualCapture != null;
+
 	return (
 		<>
 			<a className="skip-link" href="#workspace">
@@ -80,7 +83,7 @@ export const App = () => {
 			<SiteHeader />
 			<main>
 				<IntroSection />
-				{message && (
+				{hasMessage && (
 					<div className="notice" role="status">
 						<span>{message}</span>
 						<button
@@ -140,7 +143,7 @@ export const App = () => {
 							videoProgress={videoProgress}
 						/>
 						<MetricsStrip engine={engine} frame={frame} />
-						{engine.actualCapture && (
+						{hasActualCapture && (
 							<p className="caption">{engine.actualCapture}</p>
 						)}
 						<ReportsCard

@@ -66,6 +66,8 @@ export const ReportsCard = ({
 	const handleRecordingDownloadClick = () =>
 		download("pose-recording.json", JSON.stringify(recorded));
 
+	const hasRecording = recorded != null;
+
 	return (
 		<section className="results-card">
 			<div className="section-heading">
@@ -176,7 +178,7 @@ export const ReportsCard = ({
 							{" "}
 							{recording ? "Stop recording" : "Record landmarks"}
 						</button>
-						{recorded && (
+						{hasRecording && (
 							<button type="button" onClick={handleRecordingDownloadClick}>
 								Download recording
 							</button>

@@ -64,6 +64,8 @@ export const Inspector = ({
 		if (file) void loadFile(file, "config");
 	};
 
+	const hasModelName = modelName !== "";
+
 	return (
 		<aside className="inspector" aria-label="Configuration">
 			<div className="inspector-heading">
@@ -96,7 +98,7 @@ export const Inspector = ({
 					</button>
 				</div>
 			</div>
-			{modelName && (
+			{hasModelName && (
 				<p className="model-note">
 					Local model: {modelName}
 					<button type="button" onClick={handleModelClearClick}>

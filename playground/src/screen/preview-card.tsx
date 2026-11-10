@@ -205,6 +205,14 @@ export const PreviewCard = ({
 
 	const handleReplaySpeedChange = (amount: string) => setSpeed(Number(amount));
 
+	const hasRecording = recorded != null;
+	const hasMediaUrl = mediaUrl !== "";
+	const isStillImageShown = isStillMode && hasMediaUrl;
+	const isSkeletonEnabled = settings.skeleton.enabled;
+	const hasEngineError = engine.error != null && engine.error !== "";
+	const hasReplay = replay != null;
+	const isReplayTransportShown = isReplayMode && hasReplay;
+
 	return (
 		<section className="preview-card">
 			<nav className="source-tabs" aria-label="Input source">
@@ -274,7 +282,7 @@ export const PreviewCard = ({
 								onChange={handleRecordingFileChange}
 							/>
 						</label>
-						{recorded && (
+						{hasRecording && (
 							<button type="button" onClick={handleRecordingReplayClick}>
 								Use last recording
 							</button>
@@ -287,7 +295,7 @@ export const PreviewCard = ({
 					className={`media-stage ${mediaStageMirrorClass}`}
 					style={frameAspectStyle}
 				>
-					{isStillMode && mediaUrl && (
+					{isStillImageShown && (
 						<img
 							ref={image}
 							key={mediaUrl}
@@ -309,14 +317,14 @@ export const PreviewCard = ({
 							onSeeked={handleVideoSeeked}
 						/>
 					)}
-					{frame && (
+					{isFrameKnown && (
 						<>
 							<MaskCanvas
 								mask={masks[settings.skeleton.poseIndex]}
 								color={settings.mask.color}
 								opacity={settings.mask.opacity}
 							/>
-							{settings.skeleton.enabled && (
+							{isSkeletonEnabled && (
 								<svg
 									className="skeleton"
 									viewBox={`0 0 ${frame.imageSize.width} ${frame.imageSize.height}`}
@@ -374,7 +382,7 @@ export const PreviewCard = ({
 					</button>
 				)}
 			</div>
-			{engine.error && (
+			{hasEngineError && (
 				<div role="alert" className="error-box">
 					<strong>We couldn’t start this test.</strong>
 					<p>{engine.error}</p>
@@ -400,7 +408,7 @@ export const PreviewCard = ({
 					</button>
 				</div>
 			)}
-			{isReplayMode && replay && (
+			{isReplayTransportShown && (
 				<div className="transport">
 					<button
 						type="button"
