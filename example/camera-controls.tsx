@@ -6,6 +6,7 @@ import {
 import * as React from "react";
 import { ScrollView, Text, View } from "react-native";
 import { CameraSelectButton } from "./camera-select-button";
+import { panelStyles } from "./panel-styles";
 
 export type CameraSelection = {
 	facing: "front" | "back";
@@ -48,14 +49,14 @@ export const CameraControls = ({
 	if (error)
 		return (
 			<View>
-				<Text style={{ color: "white" }}>Camera discovery failed.</Text>
+				<Text style={panelStyles.label}>Camera discovery failed.</Text>
 				<Button title="Retry discovery" onPress={discover} />
 			</View>
 		);
 
 	const isCapabilitiesMissing = capabilities == null;
 	if (isCapabilitiesMissing)
-		return <Text style={{ color: "white" }}>Discovering cameras…</Text>;
+		return <Text style={panelStyles.label}>Discovering cameras…</Text>;
 
 	const isCapabilitiesUnavailable = capabilities.status !== "available";
 	if (isCapabilitiesUnavailable) {
@@ -65,7 +66,7 @@ export const CameraControls = ({
 			: "No selectable camera is currently available.";
 		return (
 			<View>
-				<Text style={{ color: "white" }}>{message}</Text>
+				<Text style={panelStyles.label}>{message}</Text>
 				<Button title="Retry discovery" onPress={discover} />
 			</View>
 		);
@@ -102,7 +103,7 @@ export const CameraControls = ({
 				);
 			})}
 			{selectedCamera?.zoomRange && (
-				<Text style={{ color: "white" }}>
+				<Text style={panelStyles.label}>
 					Available zoom: {selectedCamera.zoomRange.min}–
 					{selectedCamera.zoomRange.max.toFixed(1)}×
 				</Text>
