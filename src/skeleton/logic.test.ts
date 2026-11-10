@@ -6,7 +6,7 @@ import {
 	getNamedLandmarks,
 	projectLandmark,
 } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
 describe("createSkeleton", () => {
 	test("rejects invalid visibility thresholds before rendering", () => {
@@ -14,7 +14,7 @@ describe("createSkeleton", () => {
 			assert.throws(
 				() =>
 					createSkeleton(
-						poseFrame(),
+						createPoseFrame(),
 						{ width: 360, height: 640 },
 						{ minVisibility },
 					),
@@ -24,7 +24,7 @@ describe("createSkeleton", () => {
 	});
 
 	test("does not mirror the native coordinates twice", () => {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 		frame.landmarks[15] = { x: 0.2, y: 0.4, z: 0, visibility: 1 };
 
 		const skeleton = createSkeleton(
@@ -37,7 +37,7 @@ describe("createSkeleton", () => {
 	});
 
 	test("selects body parts, deduplicates shared joints, and keeps raw detections", () => {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 		const before = structuredClone(frame);
 
 		const skeleton = createSkeleton(
@@ -56,7 +56,7 @@ describe("createSkeleton", () => {
 	});
 
 	test("applies explicit styles over global defaults and removes low-confidence connections", () => {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 		const options = {
 			bodyParts: ["leftArm"] as const,
 			color: "blue",
@@ -100,7 +100,7 @@ describe("createSkeleton", () => {
 
 describe("getNamedLandmarks", () => {
 	test("exposes anatomical landmark names without changing raw results", () => {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 
 		assert.equal(getLandmark(frame, "leftWrist"), frame.landmarks[15]);
 		assert.equal(getNamedLandmarks(frame).rightAnkle, frame.landmarks[28]);

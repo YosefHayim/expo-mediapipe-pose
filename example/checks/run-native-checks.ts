@@ -6,23 +6,23 @@ import { runMultiplePoseChecks } from "./run-multiple-pose-checks";
 import { runSegmentationChecks } from "./run-segmentation-checks";
 import { runVideoChecks } from "./run-video-checks";
 
-function verify(condition: boolean, message: string): asserts condition {
+const verify = (condition: boolean, message: string): asserts condition => {
 	const isCheckFailed = !condition;
 	if (isCheckFailed) throw new Error(message);
-}
-async function localAsset(module: number) {
+};
+const readLocalAssetUri = async (module: number) => {
 	const asset = await Asset.fromModule(module).downloadAsync();
 	verify(asset.localUri !== null, "Fixture must be downloaded before analysis");
 	return asset.localUri;
-}
-export async function runNativeChecks() {
+};
+export const runNativeChecks = async () => {
 	const cases: string[] = [];
 	const nativeFailures: { label: string; code: string; message: string }[] = [];
-	async function expectNativeFailure(
+	const expectNativeFailure = async (
 		label: string,
 		operation: () => Promise<unknown>,
 		expectedMessage?: string,
-	) {
+	) => {
 		try {
 			await operation();
 		} catch (error) {
@@ -46,12 +46,12 @@ export async function runNativeChecks() {
 			return;
 		}
 		throw new Error(`${label}: expected rejection`);
-	}
+	};
 	writeReport({ status: "running", platform: Platform.OS, cases });
 	try {
 		const capabilities = await getCameraCapabilities();
 		cases.push(`camera discovery: ${capabilities.status}`);
-		const photo = await localAsset(require("./fixtures/pose.jpg"));
+		const photo = await readLocalAssetUri(require("./fixtures/pose.jpg"));
 		const result = await analyzePoseImage(photo);
 		verify(
 			result.landmarks.length === 33,
@@ -88,7 +88,7 @@ export async function runNativeChecks() {
 			require("./fixtures/pose-exif-8.jpg"),
 		];
 		for (const [index, module] of orientations.entries()) {
-			const oriented = await analyzePoseImage(await localAsset(module));
+			const oriented = await analyzePoseImage(await readLocalAssetUri(module));
 			verify(
 				oriented.imageSize.width === result.imageSize.width,
 				"EXIF upright width must match",
@@ -116,7 +116,9 @@ export async function runNativeChecks() {
 			cases.push(`EXIF orientation ${index + 2}`);
 		}
 
-		const emptyImage = await localAsset(require("./fixtures/burger.jpg"));
+		const emptyImage = await readLocalAssetUri(
+			require("./fixtures/burger.jpg"),
+		);
 		const empty = await analyzePoseImage(emptyImage);
 		verify(
 			empty.landmarks.length === 0,
@@ -147,7 +149,9 @@ export async function runNativeChecks() {
 			analyzePoseImage(photo, { modelPath: photo }),
 		);
 		cases.push("invalid local model rejected");
-		const oversized = await localAsset(require("./fixtures/oversized.png"));
+		const oversized = await readLocalAssetUri(
+			require("./fixtures/oversized.png"),
+		);
 		await expectNativeFailure(
 			"oversized image",
 			() => analyzePoseImage(oversized),
@@ -161,24 +165,28 @@ export async function runNativeChecks() {
 			"Analysis must recover after invalid input",
 		);
 		cases.push("resources reusable after failure");
-		await runVideoChecks(
-			await localAsset(require("./fixtures/pose-video.mp4")),
-			await localAsset(require("./fixtures/pose-video-rotated.mp4")),
-			result,
+		await runVideoChecks({
+			video: await readLocalAssetUri(require("./fixtures/pose-video.mp4")),
+			rotated: await readLocalAssetUri(
+				require("./fixtures/pose-video-rotated.mp4"),
+			),
+			reference: result,
 			cases,
-		);
+		});
 		await runMultiplePoseChecks(
-			await localAsset(require("./fixtures/man-woman-okay.jpg")),
+			await readLocalAssetUri(require("./fixtures/man-woman-okay.jpg")),
 			cases,
 		);
-		await runSegmentationChecks(
+		await runSegmentationChecks({
 			photo,
-			await localAsset(require("./fixtures/pose-exif-6.jpg")),
-			emptyImage,
-			await localAsset(require("./fixtures/man-woman-okay.jpg")),
-			await localAsset(require("./fixtures/pose-video.mp4")),
+			rotated: await readLocalAssetUri(require("./fixtures/pose-exif-6.jpg")),
+			empty: emptyImage,
+			multiple: await readLocalAssetUri(
+				require("./fixtures/man-woman-okay.jpg"),
+			),
+			video: await readLocalAssetUri(require("./fixtures/pose-video.mp4")),
 			cases,
-		);
+		});
 		return writeReport({
 			status: "passed",
 			platform: Platform.OS,
@@ -197,16 +205,16 @@ export async function runNativeChecks() {
 				: String(error),
 		});
 	}
-}
-function writeReport(report: {
+};
+const writeReport = (report: {
 	status: string;
 	platform: string;
 	cases: string[];
 	nativeFailures?: { label: string; code: string; message: string }[];
 	error?: string;
-}) {
+}) => {
 	new File(Paths.document, "pose-native-checks.json").write(
 		JSON.stringify(report),
 	);
 	return JSON.stringify(report, null, 2);
-}
+};

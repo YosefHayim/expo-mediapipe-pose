@@ -54,7 +54,7 @@ const createRecordingSchema = <FrameSchema extends z.ZodType>(
 	return recordingShapeSchema.refine(hasIncreasingTimestamps);
 };
 
-const withoutSegmentation = (candidateFrame: unknown): unknown => {
+const stripSegmentation = (candidateFrame: unknown): unknown => {
 	const isObjectFrame =
 		typeof candidateFrame === "object" && candidateFrame !== null;
 
@@ -79,12 +79,12 @@ export const PoseDetectionRecording = createRecordingSchema(RecordedDetection);
 export type PoseDetectionRecording = z.infer<typeof PoseDetectionRecording>;
 
 const decodeFrame = (candidateFrame: unknown) => {
-	const frameWithoutSegmentation = withoutSegmentation(candidateFrame);
+	const frameWithoutSegmentation = stripSegmentation(candidateFrame);
 	return RecordedFrame.parse(frameWithoutSegmentation);
 };
 
 const decodeDetection = (candidateDetection: unknown) => {
-	const detectionWithoutSegmentation = withoutSegmentation(candidateDetection);
+	const detectionWithoutSegmentation = stripSegmentation(candidateDetection);
 	return RecordedDetection.parse(detectionWithoutSegmentation);
 };
 

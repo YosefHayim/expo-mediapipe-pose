@@ -40,12 +40,19 @@ const validateConfidence = (options: GeometryOptions) => {
 
 	return minimum;
 };
-const readPoints = (
-	landmarks: readonly Landmark[],
-	names: readonly LandmarkName[],
-	project: (joint: Landmark) => Point,
-	options: GeometryOptions,
-): PointsResult => {
+interface ReadPointsDetails {
+	landmarks: readonly Landmark[];
+	names: readonly LandmarkName[];
+	project: (joint: Landmark) => Point;
+	geometry: GeometryOptions;
+}
+
+const readPoints = ({
+	landmarks,
+	names,
+	project,
+	geometry: options,
+}: ReadPointsDetails): PointsResult => {
 	const minimum = validateConfidence(options);
 	const points: Point[] = [];
 	for (const name of names) {
@@ -69,7 +76,7 @@ const readPoints = (
 	}
 	return { status: "available", points };
 };
-const imagePoints = (
+const readImagePoints = (
 	input: ImageGeometryInput,
 	names: readonly LandmarkName[],
 	options: GeometryOptions,
@@ -84,31 +91,31 @@ const imagePoints = (
 	if (areDimensionsInvalid)
 		throw new RangeError("Image width and height must be finite and positive");
 
-	return readPoints(
-		input.landmarks,
+	return readPoints({
+		landmarks: input.landmarks,
 		names,
-		(joint) => [joint.x * width, joint.y * height, 0],
-		options,
-	);
+		project: (joint) => [joint.x * width, joint.y * height, 0],
+		geometry: options,
+	});
 };
-const worldPoints = (
+const readWorldPoints = (
 	input: WorldGeometryInput,
 	names: readonly LandmarkName[],
 	options: GeometryOptions,
 ) =>
-	readPoints(
-		input.worldLandmarks,
+	readPoints({
+		landmarks: input.worldLandmarks,
 		names,
-		(joint) => [joint.x, joint.y, joint.z],
-		options,
-	);
-const subtract = (left: Point, right: Point): Point => [
+		project: (joint) => [joint.x, joint.y, joint.z],
+		geometry: options,
+	});
+const subtractPoints = (left: Point, right: Point): Point => [
 	left[0] - right[0],
 	left[1] - right[1],
 	left[2] - right[2],
 ];
 
-const angle = (result: PointsResult): PoseMeasurement<"degrees"> => {
+const measureAngle = (result: PointsResult): PoseMeasurement<"degrees"> => {
 	const isStatusUnavailable = result.status === "unavailable";
 	if (isStatusUnavailable) return result;
 
@@ -117,8 +124,8 @@ const angle = (result: PointsResult): PoseMeasurement<"degrees"> => {
 	const isAnyLandmarkMissing = start == null || vertex == null || end == null;
 	if (isAnyLandmarkMissing) throw new Error("An angle requires three points");
 
-	const first = subtract(start, vertex);
-	const second = subtract(end, vertex);
+	const first = subtractPoints(start, vertex);
+	const second = subtractPoints(end, vertex);
 	const firstLength = Math.hypot(...first);
 
 	const secondLength = Math.hypot(...second);
@@ -154,7 +161,7 @@ const angle = (result: PointsResult): PoseMeasurement<"degrees"> => {
 		unit: "degrees",
 	};
 };
-const distance = <Unit extends "pixels" | "meters">(
+const measureDistance = <Unit extends "pixels" | "meters">(
 	result: PointsResult,
 	unit: Unit,
 ): PoseMeasurement<Unit> => {
@@ -166,7 +173,7 @@ const distance = <Unit extends "pixels" | "meters">(
 	const isStartOrEndMissing = start == null || end == null;
 	if (isStartOrEndMissing) throw new Error("A distance requires two points");
 
-	const value = Math.hypot(...subtract(start, end));
+	const value = Math.hypot(...subtractPoints(start, end));
 
 	const isNonFinite = !Number.isFinite(value);
 	if (isNonFinite)
@@ -182,7 +189,7 @@ export const getImageJointAngle = (
 	end: LandmarkName,
 	options: GeometryOptions = {},
 ): PoseMeasurement<"degrees"> =>
-	angle(imagePoints(input, [start, vertex, end], options));
+	measureAngle(readImagePoints(input, [start, vertex, end], options));
 export const getWorldJointAngle = (
 	input: WorldGeometryInput,
 	start: LandmarkName,
@@ -190,18 +197,18 @@ export const getWorldJointAngle = (
 	end: LandmarkName,
 	options: GeometryOptions = {},
 ): PoseMeasurement<"degrees"> =>
-	angle(worldPoints(input, [start, vertex, end], options));
+	measureAngle(readWorldPoints(input, [start, vertex, end], options));
 export const getImageDistance = (
 	input: ImageGeometryInput,
 	start: LandmarkName,
 	end: LandmarkName,
 	options: GeometryOptions = {},
 ): PoseMeasurement<"pixels"> =>
-	distance(imagePoints(input, [start, end], options), "pixels");
+	measureDistance(readImagePoints(input, [start, end], options), "pixels");
 export const getWorldDistance = (
 	input: WorldGeometryInput,
 	start: LandmarkName,
 	end: LandmarkName,
 	options: GeometryOptions = {},
 ): PoseMeasurement<"meters"> =>
-	distance(worldPoints(input, [start, end], options), "meters");
+	measureDistance(readWorldPoints(input, [start, end], options), "meters");

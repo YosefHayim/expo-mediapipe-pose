@@ -7,10 +7,10 @@ export type SelectablePose = {
 };
 
 /** A view of one result index, never a persistent person identity. Missing indices have empty landmarks. */
-export function selectPose<Frame extends SelectablePose>(
+export const selectPose = <Frame extends SelectablePose>(
 	frame: Frame,
 	poseIndex: number,
-): Frame {
+): Frame => {
 	const isPoseIndexOutOfRange =
 		!Number.isInteger(poseIndex) || poseIndex < 0 || poseIndex > 5;
 	if (isPoseIndexOutOfRange)
@@ -30,4 +30,4 @@ export function selectPose<Frame extends SelectablePose>(
 		landmarks: selected.landmarks,
 		worldLandmarks: selected.worldLandmarks,
 	};
-}
+};

@@ -48,7 +48,7 @@ const recordingSchema = z
 			),
 	);
 export type Recording = z.infer<typeof recordingSchema>;
-export function parseRecording(serializedRecording: string): Recording {
+export const parseRecording = (serializedRecording: string): Recording => {
 	const isTooLarge = serializedRecording.length > 16 * 1024 * 1024;
 	if (isTooLarge)
 		throw new Error("Recording exceeds the playground's 16 MiB limit.");
@@ -69,7 +69,7 @@ export function parseRecording(serializedRecording: string): Recording {
 			frame: {
 				landmarks: frame.landmarks,
 				worldLandmarks: frame.worldLandmarks,
-				poses: nativePoseResults(frame),
+				poses: listNativePoses(frame),
 				imageSize: {
 					width: frame.additionalData.width,
 					height: frame.additionalData.height,
@@ -84,7 +84,7 @@ export function parseRecording(serializedRecording: string): Recording {
 			frame: {
 				landmarks: frame.landmarks,
 				worldLandmarks: frame.worldLandmarks,
-				poses: nativePoseResults(frame),
+				poses: listNativePoses(frame),
 				imageSize: frame.imageSize,
 				inferenceDurationMs: frame.inferenceDurationMs,
 			},
@@ -95,8 +95,8 @@ export function parseRecording(serializedRecording: string): Recording {
 		version: 1,
 		frames,
 	});
-}
-export function frameAt(recording: Recording, timestampMs: number) {
+};
+export const readFrameAt = (recording: Recording, timestampMs: number) => {
 	let index = 0;
 	for (let i = 1; i < recording.frames.length; i++) {
 		const isNextFrameAfterTimestamp =
@@ -106,8 +106,8 @@ export function frameAt(recording: Recording, timestampMs: number) {
 		index = i;
 	}
 	return recording.frames[index]?.frame ?? null;
-}
-export function download(name: string, contents: string) {
+};
+export const download = (name: string, contents: string) => {
 	const url = URL.createObjectURL(
 		new Blob([contents], { type: "application/json" }),
 	);
@@ -116,13 +116,13 @@ export function download(name: string, contents: string) {
 	link.download = name;
 	link.click();
 	setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+};
 
-function nativePoseResults(
+const listNativePoses = (
 	frame: Pick<BrowserFrame, "landmarks" | "worldLandmarks"> & {
 		poses?: readonly PoseLandmarks[];
 	},
-): PoseLandmarks[] {
+): PoseLandmarks[] => {
 	const hasFramePoses = frame.poses !== undefined;
 	if (hasFramePoses) return [...frame.poses];
 
@@ -130,7 +130,7 @@ function nativePoseResults(
 	if (isFrameLandmarksEmpty) return [];
 
 	return [{ landmarks: frame.landmarks, worldLandmarks: frame.worldLandmarks }];
-}
+};
 export const RECORDING_ENVELOPE_BYTES = JSON.stringify({
 	format: "pose-playground",
 	version: 1,

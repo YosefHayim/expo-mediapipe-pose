@@ -7,7 +7,7 @@ import {
 	evaluatePoseThreshold,
 	type SkeletonOptions,
 } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
 describe("evaluatePoseThreshold", () => {
 	test("uses distinct enter/exit boundaries and retains unknown inside the initial band", () => {
@@ -57,9 +57,9 @@ describe("createThresholdRule", () => {
 			() => createThresholdRule({ ...options, resetKey: NaN }),
 			RangeError,
 		);
-		assert.equal(evaluatePoseRule(poseFrame(), rule), "unknown");
-		assert.equal(evaluatePoseRule(poseFrame(), rule, "pass"), "pass");
-		assert.equal(evaluatePoseRule(poseFrame(), rule, "fail"), "fail");
+		assert.equal(evaluatePoseRule(createPoseFrame(), rule), "unknown");
+		assert.equal(evaluatePoseRule(createPoseFrame(), rule, "pass"), "pass");
+		assert.equal(evaluatePoseRule(createPoseFrame(), rule, "fail"), "fail");
 		assert.notEqual(
 			createThresholdRule({ ...options, enterThreshold: 0.7 }).resetKey,
 			rule.resetKey,

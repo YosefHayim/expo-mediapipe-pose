@@ -4,7 +4,7 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, test, vi } from "vitest";
 import { createThresholdRule, type PoseRuleOptions } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 import { usePoseRules } from "./use-pose-rules";
 
 interface RulesHarnessProps {
@@ -52,7 +52,7 @@ describe("usePoseRules", () => {
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
 		let result: ReturnType<typeof usePoseRules> | undefined;
-		const current = () => {
+		const readCurrentRules = () => {
 			assert.ok(result);
 			return result;
 		};
@@ -74,7 +74,7 @@ describe("usePoseRules", () => {
 		const captureResult = (captured: ReturnType<typeof usePoseRules>) => {
 			result = captured;
 		};
-		const render = async (rules: Record<string, PoseRuleOptions>) => {
+		const mountRules = async (rules: Record<string, PoseRuleOptions>) => {
 			await act(() =>
 				root.render(
 					createElement(RulesHarness, { onResult: captureResult, rules }),
@@ -89,18 +89,21 @@ describe("usePoseRules", () => {
 		const send = async (elapsed = 0) => {
 			await advanceTime(elapsed);
 			frameNumber += 1;
-			const frame = poseFrame();
+			const frame = createPoseFrame();
 			await act(() =>
-				current().update({
+				readCurrentRules().update({
 					...frame,
 					additionalData: { ...frame.additionalData, frameNumber },
 				}),
 			);
 		};
 		try {
-			await render({ wrist, elbow });
+			await mountRules({ wrist, elbow });
 			await send();
-			assert.deepEqual(current().statuses, { wrist: "unknown", elbow: "pass" });
+			assert.deepEqual(readCurrentRules().statuses, {
+				wrist: "unknown",
+				elbow: "pass",
+			});
 			await send(100);
 			assert.deepEqual(transitions, ["elbow:pass", "wrist:pass"]);
 			const latestWrist = {
@@ -108,45 +111,48 @@ describe("usePoseRules", () => {
 				onChange: (status: string) => updatedTransitions.push(status),
 			};
 			const failingElbow = { ...elbow, evaluate: () => false };
-			await render({ wrist: latestWrist, elbow: failingElbow });
+			await mountRules({ wrist: latestWrist, elbow: failingElbow });
 			await send(20);
-			assert.deepEqual(current().statuses, { wrist: "pass", elbow: "fail" });
+			assert.deepEqual(readCurrentRules().statuses, {
+				wrist: "pass",
+				elbow: "fail",
+			});
 			const quick: PoseRuleOptions = {
 				landmarks: ["rightWrist"],
 				evaluate: () => true,
 				staleAfterMs: 50,
 			};
-			await render({ wrist: latestWrist, elbow: failingElbow, quick });
-			assert.equal(current().statuses.wrist, "pass");
+			await mountRules({ wrist: latestWrist, elbow: failingElbow, quick });
+			assert.equal(readCurrentRules().statuses.wrist, "pass");
 			await send();
 			await advanceTime(50);
-			assert.deepEqual(current().statuses, {
+			assert.deepEqual(readCurrentRules().statuses, {
 				wrist: "pass",
 				elbow: "fail",
 				quick: "unknown",
 			});
-			await render({ wrist: { ...latestWrist, isActive: false }, quick });
-			assert.equal(Object.hasOwn(current().statuses, "elbow"), false);
+			await mountRules({ wrist: { ...latestWrist, isActive: false }, quick });
+			assert.equal(Object.hasOwn(readCurrentRules().statuses, "elbow"), false);
 			assert.deepEqual(updatedTransitions, ["unknown"]);
 			await send();
-			assert.equal(current().statuses.wrist, "unknown");
-			await render({ wrist: latestWrist, quick });
+			assert.equal(readCurrentRules().statuses.wrist, "unknown");
+			await mountRules({ wrist: latestWrist, quick });
 			await send();
 			await send(100);
-			assert.equal(current().statuses.wrist, "pass");
-			await act(() => current().reset("wrist"));
-			assert.equal(current().statuses.wrist, "unknown");
-			assert.equal(current().statuses.quick, "pass");
+			assert.equal(readCurrentRules().statuses.wrist, "pass");
+			await act(() => readCurrentRules().reset("wrist"));
+			assert.equal(readCurrentRules().statuses.wrist, "unknown");
+			assert.equal(readCurrentRules().statuses.quick, "pass");
 			await send();
 			await send(100);
 			await advanceTime(500);
-			assert.equal(current().statuses.wrist, "unknown");
+			assert.equal(readCurrentRules().statuses.wrist, "unknown");
 			assert.equal(
 				transitions.filter((value) => value === "elbow:unknown").length,
 				0,
 			);
 			let measuredAngle = 80;
-			const thresholdRule = (
+			const createElbowRule = (
 				enterThreshold = 85,
 				exitThreshold = 95,
 				holdMs = 0,
@@ -159,46 +165,46 @@ describe("usePoseRules", () => {
 					holdMs,
 					measure: () => measuredAngle,
 				});
-			await render({ elbow: thresholdRule() });
+			await mountRules({ elbow: createElbowRule() });
 			await send();
-			assert.equal(current().statuses.elbow, "pass");
+			assert.equal(readCurrentRules().statuses.elbow, "pass");
 			measuredAngle = 90;
-			await render({ elbow: thresholdRule() });
+			await mountRules({ elbow: createElbowRule() });
 			await send();
-			assert.equal(current().statuses.elbow, "pass");
-			await render({ elbow: thresholdRule(70, 75) });
-			assert.equal(current().statuses.elbow, "unknown");
+			assert.equal(readCurrentRules().statuses.elbow, "pass");
+			await mountRules({ elbow: createElbowRule(70, 75) });
+			assert.equal(readCurrentRules().statuses.elbow, "unknown");
 			await send();
-			assert.equal(current().statuses.elbow, "fail");
+			assert.equal(readCurrentRules().statuses.elbow, "fail");
 			measuredAngle = 72;
 			await send();
-			assert.equal(current().statuses.elbow, "fail");
+			assert.equal(readCurrentRules().statuses.elbow, "fail");
 			measuredAngle = 69;
 			await send();
-			assert.equal(current().statuses.elbow, "pass");
-			await render({ elbow: thresholdRule(85, 95, 100) });
+			assert.equal(readCurrentRules().statuses.elbow, "pass");
+			await mountRules({ elbow: createElbowRule(85, 95, 100) });
 			measuredAngle = 80;
 			await send();
-			assert.equal(current().statuses.elbow, "unknown");
+			assert.equal(readCurrentRules().statuses.elbow, "unknown");
 			measuredAngle = 90;
 			await send(50);
 			await send(50);
-			assert.equal(current().statuses.elbow, "pass");
+			assert.equal(readCurrentRules().statuses.elbow, "pass");
 			measuredAngle = 95;
 			await send();
 			measuredAngle = 90;
 			await send(50);
 			await send(50);
-			assert.equal(current().statuses.elbow, "fail");
-			await render({});
-			assert.deepEqual(current().statuses, {});
+			assert.equal(readCurrentRules().statuses.elbow, "fail");
+			await mountRules({});
+			assert.deepEqual(readCurrentRules().statuses, {});
 			let followingEvaluations = 0;
-			await render({
+			await mountRules({
 				resetter: {
 					...quick,
 					onChange: (status) => {
 						const isStatusPass = status === "pass";
-						if (isStatusPass) current().reset();
+						if (isStatusPass) readCurrentRules().reset();
 					},
 				},
 				following: {
@@ -210,23 +216,23 @@ describe("usePoseRules", () => {
 				},
 			});
 			await send();
-			assert.deepEqual(current().statuses, {
+			assert.deepEqual(readCurrentRules().statuses, {
 				resetter: "unknown",
 				following: "unknown",
 			});
 			assert.equal(followingEvaluations, 0);
 			await advanceTime(1000);
-			assert.deepEqual(current().statuses, {
+			assert.deepEqual(readCurrentRules().statuses, {
 				resetter: "unknown",
 				following: "unknown",
 			});
-			await render({ wrist: latestWrist });
+			await mountRules({ wrist: latestWrist });
 			await send();
 			await send(100);
 		} finally {
 			const notifications = updatedTransitions.length;
 			await act(() => root.unmount());
-			await act(() => current().update(poseFrame()));
+			await act(() => readCurrentRules().update(createPoseFrame()));
 			await advanceTime(1000);
 			assert.equal(updatedTransitions.length, notifications);
 			vi.useRealTimers();

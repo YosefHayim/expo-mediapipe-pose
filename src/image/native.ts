@@ -7,10 +7,10 @@ import {
 	validateLocalFileLocation,
 } from "./analysis";
 
-export async function analyzePoseImage(
+export const analyzePoseImage = async (
 	location: string,
 	imageOptions: PoseImageOptions = {},
-): Promise<PoseDetection> {
+): Promise<PoseDetection> => {
 	validateLocalFileLocation(location);
 	const checkedOptions = resolvePoseImageOptions(imageOptions);
 	const native = requireNativeModule<{
@@ -34,4 +34,4 @@ export async function analyzePoseImage(
 		}
 		throw error;
 	}
-}
+};

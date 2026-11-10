@@ -1,7 +1,7 @@
 import { initialPoseRuleState } from "expo-mediapipe-pose/core";
 import { Range } from "@/controls/range";
 import { Select } from "@/controls/select";
-import { frameAt } from "@/recording";
+import { readFrameAt } from "@/recording";
 import { base } from "@/site";
 import { MaskCanvas } from "./mask-canvas";
 import type { PlaygroundScreen } from "./use-playground";
@@ -224,7 +224,7 @@ export const PreviewCard = ({
 								onClick={() => {
 									setReplay(recorded);
 									setPosition(0);
-									setFrame(frameAt(recorded, 0));
+									setFrame(readFrameAt(recorded, 0));
 								}}
 							>
 								Use last recording
@@ -404,7 +404,7 @@ export const PreviewCard = ({
 						onChange={(value) => {
 							setPlaying(false);
 							setPosition(value);
-							setFrame(frameAt(replay, value));
+							setFrame(readFrameAt(replay, value));
 							ruleRef.current = config.rules.map(() => initialPoseRuleState());
 						}}
 					/>

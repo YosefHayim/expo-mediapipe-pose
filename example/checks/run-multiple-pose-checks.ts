@@ -1,10 +1,17 @@
 import { analyzePoseImage, selectPose } from "expo-mediapipe-pose";
 
-function verify(condition: boolean, message: string): asserts condition {
+// An assertion call needs an explicit type on the const it calls.
+const verify: (condition: boolean, message: string) => asserts condition = (
+	condition,
+	message,
+) => {
 	const isCheckFailed = !condition;
 	if (isCheckFailed) throw new Error(message);
-}
-export async function runMultiplePoseChecks(location: string, cases: string[]) {
+};
+export const runMultiplePoseChecks = async (
+	location: string,
+	cases: string[],
+) => {
 	const detection = await analyzePoseImage(location, { maxPoses: 2 });
 	verify(
 		detection.poses?.length === 2,
@@ -53,4 +60,4 @@ export async function runMultiplePoseChecks(location: string, cases: string[]) {
 	const single = await analyzePoseImage(location, { maxPoses: 1 });
 	verify(single.poses?.length === 1, "maxPoses must limit native detections");
 	cases.push("native maximum pose count");
-}
+};

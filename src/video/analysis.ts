@@ -29,7 +29,7 @@ export type PoseVideoOptions = PoseImageOptions &
 		signal?: AbortSignal;
 		onProgress?: (progress: PoseVideoProgress) => void;
 	};
-export function resolvePoseVideoOptions(options: PoseVideoOptions = {}) {
+export const resolvePoseVideoOptions = (options: PoseVideoOptions = {}) => {
 	const {
 		samplingFps,
 		startMs,
@@ -53,11 +53,11 @@ export function resolvePoseVideoOptions(options: PoseVideoOptions = {}) {
 		signal,
 		onProgress,
 	};
-}
-export function createVideoSamplePlan(
+};
+export const createVideoSamplePlan = (
 	durationMs: number,
 	samplingOptions: z.input<typeof PoseVideoSampling> = {},
-) {
+) => {
 	const isDurationInvalid = !Number.isFinite(durationMs) || durationMs <= 0;
 	if (isDurationInvalid)
 		throw new RangeError("Video duration must be finite and positive");
@@ -99,4 +99,4 @@ export function createVideoSamplePlan(
 			);
 		},
 	};
-}
+};

@@ -1,11 +1,11 @@
 import type { SkeletonOptions } from "expo-mediapipe-pose/core";
 import type { Config, Rule } from "./config";
 import type { SourceMode } from "./types";
-export function skeletonOptions(config: Config): SkeletonOptions {
+export const createSkeletonSettings = (config: Config): SkeletonOptions => {
 	const { enabled: _enabled, ...options } = config.skeleton;
 	return options;
-}
-function ruleCode(rule: Rule) {
+};
+const createRuleCode = (rule: Rule) => {
 	const isRuleKindAngle = rule.kind === "angle";
 	const requiredLandmarks = isRuleKindAngle
 		? [rule.start, rule.vertex, rule.end]
@@ -40,12 +40,12 @@ function ruleCode(rule: Rule) {
       minVisibility: ${rule.minVisibility}, holdMs: ${rule.holdMs}, staleAfterMs: ${rule.staleAfterMs}, isActive: active,
       measure: (_pose, frame) => { ${measure} }
     })`;
-}
-export function generateCode(
+};
+export const generateCode = (
 	config: Config,
 	mode: SourceMode,
 	hasLocalModel = false,
-): string {
+): string => {
 	const d = config.detection;
 	const needsModelPath = hasLocalModel || d.modelVariant !== "full";
 
@@ -82,7 +82,7 @@ export async function analyzeVideo(localUri: string, consume: (result: PoseDetec
 
 		return `import { analyzePoseImage, releasePoseSegmentation, type PoseDetection, type SkeletonOptions } from "expo-mediapipe-pose";
 
-export const skeleton: SkeletonOptions = ${JSON.stringify(skeletonOptions(config), null, 2)};
+export const skeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(config), null, 2)};
 
 // A local file URI on the phone, not the browser upload URL.
 export async function analyzePhoto(localUri: string, consume: (result: PoseDetection) => Promise<void>) {
@@ -97,7 +97,7 @@ export async function analyzePhoto(localUri: string, consume: (result: PoseDetec
 	}
 
 	const rules = config.rules
-		.map((rule, i) => `rule${i}: ${ruleCode(rule)}`)
+		.map((rule, i) => `rule${i}: ${createRuleCode(rule)}`)
 		.join(",\n    ");
 	const styles = config.rules
 		.map(
@@ -120,7 +120,7 @@ import {
   ${d.segmentationEnabled ? "PoseSegmentationOverlay, PoseSkeleton, type PoseFrame," : ""}
 } from "expo-mediapipe-pose";
 
-const baseSkeleton: SkeletonOptions = ${JSON.stringify(skeletonOptions(config), null, 2)};
+const baseSkeleton: SkeletonOptions = ${JSON.stringify(createSkeletonSettings(config), null, 2)};
 
 // Supply screen focus from your navigation library. Requires a native development build.
 export function PoseScreen({ focused = true }: { focused?: boolean }) {
@@ -179,9 +179,9 @@ export function PoseScreen({ focused = true }: { focused?: boolean }) {
 	};
 }
 `;
-}
+};
 
-function maskStateCode(config: Config): string {
+const maskStateCode = (config: Config): string => {
 	const staleMs = Math.max(
 		500,
 		2000 /
@@ -213,4 +213,4 @@ function maskStateCode(config: Config): string {
     const timer = setTimeout(() => setOverlayFrame(null), ${staleMs});
     return () => clearTimeout(timer);
   }, [overlayFrame]);`;
-}
+};

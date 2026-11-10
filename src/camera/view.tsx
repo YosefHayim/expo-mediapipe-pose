@@ -156,7 +156,7 @@ export const PoseCameraView = ({
 
 	const handleFrame = React.useCallback(
 		(event: { nativeEvent: unknown }) => {
-			const discard = () => {
+			const discardEventSegmentation = () => {
 				void discardResultSegmentation(event.nativeEvent).catch(() =>
 					onInferenceError?.({ code: "segmentationCleanup" }),
 				);
@@ -164,7 +164,7 @@ export const PoseCameraView = ({
 
 			const isInactive = !isActive;
 			if (isInactive) {
-				discard();
+				discardEventSegmentation();
 				return;
 			}
 
@@ -173,7 +173,7 @@ export const PoseCameraView = ({
 			const isDecodeFailed = !decoded.success;
 			if (isDecodeFailed) {
 				clear();
-				discard();
+				discardEventSegmentation();
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
@@ -184,14 +184,14 @@ export const PoseCameraView = ({
 
 			const isOnLandmarkMissing = onLandmark == null;
 			if (isOnLandmarkMissing) {
-				discard();
+				discardEventSegmentation();
 				return;
 			}
 
 			try {
 				onLandmark(decoded.data);
 			} catch (error) {
-				discard();
+				discardEventSegmentation();
 				throw error;
 			}
 		},

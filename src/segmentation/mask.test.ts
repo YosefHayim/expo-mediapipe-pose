@@ -7,7 +7,7 @@ import {
 	parsePoseRecording,
 	resolvePoseImageOptions,
 } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
 const leaseId = "a766dfac-4266-4dac-8de2-e8c9983ce558";
 const segmentation = {
@@ -59,7 +59,7 @@ describe("PoseSegmentation", () => {
 
 describe("createPoseRecorder", () => {
 	test("landmark recordings exclude ephemeral mask handles without releasing consumer-owned files", () => {
-		const frame = { ...poseFrame(), segmentation };
+		const frame = { ...createPoseFrame(), segmentation };
 		const recorder = createPoseRecorder();
 		recorder.start();
 		recorder.append(frame, 0);

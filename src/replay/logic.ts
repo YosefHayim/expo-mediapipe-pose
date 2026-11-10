@@ -7,7 +7,7 @@ import {
 	type PoseRecording,
 } from "./recording";
 
-function copyPoseResults(frame: Pick<PoseFrame, "poses">) {
+const copyPoseResults = (frame: Pick<PoseFrame, "poses">) => {
 	const poses = frame.poses;
 	const isFramePosesMissing = poses == null;
 	if (isFramePosesMissing) return {};
@@ -18,7 +18,7 @@ function copyPoseResults(frame: Pick<PoseFrame, "poses">) {
 			worldLandmarks: pose.worldLandmarks.map((joint) => ({ ...joint })),
 		})),
 	};
-}
+};
 
 export type PoseReplayStatus = "paused" | "playing" | "ended" | "disposed";
 export interface PoseReplayState {
@@ -32,10 +32,10 @@ export interface PoseReplayCallbacks<Frame = PoseFrame> {
 	onReset?: () => void;
 	onStateChange?: (state: PoseReplayState) => void;
 }
-export function createPoseReplay(
+export const createPoseReplay = (
 	recording: PoseRecording,
 	callbacks: PoseReplayCallbacks,
-) {
+) => {
 	return createReplay(copyPoseRecording(recording), callbacks, (frame) => ({
 		...frame,
 		...copyPoseResults(frame),
@@ -43,11 +43,11 @@ export function createPoseReplay(
 		worldLandmarks: frame.worldLandmarks.map((joint) => ({ ...joint })),
 		additionalData: { ...frame.additionalData },
 	}));
-}
-export function createPoseDetectionReplay(
+};
+export const createPoseDetectionReplay = (
 	recording: PoseDetectionRecording,
 	callbacks: PoseReplayCallbacks<PoseDetection>,
-) {
+) => {
 	return createReplay(
 		copyPoseDetectionRecording(recording),
 		callbacks,
@@ -60,8 +60,8 @@ export function createPoseDetectionReplay(
 			model: { ...frame.model },
 		}),
 	);
-}
-function createReplay<Frame>(
+};
+const createReplay = <Frame>(
 	recording: {
 		readonly version: 1;
 		readonly frames: ReadonlyArray<{
@@ -71,7 +71,7 @@ function createReplay<Frame>(
 	},
 	callbacks: PoseReplayCallbacks<Frame>,
 	copyFrame: (frame: Frame) => Frame,
-) {
+) => {
 	let session = recording;
 	const durationMs = session.frames.at(-1)?.timestampMs ?? 0;
 	let status: PoseReplayStatus = "paused";
@@ -81,7 +81,7 @@ function createReplay<Frame>(
 	let nextFrame = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let revision = 0;
-	const position = () => {
+	const readPosition = () => {
 		const isNotPlaying = status !== "playing";
 		if (isNotPlaying) return positionMs;
 
@@ -90,14 +90,14 @@ function createReplay<Frame>(
 			positionMs + (performance.now() - anchorMs) * speed,
 		);
 	};
-	const state = (): PoseReplayState => ({
+	const readReplaySnapshot = (): PoseReplayState => ({
 		status,
-		positionMs: position(),
+		positionMs: readPosition(),
 		durationMs,
 		speed,
 	});
 	const stopAfterCallbackFailure = (error: unknown): never => {
-		positionMs = position();
+		positionMs = readPosition();
 
 		const isNotDisposed = status !== "disposed";
 		if (isNotDisposed) status = "paused";
@@ -107,7 +107,7 @@ function createReplay<Frame>(
 	};
 	const notify = () => {
 		try {
-			callbacks.onStateChange?.(state());
+			callbacks.onStateChange?.(readReplaySnapshot());
 		} catch (error) {
 			stopAfterCallbackFailure(error);
 		}
@@ -136,7 +136,7 @@ function createReplay<Frame>(
 		}
 
 		const scheduledRevision = revision;
-		const delay = Math.max(0, (entry.timestampMs - position()) / speed);
+		const delay = Math.max(0, (entry.timestampMs - readPosition()) / speed);
 		timer = setTimeout(() => {
 			const isScheduleOutdated = scheduledRevision !== revision;
 			if (isScheduleOutdated) return;
@@ -164,7 +164,7 @@ function createReplay<Frame>(
 		const isNotPlaying = status !== "playing";
 		if (isNotPlaying) return;
 
-		positionMs = position();
+		positionMs = readPosition();
 		status = "paused";
 		cancel();
 		notify();
@@ -208,7 +208,7 @@ function createReplay<Frame>(
 	};
 	return {
 		get state() {
-			return state();
+			return readReplaySnapshot();
 		},
 		play() {
 			requireOpen();
@@ -242,7 +242,7 @@ function createReplay<Frame>(
 			const isSameSpeed = value === speed;
 			if (isSameSpeed) return;
 
-			positionMs = position();
+			positionMs = readPosition();
 			anchorMs = performance.now();
 			speed = value;
 			cancel();
@@ -253,11 +253,11 @@ function createReplay<Frame>(
 			if (isSpeedCurrent) schedule();
 		},
 		dispose() {
-			positionMs = position();
+			positionMs = readPosition();
 			cancel();
 			status = "disposed";
 			session = { version: 1, frames: [] };
 		},
 	};
-}
+};
 export type PoseReplay = ReturnType<typeof createPoseReplay>;

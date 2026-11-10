@@ -4,7 +4,7 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, test, vi } from "vitest";
 import type { PoseTrackingOptions, PoseTrackingStatus } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 import { usePoseTracking } from "./use-pose-tracking";
 
 type TrackingHarnessProps = PoseTrackingOptions & {
@@ -43,7 +43,7 @@ describe("usePoseTracking", () => {
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		vi.useFakeTimers({ toFake: ["setTimeout"] });
 		let tracking: ReturnType<typeof usePoseTracking> | undefined;
-		const currentTracking = () => {
+		const readCurrentTracking = () => {
 			assert.ok(tracking);
 			return tracking;
 		};
@@ -66,9 +66,9 @@ describe("usePoseTracking", () => {
 		const send = async (elapsed: number, visible = true) => {
 			await advanceTime(elapsed);
 			frameNumber += 1;
-			const frame = poseFrame();
+			const frame = createPoseFrame();
 			await act(() =>
-				currentTracking().update({
+				readCurrentTracking().update({
 					...frame,
 					landmarks: visible ? frame.landmarks : [],
 					additionalData: { ...frame.additionalData, frameNumber },
@@ -84,18 +84,18 @@ describe("usePoseTracking", () => {
 					}),
 				),
 			);
-			assert.equal(currentTracking().status, "searching");
+			assert.equal(readCurrentTracking().status, "searching");
 			await send(0);
-			assert.equal(currentTracking().status, "acquiring");
+			assert.equal(readCurrentTracking().status, "acquiring");
 			await send(100);
 			await send(20);
 			assert.deepEqual(transitions, ["acquiring", "found"]);
 			await send(0, false);
-			assert.equal(currentTracking().status, "lost");
+			assert.equal(readCurrentTracking().status, "lost");
 			await send(0);
-			assert.equal(currentTracking().status, "acquiring");
+			assert.equal(readCurrentTracking().status, "acquiring");
 			await send(100);
-			assert.equal(currentTracking().status, "found");
+			assert.equal(readCurrentTracking().status, "found");
 			await act(() =>
 				root.render(
 					createElement(TrackingHarness, {
@@ -106,14 +106,14 @@ describe("usePoseTracking", () => {
 				),
 			);
 			await advanceTime(500);
-			assert.equal(currentTracking().status, "stale");
+			assert.equal(readCurrentTracking().status, "stale");
 			assert.deepEqual(latestTransitions, ["stale"]);
 			await send(0);
-			assert.equal(currentTracking().status, "acquiring");
+			assert.equal(readCurrentTracking().status, "acquiring");
 			await send(100);
 			frameNumber = 0;
 			await send(0);
-			assert.equal(currentTracking().status, "acquiring");
+			assert.equal(readCurrentTracking().status, "acquiring");
 			await act(() =>
 				root.render(
 					createElement(TrackingHarness, {
@@ -124,9 +124,9 @@ describe("usePoseTracking", () => {
 				),
 			);
 			await send(100);
-			assert.equal(currentTracking().status, "inactive");
+			assert.equal(readCurrentTracking().status, "inactive");
 			await advanceTime(1000);
-			assert.equal(currentTracking().status, "inactive");
+			assert.equal(readCurrentTracking().status, "inactive");
 			await act(() =>
 				root.render(
 					createElement(TrackingHarness, {
@@ -135,10 +135,10 @@ describe("usePoseTracking", () => {
 					}),
 				),
 			);
-			assert.equal(currentTracking().status, "searching");
+			assert.equal(readCurrentTracking().status, "searching");
 			await send(0);
-			await act(() => currentTracking().reset());
-			assert.equal(currentTracking().status, "searching");
+			await act(() => readCurrentTracking().reset());
+			assert.equal(readCurrentTracking().status, "searching");
 			await send(0);
 			await send(100);
 			await act(() =>
@@ -150,10 +150,10 @@ describe("usePoseTracking", () => {
 					}),
 				),
 			);
-			assert.equal(currentTracking().status, "searching");
+			assert.equal(readCurrentTracking().status, "searching");
 			await send(0);
 			await send(100);
-			assert.equal(currentTracking().status, "found");
+			assert.equal(readCurrentTracking().status, "found");
 			await act(() =>
 				root.render(
 					createElement(TrackingHarness, {
@@ -164,8 +164,8 @@ describe("usePoseTracking", () => {
 				),
 			);
 			await send(0);
-			assert.equal(currentTracking().status, "incomplete");
-			assert.deepEqual(currentTracking().uncertainLandmarks, ["leftWrist"]);
+			assert.equal(readCurrentTracking().status, "incomplete");
+			assert.deepEqual(readCurrentTracking().uncertainLandmarks, ["leftWrist"]);
 			await act(() =>
 				root.render(
 					createElement(TrackingHarness, {
@@ -174,15 +174,15 @@ describe("usePoseTracking", () => {
 						holdMs: 0,
 						onChange: (state) => {
 							const isStatusFound = state.status === "found";
-							if (isStatusFound) currentTracking().reset();
+							if (isStatusFound) readCurrentTracking().reset();
 						},
 					}),
 				),
 			);
 			await send(0);
-			assert.equal(currentTracking().status, "searching");
+			assert.equal(readCurrentTracking().status, "searching");
 			await advanceTime(1000);
-			assert.equal(currentTracking().status, "searching");
+			assert.equal(readCurrentTracking().status, "searching");
 			await act(() =>
 				root.render(
 					createElement(TrackingHarness, {

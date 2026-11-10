@@ -12,13 +12,13 @@ export type CameraSelection = {
 	previewFps: number;
 };
 
-export function CameraControls({
+export const CameraControls = ({
 	selection,
 	onSelect,
 }: {
 	selection: CameraSelection | null;
 	onSelect: (selection: CameraSelection) => void;
-}) {
+}) => {
 	const [capabilities, setCapabilities] =
 		React.useState<CameraCapabilities | null>(null);
 	const [error, setError] = React.useState(false);
@@ -127,4 +127,4 @@ export function CameraControls({
 			)}
 		</View>
 	);
-}
+};

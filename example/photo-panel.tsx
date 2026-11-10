@@ -9,15 +9,15 @@ import {
 import * as React from "react";
 import { Button, Image, Text, TextInput, View } from "react-native";
 
-async function releaseMasks(detection: PoseDetection | undefined) {
+const releaseMasks = async (detection: PoseDetection | undefined) => {
 	const isDetectionSegmentationUnavailable =
 		detection?.segmentation?.status !== "available";
 	if (isDetectionSegmentationUnavailable) return;
 
 	await releasePoseSegmentation(detection.segmentation.leaseId);
-}
+};
 
-export function PhotoPanel({ onClose }: { onClose: () => void }) {
+export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 	const [location, setLocation] = React.useState("");
 	const [maxPoses, setMaxPoses] = React.useState(1);
 	const [segmentationEnabled, setSegmentationEnabled] = React.useState(false);
@@ -200,4 +200,4 @@ export function PhotoPanel({ onClose }: { onClose: () => void }) {
 			<Button title="Return to camera" onPress={onClose} />
 		</View>
 	);
-}
+};

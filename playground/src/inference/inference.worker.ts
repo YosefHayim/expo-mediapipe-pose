@@ -6,7 +6,7 @@ let generation = 0;
 let runningMode: "IMAGE" | "VIDEO" = "IMAGE";
 let maskMaxDimension = 256;
 const send = (message: WorkerResponse) => postMessage(message);
-async function handle(message: WorkerRequest) {
+const answerWorkerRequest = async (message: WorkerRequest) => {
 	const isMessageTypeClose = message.type === "close";
 	if (isMessageTypeClose) {
 		detector?.close();
@@ -116,12 +116,12 @@ async function handle(message: WorkerRequest) {
 	} finally {
 		image.close();
 	}
-}
+};
 // Serialize model initialization and inference so every detector stays on its owner.
 let queue = Promise.resolve();
 self.onmessage = (event: MessageEvent<WorkerRequest>) => {
 	queue = queue
-		.then(() => handle(event.data))
+		.then(() => answerWorkerRequest(event.data))
 		.catch((error) => {
 			const isErrorInstanceError = error instanceof Error;
 			return send({

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { poseFrame } from "../../src/testing/fixtures";
-import { frameAt, parseRecording } from "./recording";
+import { createPoseFrame } from "../../src/testing/fixtures";
+import { parseRecording, readFrameAt } from "./recording";
 import { createSampleBrowserFrame } from "./sample-frame";
 
 const createTwoFrameRecordingText = (): string => {
@@ -34,7 +34,7 @@ describe("parseRecording", () => {
 	});
 
 	test("replays legacy native frames with no person as zero poses", () => {
-		const nativeFrame = poseFrame();
+		const nativeFrame = createPoseFrame();
 		const cameraFrame = {
 			...nativeFrame,
 			landmarks: [],
@@ -69,9 +69,9 @@ describe("frameAt", () => {
 			JSON.stringify({ version: 1, frames: [] }),
 		);
 
-		expect(frameAt(recording, 50)?.inferenceDurationMs).toBe(10);
-		expect(frameAt(recording, 100)?.inferenceDurationMs).toBe(20);
-		expect(frameAt(emptyRecording, 0)).toBeNull();
-		expect(frameAt(nativeEmptyRecording, 0)).toBeNull();
+		expect(readFrameAt(recording, 50)?.inferenceDurationMs).toBe(10);
+		expect(readFrameAt(recording, 100)?.inferenceDurationMs).toBe(20);
+		expect(readFrameAt(emptyRecording, 0)).toBeNull();
+		expect(readFrameAt(nativeEmptyRecording, 0)).toBeNull();
 	});
 });

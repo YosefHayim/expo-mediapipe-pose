@@ -4,7 +4,7 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, test, vi } from "vitest";
 import type { PoseRuleOptions, PoseRuleStatus } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 import { usePoseRule } from "./use-pose-rule";
 
 type RuleHarnessProps = PoseRuleOptions<"leftWrist"> & {
@@ -67,7 +67,7 @@ describe("usePoseRule", () => {
 		const sendFrame = async (elapsed: number) => {
 			await advanceTime(elapsed);
 			frameNumber += 1;
-			const frame = poseFrame();
+			const frame = createPoseFrame();
 			await act(() =>
 				getRule().update({
 					...frame,

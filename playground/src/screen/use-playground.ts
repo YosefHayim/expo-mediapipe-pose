@@ -5,40 +5,50 @@ import {
 	selectPose,
 } from "expo-mediapipe-pose/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generateCode, skeletonOptions } from "@/codegen";
-import { type Config, defaults, parseConfig, preset } from "@/config";
+import { createSkeletonSettings, generateCode } from "@/codegen";
+import {
+	type Config,
+	createDefaultSettings,
+	parseConfig,
+	readPresetSettings,
+} from "@/config";
 import { useInference } from "@/inference/use-inference";
 import {
-	frameAt,
 	MAX_RECORDING_FRAMES,
 	parseRecording,
 	RECORDING_ENVELOPE_BYTES,
 	type Recording,
+	readFrameAt,
 } from "@/recording";
 import { updateRules } from "@/rules";
 import { base } from "@/site";
 import type { BrowserFrame, BrowserMask, SourceMode } from "@/types";
 
-function initialConfiguration(): { config: Config; error: string | null } {
+const readInitialConfiguration = (): {
+	config: Config;
+	error: string | null;
+} => {
 	try {
 		const hash = new URLSearchParams(location.hash.slice(1));
 		const value = hash.get("config");
 		const isSharedSetupInHash = value !== null && value !== "";
 		return {
-			config: isSharedSetupInHash ? parseConfig(value) : defaults(),
+			config: isSharedSetupInHash
+				? parseConfig(value)
+				: createDefaultSettings(),
 			error: null,
 		};
 	} catch {
 		return {
-			config: defaults(),
+			config: createDefaultSettings(),
 			error:
 				"The shared configuration is invalid or unsupported. Library defaults are shown instead.",
 		};
 	}
-}
+};
 
 export const usePlayground = () => {
-	const [initial] = useState(initialConfiguration);
+	const [initial] = useState(readInitialConfiguration);
 	const [config, setConfigState] = useState(initial.config);
 	const [message, setMessage] = useState<string | null>(initial.error);
 	const [mode, setMode] = useState<SourceMode>("sample");
@@ -100,7 +110,7 @@ export const usePlayground = () => {
 				frames: [...recordRef.current],
 			});
 	}, []);
-	function acceptFrame(next: BrowserFrame, nextMasks: BrowserMask[]) {
+	const acceptFrame = (next: BrowserFrame, nextMasks: BrowserMask[]) => {
 		receivedAt.current = performance.now();
 		setFrame(next);
 		setMasks(nextMasks);
@@ -134,7 +144,7 @@ export const usePlayground = () => {
 			finishRecording();
 			setMessage("Recording complete: 1,800-frame limit reached.");
 		}
-	}
+	};
 	const engine = useInference({
 		config,
 		mode,
@@ -163,9 +173,13 @@ export const usePlayground = () => {
 		config.timing.previewFps,
 	]);
 	useEffect(() => {
-		const visibility = () => setHidden(document.hidden);
-		document.addEventListener("visibilitychange", visibility);
-		return () => document.removeEventListener("visibilitychange", visibility);
+		const updateHiddenFromDocument = () => setHidden(document.hidden);
+		document.addEventListener("visibilitychange", updateHiddenFromDocument);
+		return () =>
+			document.removeEventListener(
+				"visibilitychange",
+				updateHiddenFromDocument,
+			);
 	}, []);
 	useEffect(
 		() => () => {
@@ -206,13 +220,13 @@ export const usePlayground = () => {
 		if (isFrameMissing) return;
 
 		const now = performance.now();
-		ruleRef.current = updateRules(
+		ruleRef.current = updateRules({
 			frame,
-			config.skeleton.poseIndex,
-			config.rules,
-			ruleRef.current,
+			poseIndex: config.skeleton.poseIndex,
+			rules: config.rules,
+			previous: ruleRef.current,
 			now,
-		);
+		});
 		setRuleStates(ruleRef.current);
 	}, [frame, config.rules, config.skeleton.poseIndex]);
 	useEffect(() => {
@@ -223,13 +237,13 @@ export const usePlayground = () => {
 
 			const canUpdateRulesFromFrame = frame && stillImage && !paused && !hidden;
 			if (canUpdateRulesFromFrame) {
-				ruleRef.current = updateRules(
+				ruleRef.current = updateRules({
 					frame,
-					config.skeleton.poseIndex,
-					config.rules,
-					ruleRef.current,
+					poseIndex: config.skeleton.poseIndex,
+					rules: config.rules,
+					previous: ruleRef.current,
 					now,
-				);
+				});
 			} else {
 				ruleRef.current = ruleRef.current.map((state, index) => {
 					const isRuleStale =
@@ -278,7 +292,7 @@ export const usePlayground = () => {
 				initialPosition + (performance.now() - started) * speed,
 			);
 			setPosition(nextPosition);
-			setFrame(frameAt(replay, nextPosition));
+			setFrame(readFrameAt(replay, nextPosition));
 			receivedAt.current = performance.now();
 
 			const isNextPositionPastDuration = nextPosition >= duration;
@@ -292,7 +306,7 @@ export const usePlayground = () => {
 		timer = requestAnimationFrame(tick);
 		return () => cancelAnimationFrame(timer);
 	}, [playing, replay, speed, hidden]);
-	function changeMode(next: SourceMode) {
+	const changeMode = (next: SourceMode) => {
 		finishRecording();
 		setMode(next);
 		setUpload("");
@@ -303,13 +317,13 @@ export const usePlayground = () => {
 		const isNextReplayAndReplayPresent = next === "replay" && replay;
 		if (isNextReplayAndReplayPresent) {
 			setPosition(0);
-			setTimeout(() => setFrame(frameAt(replay, 0)), 0);
+			setTimeout(() => setFrame(readFrameAt(replay, 0)), 0);
 		}
-	}
-	async function loadFile(
+	};
+	const loadFile = async (
 		file: File,
 		kind: "media" | "recording" | "config" | "model",
-	) {
+	) => {
 		try {
 			const isKindConfig = kind === "config";
 			if (isKindConfig) {
@@ -339,7 +353,7 @@ export const usePlayground = () => {
 				setReplay(parsed);
 				setPlaying(false);
 				setPosition(0);
-				setFrame(frameAt(parsed, 0));
+				setFrame(readFrameAt(parsed, 0));
 				setMasks([]);
 				return;
 			}
@@ -365,8 +379,8 @@ export const usePlayground = () => {
 			const isErrorInstanceError = error instanceof Error;
 			setMessage(isErrorInstanceError ? error.message : String(error));
 		}
-	}
-	async function copy(text: string, success: string) {
+	};
+	const copy = async (text: string, success: string) => {
 		try {
 			await navigator.clipboard.writeText(text);
 			setMessage(success);
@@ -375,21 +389,21 @@ export const usePlayground = () => {
 				"Clipboard unavailable. Select and copy the code, or export the configuration file.",
 			);
 		}
-	}
-	function choosePreset(name: string) {
-		setConfig(preset(name));
+	};
+	const choosePreset = (name: string) => {
+		setConfig(readPresetSettings(name));
 		const isNameMultiple = name === "multiple";
 		setSample(isNameMultiple ? "man-woman-okay.jpg" : "pose.jpg");
 		setMode("sample");
 		setPaused(false);
 		setPlaying(false);
 		finishRecording();
-	}
+	};
 	const isFramePresent = frame !== null;
 	const selected = isFramePresent
 		? selectPose(frame, config.skeleton.poseIndex)
 		: null;
-	const options = skeletonOptions(config);
+	const options = createSkeletonSettings(config);
 	const joints = { ...options.joints };
 	config.rules.forEach((rule, index) => {
 		const status = ruleStates[index]?.status ?? "unknown";

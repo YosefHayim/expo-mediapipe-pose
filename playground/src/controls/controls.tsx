@@ -8,7 +8,7 @@ import {
 import { useState } from "react";
 import { type Config, defaultRule } from "@/config";
 import { Color } from "./color";
-import { humanize } from "./humanize";
+import { createReadableLabel } from "./humanize";
 import { Range } from "./range";
 import { RuleEditor } from "./rule-editor";
 import { Select } from "./select";
@@ -23,9 +23,9 @@ interface ControlsProps {
 export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 	const [joint, setJoint] = useState<LandmarkName>("leftWrist");
 	const [edge, setEdge] = useState<ConnectionName>("leftElbow:leftWrist");
-	const d = (patch: Partial<Config["detection"]>) =>
+	const updateDetection = (patch: Partial<Config["detection"]>) =>
 		setConfig({ ...c, detection: { ...c.detection, ...patch } });
-	const s = (patch: Partial<Config["skeleton"]>) =>
+	const updateSkeleton = (patch: Partial<Config["skeleton"]>) =>
 		setConfig({ ...c, skeleton: { ...c.skeleton, ...patch } });
 	const jointStyle = c.skeleton.joints[joint] ?? {
 		color: c.skeleton.color,
@@ -45,12 +45,12 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 					<Toggle
 						label="Show skeleton"
 						value={c.skeleton.enabled}
-						onChange={(enabled) => s({ enabled })}
+						onChange={(enabled) => updateSkeleton({ enabled })}
 					/>
 					<Color
 						label="Skeleton color"
 						value={c.skeleton.color}
-						onChange={(color) => s({ color })}
+						onChange={(color) => updateSkeleton({ color })}
 					/>
 					<div className="two-fields">
 						<Range
@@ -58,14 +58,14 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 							value={c.skeleton.jointRadius}
 							min={0}
 							max={20}
-							onChange={(jointRadius) => s({ jointRadius })}
+							onChange={(jointRadius) => updateSkeleton({ jointRadius })}
 						/>
 						<Range
 							label="Line width"
 							value={c.skeleton.lineWidth}
 							min={0}
 							max={15}
-							onChange={(lineWidth) => s({ lineWidth })}
+							onChange={(lineWidth) => updateSkeleton({ lineWidth })}
 						/>
 					</div>
 					<Range
@@ -74,7 +74,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 						min={0}
 						max={1}
 						step={0.05}
-						onChange={(minVisibility) => s({ minVisibility })}
+						onChange={(minVisibility) => updateSkeleton({ minVisibility })}
 					/>
 					<fieldset>
 						<legend>Body regions</legend>
@@ -88,14 +88,14 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 										key={part}
 										aria-pressed={selected}
 										onClick={() =>
-											s({
+											updateSkeleton({
 												bodyParts: selected
 													? c.skeleton.bodyParts.filter((p) => p !== part)
 													: [...c.skeleton.bodyParts, part],
 											})
 										}
 									>
-										{humanize(part)}
+										{createReadableLabel(part)}
 									</button>
 								);
 							})}
@@ -117,7 +117,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								label="Include this landmark"
 								value={c.skeleton.landmarks.includes(joint)}
 								onChange={(value) =>
-									s({
+									updateSkeleton({
 										landmarks: value
 											? [...c.skeleton.landmarks, joint]
 											: c.skeleton.landmarks.filter((name) => name !== joint),
@@ -128,7 +128,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								label="Joint override color"
 								value={jointStyle.color}
 								onChange={(color) =>
-									s({
+									updateSkeleton({
 										joints: {
 											...c.skeleton.joints,
 											[joint]: { ...jointStyle, color },
@@ -142,7 +142,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								min={0}
 								max={20}
 								onChange={(radius) =>
-									s({
+									updateSkeleton({
 										joints: {
 											...c.skeleton.joints,
 											[joint]: { ...jointStyle, radius },
@@ -155,7 +155,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								onClick={() => {
 									const joints = { ...c.skeleton.joints };
 									delete joints[joint];
-									s({ joints });
+									updateSkeleton({ joints });
 								}}
 							>
 								Clear joint override
@@ -173,7 +173,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								label="Connection override color"
 								value={edgeStyle.color}
 								onChange={(color) =>
-									s({
+									updateSkeleton({
 										connections: {
 											...c.skeleton.connections,
 											[edge]: { ...edgeStyle, color },
@@ -187,7 +187,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								min={0}
 								max={15}
 								onChange={(width) =>
-									s({
+									updateSkeleton({
 										connections: {
 											...c.skeleton.connections,
 											[edge]: { ...edgeStyle, width },
@@ -200,7 +200,7 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 								onClick={() => {
 									const connections = { ...c.skeleton.connections };
 									delete connections[edge];
-									s({ connections });
+									updateSkeleton({ connections });
 								}}
 							>
 								Clear connection override
@@ -219,14 +219,14 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 						value={c.detection.maxPoses}
 						min={1}
 						max={6}
-						onChange={(maxPoses) => d({ maxPoses })}
+						onChange={(maxPoses) => updateDetection({ maxPoses })}
 					/>
 					<Range
 						label="Selected pose index"
 						value={c.skeleton.poseIndex}
 						min={0}
 						max={5}
-						onChange={(poseIndex) => s({ poseIndex })}
+						onChange={(poseIndex) => updateSkeleton({ poseIndex })}
 						hint="A result index, not a persistent person identity. Missing selections remain empty."
 					/>
 					{(
@@ -238,19 +238,21 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 					).map((key) => (
 						<Range
 							key={key}
-							label={humanize(key)}
+							label={createReadableLabel(key)}
 							value={c.detection[key]}
 							min={0}
 							max={1}
 							step={0.05}
-							onChange={(value) => d({ [key]: value })}
+							onChange={(value) => updateDetection({ [key]: value })}
 						/>
 					))}
 					<Select
 						label="Pose model"
 						value={c.detection.modelVariant}
 						onChange={(value) =>
-							d({ modelVariant: value as Config["detection"]["modelVariant"] })
+							updateDetection({
+								modelVariant: value as Config["detection"]["modelVariant"],
+							})
 						}
 					>
 						<option value="full">Full · bundled</option>
@@ -313,7 +315,9 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 					<Toggle
 						label="Enable segmentation"
 						value={c.detection.segmentationEnabled}
-						onChange={(segmentationEnabled) => d({ segmentationEnabled })}
+						onChange={(segmentationEnabled) =>
+							updateDetection({ segmentationEnabled })
+						}
 					/>
 					<Range
 						label="Mask maximum dimension"
@@ -321,7 +325,9 @@ export const Controls = ({ config: c, setConfig, onModel }: ControlsProps) => {
 						min={64}
 						max={512}
 						step={16}
-						onChange={(maskMaxDimension) => d({ maskMaxDimension })}
+						onChange={(maskMaxDimension) =>
+							updateDetection({ maskMaxDimension })
+						}
 					/>
 					<Color
 						label="Mask tint"

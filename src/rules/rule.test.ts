@@ -7,7 +7,7 @@ import {
 	type PoseRuleOptions,
 	validatePoseRuleOptions,
 } from "../core";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 
 const raisedWrist: PoseRuleOptions<"leftWrist" | "leftShoulder"> = {
 	landmarks: ["leftWrist", "leftShoulder"],
@@ -16,7 +16,7 @@ const raisedWrist: PoseRuleOptions<"leftWrist" | "leftShoulder"> = {
 
 describe("evaluatePoseRule", () => {
 	test("lets the application define pass and fail", () => {
-		const frame = poseFrame();
+		const frame = createPoseFrame();
 		assert.equal(evaluatePoseRule(frame, raisedWrist), "fail");
 
 		frame.landmarks[15] = { x: 0.5, y: 0.1, z: 0, visibility: 0.9 };
@@ -41,17 +41,17 @@ describe("evaluatePoseRule", () => {
 			{ x: 0.5, y: 0.1, z: 0, visibility: NaN },
 			{ x: 0.5, y: 0.1, z: 0, visibility: 1, presence: Infinity },
 		]) {
-			const frame = poseFrame();
+			const frame = createPoseFrame();
 			frame.landmarks[15] = wrist;
 
 			assert.equal(evaluatePoseRule(frame, rule), "unknown");
 		}
 
-		const emptyFrame = poseFrame();
+		const emptyFrame = createPoseFrame();
 		emptyFrame.landmarks.length = 0;
 		assert.equal(evaluatePoseRule(emptyFrame, rule), "unknown");
 		assert.equal(
-			evaluatePoseRule(poseFrame(), { ...rule, isActive: false }),
+			evaluatePoseRule(createPoseFrame(), { ...rule, isActive: false }),
 			"unknown",
 		);
 		assert.equal(evaluations, 0);

@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { describe, test, vi } from "vitest";
 import { createPoseRecorder, type PoseRecording } from "../core";
 import { usePoseRule } from "../rules/use-pose-rule";
-import { poseFrame } from "../testing/fixtures";
+import { createPoseFrame } from "../testing/fixtures";
 import { usePoseReplay } from "./use-pose-replay";
 
 interface ReplayHarnessReports {
@@ -73,13 +73,13 @@ describe("usePoseReplay", () => {
 		vi.spyOn(performance, "now").mockImplementation(() => now);
 		const recorder = createPoseRecorder();
 		recorder.start();
-		recorder.append(poseFrame(), 0);
-		recorder.append(poseFrame(), 100);
+		recorder.append(createPoseFrame(), 0);
+		recorder.append(createPoseFrame(), 100);
 		const recording = recorder.stop();
 		let replay: ReturnType<typeof usePoseReplay> | undefined;
 		let status: string = "unknown";
 		const delivered: string[] = [];
-		const current = () => {
+		const readCurrentReplay = () => {
 			assert.ok(replay);
 			return replay;
 		};
@@ -94,10 +94,10 @@ describe("usePoseReplay", () => {
 				delivered.push(label);
 			},
 			playCurrent: () => {
-				current().play();
+				readCurrentReplay().play();
 			},
 		};
-		const render = async (session: PoseRecording, label: string) => {
+		const mountReplay = async (session: PoseRecording, label: string) => {
 			await act(() =>
 				root.render(
 					createElement(
@@ -110,38 +110,41 @@ describe("usePoseReplay", () => {
 		};
 
 		try {
-			await render(recording, "first");
+			await mountReplay(recording, "first");
 			await act(() => {
-				current().play();
+				readCurrentReplay().play();
 				vi.advanceTimersByTime(0);
 			});
 			assert.deepEqual(delivered, ["first"]);
 			assert.equal(status, "pass");
 
-			await render(recording, "latest");
+			await mountReplay(recording, "latest");
 			now = 100;
 			await act(() => vi.advanceTimersByTime(100));
 			assert.deepEqual(delivered, ["first", "latest"]);
 
-			await render({ version: 1, frames: [] }, "empty");
-			assert.equal(current().status, "paused");
+			await mountReplay({ version: 1, frames: [] }, "empty");
+			assert.equal(readCurrentReplay().status, "paused");
 			assert.equal(status, "unknown");
 
-			await act(() => current().play());
-			assert.equal(current().status, "ended");
+			await act(() => readCurrentReplay().play());
+			assert.equal(readCurrentReplay().status, "ended");
 
-			await assert.rejects(render(recording, "reset failure"), /reset failed/);
+			await assert.rejects(
+				mountReplay(recording, "reset failure"),
+				/reset failed/,
+			);
 			vi.advanceTimersByTime(500);
 			assert.deepEqual(delivered, ["first", "latest"]);
-			assert.throws(() => current().play(), /mounted/);
+			assert.throws(() => readCurrentReplay().play(), /mounted/);
 
-			await render(recording, "unmount");
-			await act(() => current().play());
+			await mountReplay(recording, "unmount");
+			await act(() => readCurrentReplay().play());
 			await act(() => root.unmount());
 			now = 1000;
 			vi.advanceTimersByTime(1000);
 			assert.deepEqual(delivered, ["first", "latest"]);
-			assert.throws(() => current().play(), /mounted/);
+			assert.throws(() => readCurrentReplay().play(), /mounted/);
 		} finally {
 			await act(() => root.unmount());
 			dom.window.close();

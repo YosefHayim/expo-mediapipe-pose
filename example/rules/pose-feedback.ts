@@ -26,7 +26,7 @@ export const trackingLabels: Record<PoseTrackingStatus, string> = {
 	inactive: "Tracking paused",
 };
 
-export const jointFeedbackStyles = (
+export const createJointFeedbackStyles = (
 	name: LandmarkName,
 ): SkeletonFeedback["styles"] => ({
 	pass: { joints: { [name]: { color: feedbackColors.pass } } },

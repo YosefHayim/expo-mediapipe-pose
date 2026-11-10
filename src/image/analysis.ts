@@ -48,7 +48,7 @@ export const PoseDetection = z.object({
 });
 export type PoseDetection = z.infer<typeof PoseDetection>;
 
-export function validateLocalFileLocation(location: string): void {
+export const validateLocalFileLocation = (location: string): void => {
 	const hasNullByte = location.includes("\0");
 	if (hasNullByte)
 		throw new TypeError("File location contains a null character");
@@ -71,8 +71,10 @@ export function validateLocalFileLocation(location: string): void {
 		throw new TypeError(
 			"File URIs must not contain query or fragment components",
 		);
-}
-export function resolvePoseImageOptions(imageOptions: PoseImageOptions = {}) {
+};
+export const resolvePoseImageOptions = (
+	imageOptions: PoseImageOptions = {},
+) => {
 	const checkedOptions = PoseImageOptions.parse(imageOptions);
 	const { modelPath } = checkedOptions;
 
@@ -87,4 +89,4 @@ export function resolvePoseImageOptions(imageOptions: PoseImageOptions = {}) {
 		);
 
 	return checkedOptions;
-}
+};
