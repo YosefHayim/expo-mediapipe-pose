@@ -119,16 +119,23 @@ const answerWorkerRequest = async (message: WorkerRequest) => {
 	}
 };
 // Serialize model initialization and inference so every detector stays on its owner.
-let queue = Promise.resolve();
-self.onmessage = (event: MessageEvent<WorkerRequest>) => {
-	queue = queue
-		.then(() => answerWorkerRequest(event.data))
-		.catch((error) => {
-			const isErrorInstanceError = error instanceof Error;
-			return send({
-				type: "error",
-				generation,
-				message: isErrorInstanceError ? error.message : String(error),
-			});
+let queue: Promise<void> = Promise.resolve();
+const answerQueuedRequest = async (
+	previousAnswer: Promise<void>,
+	message: WorkerRequest,
+) => {
+	await previousAnswer;
+	try {
+		await answerWorkerRequest(message);
+	} catch (error) {
+		const isErrorInstanceError = error instanceof Error;
+		send({
+			type: "error",
+			generation,
+			message: isErrorInstanceError ? error.message : String(error),
 		});
+	}
+};
+self.onmessage = (event: MessageEvent<WorkerRequest>) => {
+	queue = answerQueuedRequest(queue, event.data);
 };

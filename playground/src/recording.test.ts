@@ -1,7 +1,35 @@
+import type { PoseFrame } from "expo-mediapipe-pose/core";
+import { LANDMARK_NAMES } from "expo-mediapipe-pose/core";
 import { describe, expect, test } from "vitest";
-import { createPoseFrame } from "../../src/testing/fixtures";
 import { parseRecording, readFrameAt } from "./recording";
 import { createSampleBrowserFrame } from "./sample-frame";
+
+const createNativePoseFrame = (): PoseFrame => ({
+	landmarks: LANDMARK_NAMES.map(() => ({
+		x: 0.5,
+		y: 0.5,
+		z: 0,
+		visibility: 0.9,
+	})),
+	worldLandmarks: [],
+	additionalData: {
+		width: 720,
+		height: 1280,
+		cameraFacing: "front",
+		cameraLens: "wide",
+		cameraMirrored: true,
+		cameraZoomFactor: 1,
+		receivedAtMs: 1700000000000,
+		frameNumber: 1,
+		inferenceDurationMs: 12,
+		luminance: 0.5,
+		poseCount: 1,
+		poseModelDelegate: "GPU",
+		poseModelSource: "bundled",
+		poseModelVariant: "full",
+		thermalState: "nominal",
+	},
+});
 
 const createTwoFrameRecordingString = (): string => {
 	const sampleFrame = createSampleBrowserFrame();
@@ -34,7 +62,7 @@ describe("parseRecording", () => {
 	});
 
 	test("replays legacy native frames with no person as zero poses", () => {
-		const nativeFrame = createPoseFrame();
+		const nativeFrame = createNativePoseFrame();
 		const cameraFrame = {
 			...nativeFrame,
 			landmarks: [],

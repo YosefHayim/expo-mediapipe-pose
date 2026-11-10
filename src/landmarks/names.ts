@@ -1,6 +1,5 @@
 import type { Landmark, PoseFrame } from "../contracts";
 
-/** MediaPipe's anatomical names, in the order returned by Pose Landmarker. */
 export const LANDMARK_NAMES = [
 	"nose",
 	"leftEyeInner",

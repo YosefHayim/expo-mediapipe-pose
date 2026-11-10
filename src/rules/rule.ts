@@ -68,7 +68,6 @@ export const validatePoseRuleOptions = (
 	if (isStaleAfterZero) throw new RangeError("staleAfterMs must be positive");
 };
 
-/** Confidence is a prerequisite for evaluating a condition, not its pass/fail result. */
 export const evaluatePoseRule = <Name extends LandmarkName>(
 	frame: PoseFrame,
 	settings: PoseRuleOptions<Name>,
@@ -110,7 +109,6 @@ export const evaluatePoseRule = <Name extends LandmarkName>(
 	return verdict ? "pass" : "fail";
 };
 
-/** Uses a caller-supplied monotonic clock. Unknown invalidates feedback immediately. */
 export const advancePoseRule = (
 	previous: PoseRuleState,
 	verdict: PoseRuleStatus,

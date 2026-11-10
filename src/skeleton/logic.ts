@@ -25,9 +25,7 @@ export interface SkeletonOptions {
 	color?: string;
 	jointRadius?: number;
 	lineWidth?: number;
-	/** A provided list selects body parts; omission shows every part. */
 	bodyParts?: readonly BodyPart[];
-	/** Further restricts the joints shown, without filtering detection results. */
 	landmarks?: readonly LandmarkName[];
 	minVisibility?: number;
 	joints?: Partial<Record<LandmarkName, JointStyle>>;
@@ -39,7 +37,6 @@ export interface Dimensions {
 	height: number;
 }
 
-/** Maps upright, already mirrored inference coordinates into an aspect-fill preview. */
 export const projectLandmark = (
 	landmark: Landmark,
 	image: Dimensions,
