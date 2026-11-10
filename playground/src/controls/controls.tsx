@@ -63,8 +63,8 @@ export const Controls = ({
 	const handleSkeletonMinVisibilityChange = (minVisibility: number) =>
 		updateSkeleton({ minVisibility });
 
-	const handleJointLandmarkChange = (landmark: string) =>
-		setJoint(landmark as LandmarkName);
+	const handleJointLandmarkChange = (landmark: LandmarkName) =>
+		setJoint(landmark);
 
 	const handleJointLandmarkVisibleChange = (choice: boolean) =>
 		updateSkeleton({
@@ -95,8 +95,8 @@ export const Controls = ({
 		updateSkeleton({ joints });
 	};
 
-	const handleEdgeConnectionChange = (connection: string) =>
-		setEdge(connection as ConnectionName);
+	const handleEdgeConnectionChange = (connection: ConnectionName) =>
+		setEdge(connection);
 
 	const handleEdgeColorChange = (color: string) =>
 		updateSkeleton({
@@ -157,10 +157,9 @@ export const Controls = ({
 	const handlePoseIndexChange = (poseIndex: number) =>
 		updateSkeleton({ poseIndex });
 
-	const handleModelVariantChange = (choice: string) =>
-		updateDetection({
-			modelVariant: choice as Settings["detection"]["modelVariant"],
-		});
+	const handleModelVariantChange = (
+		modelVariant: Settings["detection"]["modelVariant"],
+	) => updateDetection({ modelVariant });
 
 	const handleModelFileChange = (event: ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -194,12 +193,14 @@ export const Controls = ({
 			},
 		});
 
-	const handleCameraLensChange = (choice: string) =>
+	const handleCameraLensChange = (
+		cameraLens: Settings["native"]["cameraLens"],
+	) =>
 		setSettings({
 			...c,
 			native: {
 				...c.native,
-				cameraLens: choice as Settings["native"]["cameraLens"],
+				cameraLens,
 			},
 		});
 

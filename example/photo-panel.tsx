@@ -11,6 +11,7 @@ import {
 	Button,
 	Image,
 	type LayoutChangeEvent,
+	StyleSheet,
 	Text,
 	TextInput,
 	View,
@@ -183,7 +184,7 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 					{report.detection.inferenceDurationMs.toFixed(1)} ms inference
 				</Text>
 			)}
-			<View style={{ flex: 1 }} onLayout={handlePhotoFrameLayout}>
+			<View style={styles.fillArea} onLayout={handlePhotoFrameLayout}>
 				{report && (
 					<>
 						<Image
@@ -214,3 +215,9 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 		</View>
 	);
 };
+
+const styles = StyleSheet.create({
+	fillArea: {
+		flex: 1,
+	},
+});

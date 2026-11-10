@@ -14,7 +14,7 @@ export const IntegrationSection = ({
 	copy,
 	setCodeMode,
 }: IntegrationSectionProps) => {
-	const handleCodeModeChange = (mode: string) => setCodeMode(mode as MediaMode);
+	const handleCodeModeChange = (mode: MediaMode) => setCodeMode(mode);
 
 	const handleCodeCopyClick = () =>
 		void copy(code, "Expo integration code copied.");

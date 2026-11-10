@@ -7,7 +7,13 @@ import {
 	usePoseTracking,
 } from "expo-mediapipe-pose";
 import * as React from "react";
-import { Button, type LayoutChangeEvent, Text, View } from "react-native";
+import {
+	Button,
+	type LayoutChangeEvent,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { raisedArmRule } from "@/rules/pose-rules";
 
 export const ReplayPanel = ({
@@ -60,7 +66,7 @@ export const ReplayPanel = ({
 			<Text style={{ color: "white" }}>
 				Tracking: {tracking.status} · Arm: {rule.status}
 			</Text>
-			<View style={{ flex: 1 }} onLayout={handleReplayFrameLayout}>
+			<View style={styles.fillArea} onLayout={handleReplayFrameLayout}>
 				{frame && <PoseSkeleton frame={frame} {...size} color="#38bdf8" />}
 			</View>
 			<Button
@@ -83,3 +89,9 @@ export const ReplayPanel = ({
 		</View>
 	);
 };
+
+const styles = StyleSheet.create({
+	fillArea: {
+		flex: 1,
+	},
+});

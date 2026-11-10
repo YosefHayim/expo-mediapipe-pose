@@ -83,20 +83,19 @@ export const RuleEditor = ({
 
 	const isRuleKindNotHeight = rule.kind !== "height";
 
-	const handleRuleKindChange = (kind: string) => {
+	const handleRuleKindChange = (kind: Rule["kind"]) => {
 		const isKindHeight = kind === "height";
 		return update({
-			kind: kind as Rule["kind"],
+			kind,
 			space: isKindHeight ? "image" : rule.space,
 		});
 	};
 
-	const handleRuleSpaceChange = (space: string) =>
-		update({ space: space as Rule["space"] });
+	const handleRuleSpaceChange = (space: Rule["space"]) => update({ space });
 
-	const handleRuleDirectionChange = (choice: string) =>
+	const handleRuleDirectionChange = (direction: Rule["direction"]) =>
 		update({
-			direction: choice as Rule["direction"],
+			direction,
 			enterThreshold: rule.exitThreshold,
 			exitThreshold: rule.enterThreshold,
 		});

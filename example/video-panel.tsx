@@ -10,6 +10,7 @@ import * as React from "react";
 import {
 	Button,
 	type LayoutChangeEvent,
+	StyleSheet,
 	Text,
 	TextInput,
 	View,
@@ -145,10 +146,16 @@ export const VideoPanel = ({ onClose }: { onClose: () => void }) => {
 					{progress.timestampMs} ms
 				</Text>
 			)}
-			<View style={{ flex: 1 }} onLayout={handleVideoFrameLayout}>
+			<View style={styles.fillArea} onLayout={handleVideoFrameLayout}>
 				{report && <PoseSkeleton detection={report.detection} {...size} />}
 			</View>
 			<Button title="Return to camera" onPress={onClose} />
 		</View>
 	);
 };
+
+const styles = StyleSheet.create({
+	fillArea: {
+		flex: 1,
+	},
+});
