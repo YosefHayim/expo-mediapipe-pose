@@ -244,3 +244,7 @@ For files under tasks/cc/text/language_detector/custom_ops/utils/utf/
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
+
+## Pexels hero clip
+
+The landing site hero (`site/media/hero-clip.mp4` and `site/media/hero-clip-poster.jpg`) uses "Video of woman doing jumping jacks" by Gustavo Fring, https://www.pexels.com/video/video-of-woman-doing-jumping-jacks-4764177/. It is used under the Pexels License, https://www.pexels.com/license/ (no credit required).
