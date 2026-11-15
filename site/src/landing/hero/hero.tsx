@@ -1,28 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { ArrowRightIcon, CheckIcon, CopyIcon } from "@/landing/icons/icons";
+import { ArrowRightIcon } from "@/landing/icons/icons";
 import { openPlayground } from "@/landing/open-playground";
+import { HeroInstallBox } from "./hero-install-box";
+import { HeroTickRule } from "./hero-tick-rule";
+import { HeroVideoStage } from "./hero-video-stage";
 import "./hero.css";
 
-const installCommand = "npx expo install expo-mediapipe-pose";
-
 export const Hero = () => {
-	const [isCopied, setIsCopied] = useState(false);
-	const resetTimer = useRef<number | undefined>(undefined);
-
-	useEffect(() => () => window.clearTimeout(resetTimer.current), []);
-
 	const handleTryClick = () => openPlayground();
-
-	const handleCopyClick = async () => {
-		try {
-			await navigator.clipboard.writeText(installCommand);
-			setIsCopied(true);
-			window.clearTimeout(resetTimer.current);
-			resetTimer.current = window.setTimeout(() => setIsCopied(false), 2000);
-		} catch {
-			// The command stays selectable in the box.
-		}
-	};
 
 	return (
 		<section
@@ -33,13 +17,14 @@ export const Hero = () => {
 			<div className="container hero-inner">
 				<div className="hero-group-one">
 					<h1 id="hero-title">Track every joint, live in Expo.</h1>
-					<span className="hero-rule" aria-hidden="true" />
+					<HeroTickRule />
 					<p className="lead hero-lead">
 						On-device pose detection for Expo and React Native, powered by
 						MediaPipe. Camera, photo and video inference with custom skeletons
 						and your own feedback rules. Frames stay on the device.
 					</p>
 				</div>
+
 				<div className="hero-group-two">
 					<button
 						type="button"
@@ -49,19 +34,11 @@ export const Hero = () => {
 						Try it live
 						<ArrowRightIcon size={18} />
 					</button>
-					<div className="hero-install">
-						<code>{installCommand}</code>
-						<button
-							type="button"
-							className="hero-install-copy"
-							aria-label={isCopied ? "Copied" : "Copy the install command"}
-							onClick={handleCopyClick}
-						>
-							{isCopied ? <CheckIcon size={20} /> : <CopyIcon size={20} />}
-						</button>
-					</div>
+					<HeroInstallBox />
 				</div>
 			</div>
+
+			<HeroVideoStage />
 		</section>
 	);
 };
