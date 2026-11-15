@@ -59,7 +59,7 @@
 }
 .agent-prompt-bar {
 	display: flex;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	align-items: center;
 	justify-content: space-between;
 	gap: var(--space-3);
@@ -68,6 +68,7 @@
 }
 .agent-prompt-title {
 	margin: 0;
+	min-width: 0;
 	font-family: var(--font-display);
 	font-size: var(--size-h3);
 	font-weight: 800;
@@ -92,14 +93,30 @@
 .copy-prompt-button:hover {
 	border-color: var(--text);
 }
+.agent-prompt-frame {
+	position: relative;
+}
+.agent-prompt-frame::after {
+	content: "";
+	position: absolute;
+	inset: auto 0 0;
+	height: 56px;
+	background: linear-gradient(to bottom, transparent, var(--ground-raised));
+	pointer-events: none;
+}
 .agent-prompt-code {
 	margin: 0;
-	padding: var(--space-4);
+	padding: var(--space-4) var(--space-4) var(--space-9);
+	max-height: 28rem;
+	overflow: auto;
 	font-family: var(--font-mono);
 	font-size: var(--size-small);
 	line-height: 1.6;
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
+}
+.agent-prompt-code pre {
+	margin: 0;
+	font: inherit;
+	white-space: pre;
 }
 
 @media (min-width: 640px) {
@@ -107,7 +124,7 @@
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 	.agent-prompt-code {
-		padding: var(--space-5);
+		padding: var(--space-5) var(--space-5) var(--space-9);
 	}
 }
 @media (min-width: 1024px) {

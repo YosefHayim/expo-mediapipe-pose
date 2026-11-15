@@ -2,7 +2,9 @@
 	width: 100%;
 	border-collapse: collapse;
 	table-layout: fixed;
+	font-family: var(--font-body);
 	font-size: var(--size-body);
+	font-variant-numeric: normal;
 	border-bottom: 1px solid var(--line);
 }
 .compare-table thead {

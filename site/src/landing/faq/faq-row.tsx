@@ -10,7 +10,7 @@ export const FaqRow = ({ entry }: FaqRowProps) => (
 	<Reveal className="faq-row">
 		<details className="faq-details">
 			<summary className="faq-summary">
-				<span>{entry.question}</span>
+				<span className="faq-question">{entry.question}</span>
 				<FaqToggleIcon />
 			</summary>
 			<div className="faq-answer">{entry.answer}</div>

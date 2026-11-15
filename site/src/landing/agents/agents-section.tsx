@@ -23,9 +23,18 @@ export const AgentsSection = () => (
 				<h3 className="agent-prompt-title">Integration prompt</h3>
 				<CopyPromptButton text={INTEGRATION_PROMPT} />
 			</div>
-			<pre className="agent-prompt-code">
-				<code>{INTEGRATION_PROMPT}</code>
-			</pre>
+			<div className="agent-prompt-frame">
+				<section
+					className="agent-prompt-code"
+					// biome-ignore lint/a11y/noNoninteractiveTabindex: A scrollable code box must be reachable by keyboard.
+					tabIndex={0}
+					aria-label="Integration prompt text"
+				>
+					<pre>
+						<code>{INTEGRATION_PROMPT}</code>
+					</pre>
+				</section>
+			</div>
 		</Reveal>
 	</Section>
 );
