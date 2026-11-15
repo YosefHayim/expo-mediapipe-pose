@@ -22,8 +22,8 @@ Coordinates, missing/unknown states, pose-index identity limits, cancellation an
 - [Show a pose camera](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#show-a-pose-camera): Minimal PoseCameraView with permission, facing and frame limit.
 - [Style joints and body parts](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#style-joints-and-body-parts): Skeleton options for joints, connections and body parts.
 - [React to a condition](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#react-to-a-condition): usePoseRule with hold time, stale input and unknown states.
-- [FAQ](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#faq): Platform support, privacy, models, frame rates, pose indices and segmentation leases.
-- [Integration prompt](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#integrate-with-a-coding-assistant): Copyable prompt for your app's coding assistant.
+- [FAQ](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#faq): Platform support, privacy, models, pose indices and segmentation leases.
+- [For agents](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#for-agents): How to add the Agent Skill to a coding agent.
 
 ## Project files
 

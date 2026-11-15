@@ -1,57 +1,24 @@
 # expo-mediapipe-pose
 
-On-device pose detection for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), powered by Google's [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). Integrates camera, photo and video inference with customizable skeletons, named landmarks and developer-defined feedback.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/hero-dark.svg">
+  <img src=".github/hero-light.svg" alt="A body skeleton raises one arm and a usePoseRule check turns from fail to pass" width="100%">
+</picture>
 
-Community-maintained; not an official Google or Expo package. Frames stay on the device. The module does not download models or upload camera data.
+On-device pose tracking for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), built on Google's [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). One camera component draws a styled skeleton, gives you 33 named landmarks, and runs your own rules on them. Frames stay on the phone: nothing is uploaded and no model is downloaded.
 
-## Try it in your browser
+**[Try it in your browser](https://YosefHayim.github.io/expo-mediapipe-pose/)**: sample clips, your webcam or your own files, with live skeleton styling, rules and copyable Expo code. The browser page uses MediaPipe's web SDK with this library's pure helpers; the npm package itself runs only in iOS and Android builds.
 
-[Open the interactive playground](https://YosefHayim.github.io/expo-mediapipe-pose/) to try samples, webcam and local media, adjust skeletons and feedback rules, explore segmentation, and copy Expo integration code. Camera and files stay in your browser.
-
-The playground uses MediaPipe’s browser SDK with this library’s pure helpers. It does not add browser inference support to the npm package or verify native camera capabilities and phone performance. See [playground development and limits](site/README.md).
-
-## Who this helps
-
-For Expo and React Native developers building camera interactions, movement visualizations, local photo/video analysis, or feedback driven by named body landmarks. The library handles native inference, coordinates, configurable overlays and event delivery; your app supplies the conditions and user experience.
-
-## Features
-
-- Control preview, inference and callback rates; inspect measured metrics
-- Measure named angles/distances and react to pose presence
-- Evaluate independent rules with hysteresis and joint-specific feedback
-- Discover selectable cameras and frame rates
-- Record/replay bounded landmark sessions
-- Analyze local photos and sample local videos with cancellation
-- Select among multiple detected poses
-- Composite opt-in masks with explicit cleanup and backpressure
-
-Version 0.4.0 includes these features. Styling and rules are configurable without replacing Google's model. See the [changelog](CHANGELOG.md) for release history.
-
-## Status and requirements
-
-Version 0.4.0 targets Expo SDK 58, React Native 0.88, and React 19.3; its peer ranges also allow Expo SDK 57, React Native 0.86, and React 19.2. Requires an iOS/Android development build; Expo Go cannot load this native module. Native builds, TypeScript, packaging and automated behavior tests are checked. Physical-device alignment, long-session performance and accuracy comparisons remain release evaluation work; no performance advantage over other wrappers is claimed.
-
-## Documentation
-
-- [FAQ](#faq): platform support, native use, privacy, models, performance and limitations.
-- [Integration prompt](#integrate-with-a-coding-assistant): copyable instructions for your app's coding assistant.
-- [llms.txt](llms.txt): a concise public documentation index for tools that accept it.
-- [Runnable example](example/app.tsx): camera, photo/video analysis and feedback flows.
+Community project, not an official Google or Expo package.
 
 ## Install
-
-Install [expo-mediapipe-pose from npm](https://www.npmjs.com/package/expo-mediapipe-pose) with [pnpm](https://pnpm.io/):
 
 ```sh
 pnpm add expo-mediapipe-pose
 pnpm exec expo install react-native-svg expo-camera
 ```
 
-The package includes compiled JavaScript, TypeScript declarations, native Swift/Kotlin sources and the full pose model. Use the [v0.4.0 API](https://github.com/YosefHayim/expo-mediapipe-pose/blob/v0.4.0/docs/api.md) for this release; `main` may advance independently. Native dependency or configuration changes require a new development build. The older `v0.2.0` GitHub tag contains the earlier camera API.
-
-[zod](https://zod.dev/) validates events at the native boundary. [react-native-svg](https://docs.expo.dev/versions/latest/sdk/svg/) draws the optional overlay. The example uses [expo-camera](https://docs.expo.dev/versions/latest/sdk/camera/) for permissions; another permission provider is also fine.
-
-Configure the permission message in your app config, then rebuild:
+Add the camera permission text to your app config, then make a development build. Expo Go cannot load this native module.
 
 ```json
 {
@@ -71,16 +38,11 @@ pnpm exec expo run:ios
 # or: pnpm exec expo run:android
 ```
 
-## Breaking changes in 0.4.0
-
-- The `effect` package is no longer needed. Remove it from your app.
-- Exported schemas keep their names but are [zod](https://zod.dev/) schemas now. Replace `Schema.decodeUnknownSync(PoseFrame)(value)` with `PoseFrame.parse(value)`, and `Schema.decodeUnknownEither(PoseFrame)(value)` with `PoseFrame.safeParse(value)`.
-- Parsing `PoseImageOptions` or `PoseVideoSampling` directly now rejects unknown keys. The package's own functions behave as before.
-- Validation error messages come from zod now.
+Version 0.4.0 targets Expo SDK 58, React Native 0.88 and React 19.3, and its peer ranges also allow SDK 57, React Native 0.86 and React 19.2. Upgrading from 0.3? Read the [0.4.0 breaking changes](CHANGELOG.md).
 
 ## Show a pose camera
 
-Mount after permission is granted. The camera fills its layout bounds and draws the skeleton by default:
+Mount it after permission is granted. It fills its layout and draws the skeleton by default:
 
 ```tsx
 import { PoseCameraView } from "expo-mediapipe-pose";
@@ -94,7 +56,7 @@ import { PoseCameraView } from "expo-mediapipe-pose";
 />
 ```
 
-Change `cameraFacing` to switch cameras. Set `isActive={false}` when the screen loses focus to release capture while keeping the component mounted. The runnable [example](example/app.tsx) includes permissions, camera switching, pause/resume, error recovery and feedback.
+Set `isActive={false}` when the screen loses focus to release the camera and keep the component mounted. `previewFps`, `frameLimit` and `callbackFps` set the capture, inference and JavaScript rates on their own.
 
 ## Style joints and body parts
 
@@ -112,11 +74,11 @@ Change `cameraFacing` to switch cameras. Set `isActive={false}` when the screen 
 />
 ```
 
-Body-part selection changes the overlay, not the detector or raw results. Individual overrides take precedence over global styles. Use `skeleton={false}` to render your own overlay and avoid internal per-frame overlay state updates. Styling does not restart capture.
+Choosing body parts changes the drawing, not the detector or the landmarks you receive. One joint's style beats the global style. Pass `skeleton={false}` to draw your own overlay.
 
 ## React to a condition
 
-The application defines the condition. `usePoseRule` handles confidence checks, hold duration, stale input and transition callbacks:
+Your app writes the condition. `usePoseRule` checks confidence, hold time and stale input, and calls you only when the status changes:
 
 ```tsx
 const feedbackColors = {
@@ -144,9 +106,7 @@ const raisedArm = usePoseRule({
 />
 ```
 
-Import `usePoseRule` from the package. Uncertain, missing or stale landmarks produce `unknown`; that is distinct from a failed condition. Callbacks fire only on transitions. Show text or icons alongside color, as the example does. The hook does not judge exercise form or provide medical interpretation.
-
-For tests or application logic without a native view, import helpers from `expo-mediapipe-pose/core`:
+Missing, uncertain or stale landmarks give `unknown`, which is not the same as a failed condition. Use `usePoseRules` for several conditions at once. For logic and tests without a native view, import the pure helpers:
 
 ```ts
 import { getLandmark } from "expo-mediapipe-pose/core";
@@ -154,149 +114,98 @@ import { getLandmark } from "expo-mediapipe-pose/core";
 const leftWrist = getLandmark(frame, "leftWrist");
 ```
 
-## Develop
+## What else it does
 
-Use Node 24 LTS (`nvm use`) and the pinned pnpm version for contributor checks, matching CI. This development requirement does not change the library’s mobile runtime contract.
+- Measure named angles and distances between landmarks.
+- List the cameras and frame rates a phone supports.
+- Record and replay landmark sessions (pose data, not video).
+- Analyze a local photo, or sample a local video with cancel.
+- Pick one of up to six detected poses.
+- Opt in to segmentation masks, with explicit release and backpressure.
+
+Every prop and event is typed in the published package. The [runnable example](example/app.tsx) shows permissions, camera switching, pause and resume, error recovery and feedback.
+
+## For agents
+
+The repo ships an [Agent Skill](skills/expo-mediapipe-pose/SKILL.md) with the install steps, a minimal camera, common tasks and common mistakes. Add it to your coding agent:
 
 ```sh
-pnpm install --frozen-lockfile
-pnpm check
-pnpm verify:package
-pnpm --filter pose-camera-example ios
-# or: pnpm --filter pose-camera-example android
+npx skills add YosefHayim/expo-mediapipe-pose
 ```
 
-`pnpm check` runs lint ([Biome](https://biomejs.dev/) and [knip](https://knip.dev/)), [TypeScript](https://www.typescriptlang.org/) typechecks, tests and builds for the package, the example and the site, through [Turborepo](https://turborepo.dev/). `pnpm test` also runs the Swift frame-timing tests on macOS and skips them on other systems. GitHub CI runs the tests, package verification and playground browser tests on pushes to `main`, and builds the Android example app; build the iOS example on a Mac with the command above. The [native fixture runner](example/fixtures/README.md) exercises real SDK inference on public images/videos; it runs separately from CI build checks. Use physical phones to assess front/back alignment, all interface orientations, zoom, interruptions, permissions, model changes, repeated mounts and sustained capture. Include device, OS, SDK and model details when reporting bugs through [GitHub Issues](https://github.com/YosefHayim/expo-mediapipe-pose/issues).
-
-## API and scope
-
-Recordings contain landmarks/metadata, not camera video. Result indices are not persistent person identities. Repetition counting, exercise scoring and medical interpretation remain application responsibilities. Only the full pose model is bundled; lite/heavy require local model files.
-
-Native inference uses [Swift](https://www.swift.org/) with AVFoundation on iOS and [Kotlin](https://kotlinlang.org/) with CameraX on Android. Detector ownership stays on a serial worker, with camera backpressure and stale-generation rejection. This is an Expo integration, not a replacement pose model.
+[llms.txt](llms.txt) is a short reading list for tools that accept it.
 
 ## FAQ
 
 <details>
-<summary>Is this an official Google package? What does it add to MediaPipe?</summary>
-
-It is a community-maintained Expo integration built on Google's official MediaPipe Tasks SDKs and model. It adds a React Native camera component, typed events, skeleton styling, named geometry, rule/tracking hooks, local-media APIs and explicit mask ownership. It does not introduce a new pose model or claim better detection accuracy than the underlying SDK.
-
-</details>
-
-<details>
-<summary>Is this a drop-in replacement for ThinkSys/mediapipe-reactnative?</summary>
-
-No. The Expo integration uses a different public API: replace `RNMediapipe` with `PoseCameraView`, use controlled camera props and configure `SkeletonOptions`. Rebuild the native app and verify your coordinate/overlay handling. Attribution is preserved; no unmeasured speed or accuracy advantage over ThinkSys is claimed.
-
-</details>
-
-<details>
 <summary>Does it work in Expo Go, a bare React Native app, or a browser?</summary>
 
-Camera and file inference require an iOS/Android development build. Expo Go cannot load this custom native module. An existing React Native app needs [Expo modules installed](https://docs.expo.dev/bare/installing-expo-modules/) and compatible dependencies; the current development target is Expo SDK 58 / React Native 0.88, not a verified compatibility matrix for older versions. There is no browser inference backend. Pure helpers are available through `expo-mediapipe-pose/core` without initializing React Native.
+It needs an iOS or Android development build; Expo Go cannot load the native module. A bare React Native app needs [Expo modules installed](https://docs.expo.dev/bare/installing-expo-modules/). There is no browser backend in the package; the browser page above uses MediaPipe's own web SDK.
 
 </details>
 
 <details>
-<summary>Can I use it directly from a Swift-only or Kotlin-only app?</summary>
+<summary>What does it add to MediaPipe?</summary>
 
-The supported consumer API is TypeScript for Expo/React Native. The Swift and Kotlin sources implement the Expo bridge; this repository does not publish a standalone Swift Package or independent Android library API. For a fully native app, start with Google's official [iOS](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/ios) or [Android](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/android) guide.
-
-</details>
-
-<details>
-<summary>Which installation includes all the listed features?</summary>
-
-Install `expo-mediapipe-pose@^0.4.0` from npm for the features listed here. npm installs zod with it, so `effect` is not needed. The older `v0.2.0` GitHub tag provides the earlier camera API. Read the documentation for your installed version; `main` can advance independently.
+A React Native camera component, typed events, skeleton styling, named geometry, rule hooks, photo and video analysis and mask ownership. It uses Google's official MediaPipe Tasks SDKs and model as they are, so it adds no new model and claims no better accuracy.
 
 </details>
 
 <details>
-<summary>Can I recolor individual joints or trigger actions when a condition changes?</summary>
+<summary>Is it a drop-in replacement for ThinkSys/mediapipe-reactnative?</summary>
 
-Yes. `SkeletonOptions` supports global, joint and connection styling and body-part selection. Define a condition with `usePoseRule`, or multiple conditions with `usePoseRules`, then map their states to colors, text, haptics or app actions. `unknown` means missing, uncertain or stale input. These are developer-defined conditions, not built-in exercise-form judgments.
-
-</details>
-
-<details>
-<summary>Can I control FPS, battery use and background behavior?</summary>
-
-`previewFps`, `frameLimit` and `callbackFps` control capture targets, inference limits and JavaScript delivery independently. Metrics report observed work; no requested FPS is guaranteed. Lower callback FPS does not reduce detector work. Use `isActive` with screen focus and app foreground state. There is no automatic thermal/model-switching policy or measured battery-saving guarantee.
+No. Replace `RNMediapipe` with `PoseCameraView`, use the camera props and `SkeletonOptions`, then rebuild and check your overlay coordinates.
 
 </details>
 
 <details>
-<summary>Do images leave the device? Is video recording included?</summary>
+<summary>Can I use it from a Swift-only or Kotlin-only app?</summary>
 
-The library runs inference locally and does not upload frames or download models. Applications control their own analytics, networking and storage. Landmark recording/replay stores pose data and metadata, not camera video or segmentation files; local-video analysis reads an existing video.
+No. The Swift and Kotlin code is the Expo bridge, not a separate SDK. For a fully native app, start with Google's [iOS](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/ios) or [Android](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/android) guide.
 
 </details>
 
 <details>
-<summary>Does a pose index identify the same person across frames?</summary>
+<summary>Do frames leave the phone?</summary>
 
-No. `maxPoses` supports up to six detections, and `poseIndex` selects within one result. Indices are not persistent identities. Missing selections remain empty; reset temporal rules/tracking when your selection changes.
+No. Inference runs on the phone, and the library uploads nothing and downloads no model. Recordings hold landmarks and metadata, not camera video.
+
+</details>
+
+<details>
+<summary>Does a pose index follow the same person across frames?</summary>
+
+No. `poseIndex` picks within one result only. Reset rules and tracking when your selection changes.
 
 </details>
 
 <details>
 <summary>Why do segmentation results report backpressure?</summary>
 
-Segmentation is opt-in. At most two result leases can be outstanding per module; each owns bounded PNG mask files. Call `releasePoseSegmentation` when your consumer finishes, including on errors or when an overlay is replaced/unmounted. The overlay does not release files for you. Already-delivered video masks remain your responsibility after cancellation.
+At most two mask leases can be open per module. Call `releasePoseSegmentation` when you finish with one, including on errors and unmount; the overlay does not release them for you.
 
 </details>
 
 <details>
-<summary>Are lite/heavy models included? What does a test pass prove?</summary>
+<summary>Which models are included, and what do the tests prove?</summary>
 
-Only the full pose model is bundled. Lite/heavy require an explicit local model file. Native builds, behavioral tests and public photo/video fixtures verify integration behavior. They do not prove physical-camera alignment, sustained performance, medical accuracy or superiority over another wrapper. Repetition counting, exercise scoring and medical interpretation are not current library features.
+Only the full pose model is bundled; lite and heavy need a local model file. Native builds, behavior tests and public photo and video fixtures check the integration. They do not prove physical-camera alignment, long-session speed or medical accuracy. Rep counting and exercise scoring are left to your app.
 
 </details>
 
-## Integrate with a coding assistant
+## Develop
 
-Copy the prompt below and replace the bracketed goal. Supply this repository URL and your chosen tag/commit. [llms.txt](llms.txt) provides a short reading list; the versioned API remains authoritative.
+Use Node 24 (`nvm use`) and the pinned pnpm.
 
-<details>
-<summary>Copy an integration prompt for your Expo / React Native app</summary>
-
-```text
-Integrate expo-mediapipe-pose into this app for: [describe the interaction].
-Repository: https://github.com/YosefHayim/expo-mediapipe-pose
-
-Inspect this app's instructions, Expo/React Native versions, navigation,
-permission handling and existing camera code before changing anything.
-Read the README and API documentation for the exact installed tag/commit.
-The npm 0.4.0 API includes the current guides; the older v0.2.0 GitHub tag
-predates the newer APIs. Check the installed version and compatibility.
-
-Use supported exports from expo-mediapipe-pose; import pure helpers from
-expo-mediapipe-pose/core. Do not invent API names or treat the internal
-Swift/Kotlin Expo bridge as a separately distributed native SDK.
-
-Implement the smallest complete integration for the stated goal:
-- Use a native development build, obtain permission before mounting, and
-  connect isActive to screen focus and foreground state.
-- Keep preview, inference and callback rates explicit where needed.
-  Report measured performance without promising a requested frame rate.
-- Preserve named anatomical landmarks, the documented coordinate system,
-  and unknown/missing states. Do not mirror coordinates twice or treat
-  pose indices as persistent person IDs.
-- Enable segmentation only if needed. Release each delivered mask lease
-  after use/replacement/unmount, including error and cancellation paths.
-- Keep exercise rules application-defined. Do not imply medical accuracy,
-  built-in repetition counting, video recording, or unsupported platforms.
-- Follow the app's structure. Use descriptive names and early returns;
-  avoid nested ternaries, nested conditions and duplicated infrastructure.
-
-Run relevant type/behavior checks and native builds. Exercise the actual
-screen and report which devices were used. Separate simulator/fixture
-coverage from physical-camera and sustained-performance validation.
-Explain the changed files, installation/build steps and remaining limits.
+```sh
+pnpm install --frozen-lockfile
+pnpm check
+pnpm verify:package
+pnpm --filter pose-camera-example ios
 ```
 
-</details>
+`pnpm check` runs [Biome](https://biomejs.dev/), [knip](https://knip.dev/), typecheck, tests and builds for the package, the example and the [site](site/README.md) through [Turborepo](https://turborepo.dev/). The [native fixture runner](example/fixtures/README.md) runs real SDK inference on public images and videos. Report bugs with device, OS, SDK and model details in [GitHub Issues](https://github.com/YosefHayim/expo-mediapipe-pose/issues).
 
-## License and attribution
+## License
 
-[MIT](LICENSE). This project evolved from [ThinkSys/mediapipe-reactnative](https://github.com/ThinkSys/mediapipe-reactnative); its attribution is preserved in [third-party notices](THIRD_PARTY_NOTICES.md), alongside MediaPipe notices. The native inference SDKs and pose model come from Google. Contributor agent guidance lives in [AGENTS.md](AGENTS.md).
+[MIT](LICENSE). This project grew from [ThinkSys/mediapipe-reactnative](https://github.com/ThinkSys/mediapipe-reactnative); its attribution and the MediaPipe notices are kept in [third-party notices](THIRD_PARTY_NOTICES.md). The native inference SDKs and the pose model come from Google.
