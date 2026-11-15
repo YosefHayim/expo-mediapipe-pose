@@ -224,7 +224,7 @@ export const LogoMark = ({ size = 28 }: LogoMarkProps) => (
 	>
 		<path
 			d="M5 19L11 8l8 5"
-			stroke="var(--signal)"
+			stroke="var(--accent)"
 			strokeWidth={2}
 			strokeLinecap="round"
 			strokeLinejoin="round"

@@ -5,13 +5,8 @@ import "./tick-rule.css";
 const tickCount = 61;
 const ticks = Array.from({ length: tickCount }, (_, index) => index);
 
-type TickRuleProps = {
-	/** The ground of the sections on both sides. */
-	ground: "night" | "paper";
-};
-
 /** A measuring-tape divider: a hairline with ticks, every fifth one taller. */
-export const TickRule = ({ ground }: TickRuleProps) => {
+export const TickRule = () => {
 	const ref = useRef<HTMLDivElement>(null);
 	const isDrawn = useInView(ref, {
 		once: true,
@@ -22,7 +17,7 @@ export const TickRule = ({ ground }: TickRuleProps) => {
 	return (
 		<div
 			ref={ref}
-			className={`tick-rule ground-${ground}${isDrawn ? " is-drawn" : ""}`}
+			className={`tick-rule${isDrawn ? " is-drawn" : ""}`}
 			aria-hidden="true"
 		>
 			<div className="container">

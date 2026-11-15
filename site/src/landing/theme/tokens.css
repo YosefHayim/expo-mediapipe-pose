@@ -102,6 +102,7 @@
 
 	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 	--duration-fast: 0.18s;
+	--duration-sheet: 0.32s;
 	--duration-reveal: 0.8s;
 	--duration-load: 0.9s;
 	--duration-draw: 0.9s;
@@ -115,6 +116,15 @@
 	--accent: var(--signal);
 
 	color-scheme: dark;
+}
+:root[data-theme="light"] {
+	--ground: var(--paper);
+	--ground-raised: var(--paper-raised);
+	--line: var(--paper-line);
+	--text: var(--text-on-paper);
+	--muted: var(--muted-on-paper);
+	--accent: var(--signal-ink);
+	color-scheme: light;
 }
 
 @media (min-width: 768px) {
@@ -142,26 +152,6 @@
 	color: var(--text);
 	color-scheme: dark;
 }
-.ground-paper {
-	--ground: var(--paper);
-	--ground-raised: var(--paper-raised);
-	--line: var(--paper-line);
-	--text: var(--text-on-paper);
-	--muted: var(--muted-on-paper);
-	--accent: var(--signal-ink);
-	background: var(--ground);
-	color: var(--text);
-	color-scheme: light;
-}
-[data-theme="dark"] .ground-paper {
-	--ground: var(--night);
-	--ground-raised: var(--night-raised);
-	--line: var(--night-line);
-	--text: var(--text-on-night);
-	--muted: var(--muted-on-night);
-	--accent: var(--signal);
-	color-scheme: dark;
-}
 
 *,
 *::before,
@@ -169,14 +159,14 @@
 	box-sizing: border-box;
 }
 html {
-	background: var(--night);
+	background: var(--ground);
 	scroll-padding-top: var(--nav-height);
 	-webkit-text-size-adjust: 100%;
 }
 body {
 	margin: 0;
-	background: var(--night);
-	color: var(--text-on-night);
+	background: var(--ground);
+	color: var(--text);
 	font-family: var(--font-body);
 	font-size: var(--size-body);
 	line-height: 1.6;
@@ -238,16 +228,8 @@ select:focus-visible,
 summary:focus-visible,
 pre:focus-visible,
 [tabindex]:focus-visible {
-	outline: 2px solid var(--signal);
+	outline: 2px solid var(--accent);
 	outline-offset: 3px;
-}
-[data-theme="light"] .ground-paper a:focus-visible,
-[data-theme="light"] .ground-paper button:focus-visible,
-[data-theme="light"] .ground-paper input:focus-visible,
-[data-theme="light"] .ground-paper select:focus-visible,
-[data-theme="light"] .ground-paper summary:focus-visible,
-[data-theme="light"] .ground-paper pre:focus-visible {
-	outline-color: var(--signal-ink);
 }
 
 .container {
@@ -313,4 +295,16 @@ pre:focus-visible,
 	overflow: hidden;
 	clip-path: inset(50%);
 	white-space: nowrap;
+}
+
+/* Added to <html> for a moment while the theme changes, so only that change eases. */
+@media (prefers-reduced-motion: no-preference) {
+	:where(html.theme-changing, html.theme-changing *) {
+		transition:
+			background-color 0.3s var(--ease-out),
+			color 0.3s var(--ease-out),
+			border-color 0.3s var(--ease-out),
+			fill 0.3s var(--ease-out),
+			stroke 0.3s var(--ease-out);
+	}
 }

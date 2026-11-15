@@ -9,7 +9,6 @@ import "./agents-section.css";
 export const AgentsSection = () => (
 	<Section
 		id="agents"
-		ground="paper"
 		title="Made for you and your coding assistant."
 		intro="Give your assistant the skill, the reading list or the repo rules, or hand it the prompt below. It has the facts and the limits, so it does not have to guess the API."
 	>

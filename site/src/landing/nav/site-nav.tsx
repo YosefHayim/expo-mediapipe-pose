@@ -76,7 +76,7 @@ export const SiteNav = () => {
 
 	return (
 		<header
-			className={`site-nav ground-night${isScrolled || isOpen ? " is-scrolled" : ""}`}
+			className={`site-nav${isScrolled || isOpen ? " is-scrolled" : " ground-night"}`}
 		>
 			<div className="container site-nav-bar">
 				<a
@@ -129,8 +129,8 @@ export const SiteNav = () => {
 			<div
 				id={sheetId}
 				ref={sheetRef}
-				className="site-nav-sheet"
-				hidden={!isOpen}
+				className={`site-nav-sheet${isOpen ? " is-open" : ""}`}
+				inert={!isOpen}
 			>
 				<div className="container site-nav-sheet-inner">
 					<nav aria-label="Sections">

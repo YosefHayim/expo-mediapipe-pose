@@ -9,7 +9,7 @@
 		border-color var(--duration-fast);
 }
 .site-nav.is-scrolled {
-	border-bottom-color: var(--night-line);
+	border-bottom-color: var(--line);
 }
 /* The blur sits on a layer so it does not become the containing block of the fixed menu sheet. */
 .site-nav.is-scrolled::before {
@@ -17,7 +17,7 @@
 	position: absolute;
 	inset: 0;
 	z-index: -1;
-	background: rgba(13, 19, 17, 0.88);
+	background: color-mix(in srgb, var(--ground) 88%, transparent);
 	-webkit-backdrop-filter: blur(8px);
 	backdrop-filter: blur(8px);
 }
@@ -85,11 +85,30 @@
 	position: fixed;
 	inset: var(--nav-height) 0 0;
 	overflow-y: auto;
-	background: var(--night);
-	border-top: 1px solid var(--night-line);
+	background: var(--ground);
+	border-top: 1px solid var(--line);
+	opacity: 0;
+	transform: translateY(-12px);
+	visibility: hidden;
+	pointer-events: none;
 }
-.site-nav-sheet[hidden] {
-	display: none;
+.site-nav-sheet.is-open {
+	opacity: 1;
+	transform: none;
+	visibility: visible;
+	pointer-events: auto;
+}
+/* Visibility switches after the fade ends, so a shut menu cannot be reached. */
+@media (prefers-reduced-motion: no-preference) {
+	.site-nav-sheet {
+		transition:
+			opacity var(--duration-sheet) var(--ease-out),
+			transform var(--duration-sheet) var(--ease-out),
+			visibility 0s linear var(--duration-sheet);
+	}
+	.site-nav-sheet.is-open {
+		transition-delay: 0s;
+	}
 }
 .site-nav-sheet-inner {
 	display: flex;
@@ -103,7 +122,7 @@
 }
 .site-nav-sheet nav a {
 	padding-block: var(--space-4);
-	border-bottom: 1px solid var(--night-line);
+	border-bottom: 1px solid var(--line);
 	font-family: var(--font-display);
 	font-size: var(--size-h3);
 	font-weight: 800;

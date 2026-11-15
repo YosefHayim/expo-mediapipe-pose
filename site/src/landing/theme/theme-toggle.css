@@ -4,10 +4,9 @@
 	width: 52px;
 	height: 28px;
 	padding: 0;
-	border: 1px solid var(--night-line);
+	border: 1px solid var(--line);
 	border-radius: var(--radius-track);
-	background: var(--night-raised);
-	color: var(--night);
+	background: var(--ground-raised);
 	cursor: pointer;
 	touch-action: manipulation;
 }
