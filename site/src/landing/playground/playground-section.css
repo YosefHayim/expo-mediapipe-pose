@@ -1,0 +1,39 @@
+.playground-frame {
+	min-height: 320px;
+}
+.playground-placeholder {
+	position: relative;
+	display: grid;
+	background: var(--ground-raised);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-card);
+	overflow: hidden;
+}
+.playground-placeholder img {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 600px;
+	object-fit: cover;
+	opacity: 0.55;
+}
+.playground-placeholder-panel {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--space-4);
+	padding: var(--space-5);
+}
+.playground-placeholder-panel p {
+	margin: 0;
+	max-width: 44ch;
+	color: var(--muted);
+}
+@media (min-width: 768px) {
+	.playground-placeholder-panel {
+		position: absolute;
+		inset: auto 0 0 0;
+		padding: var(--space-6);
+		background: linear-gradient(to top, rgba(13, 19, 17, 0.92), transparent);
+	}
+}

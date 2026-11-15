@@ -1,0 +1,135 @@
+.site-nav {
+	position: sticky;
+	top: 0;
+	z-index: 50;
+	background: transparent;
+	border-bottom: 1px solid transparent;
+	transition:
+		background var(--duration-fast),
+		border-color var(--duration-fast);
+}
+.site-nav.is-scrolled {
+	border-bottom-color: var(--night-line);
+}
+/* The blur sits on a layer so it does not become the containing block of the fixed menu sheet. */
+.site-nav.is-scrolled::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: rgba(13, 19, 17, 0.88);
+	-webkit-backdrop-filter: blur(8px);
+	backdrop-filter: blur(8px);
+}
+.site-nav-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	height: var(--nav-height);
+}
+.site-nav-brand {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-width: 0;
+	font-weight: 600;
+	font-size: 15px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+.site-nav-brand-name {
+	display: none;
+}
+.site-nav-links {
+	display: none;
+}
+.site-nav-links a {
+	font-size: 14px;
+	font-weight: 500;
+	text-decoration: none;
+	color: var(--muted);
+	transition: color var(--duration-fast);
+}
+.site-nav-links a:hover {
+	color: var(--text);
+}
+.site-nav-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+}
+.site-nav-github,
+.site-nav-menu-button {
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-button);
+	background: transparent;
+	color: var(--text);
+	cursor: pointer;
+}
+.site-nav-github {
+	display: none;
+}
+.site-nav-try {
+	display: none;
+	height: 40px;
+	padding: 0 var(--space-4);
+	font-size: 14px;
+}
+.site-nav-sheet {
+	position: fixed;
+	inset: var(--nav-height) 0 0;
+	overflow-y: auto;
+	background: var(--night);
+	border-top: 1px solid var(--night-line);
+}
+.site-nav-sheet[hidden] {
+	display: none;
+}
+.site-nav-sheet-inner {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-6);
+	padding-block: var(--space-5);
+}
+.site-nav-sheet nav {
+	display: flex;
+	flex-direction: column;
+}
+.site-nav-sheet nav a {
+	padding-block: var(--space-4);
+	border-bottom: 1px solid var(--night-line);
+	font-family: var(--font-display);
+	font-size: var(--size-h3);
+	font-weight: 800;
+	line-height: 1.05;
+	letter-spacing: -0.02em;
+	text-decoration: none;
+}
+.site-nav-sheet .button-primary {
+	width: 100%;
+}
+@media (min-width: 400px) {
+	.site-nav-brand-name {
+		display: inline;
+	}
+}
+@media (min-width: 1024px) {
+	.site-nav-links {
+		display: flex;
+		gap: var(--space-5);
+	}
+	.site-nav-github,
+	.site-nav-try {
+		display: inline-flex;
+	}
+	.site-nav-menu-button,
+	.site-nav-sheet {
+		display: none;
+	}
+}

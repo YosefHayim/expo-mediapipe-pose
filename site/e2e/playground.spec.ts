@@ -1,4 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+const mountPlayground = async (page: Page) => {
+	await page.getByRole("button", { name: "Load the live playground" }).click();
+};
 
 test("real model detects a sample, styles update without reloading, and empty results clear", async ({
 	page,
@@ -9,6 +13,7 @@ test("real model detects a sample, styles update without reloading, and empty re
 	page.on("pageerror", (error) => errors.push(error.message));
 	const workerCreated = page.waitForEvent("worker");
 	await page.goto("./");
+	await mountPlayground(page);
 	const worker = await workerCreated;
 	expect(worker.url()).toMatch(/^blob:/);
 	await expect(
@@ -67,6 +72,7 @@ test("multi-pose, segmentation, code export and configuration sharing", async ({
 }) => {
 	await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 	await page.goto("./");
+	await mountPlayground(page);
 	await page
 		.getByRole("button", { name: "Multiple poses", exact: false })
 		.click();
@@ -102,6 +108,7 @@ test("multi-pose, segmentation, code export and configuration sharing", async ({
 
 test("uploads, video sampling, recording and replay work", async ({ page }) => {
 	await page.goto("./");
+	await mountPlayground(page);
 	await page.getByRole("button", { name: "Photo", exact: true }).click();
 	await page
 		.getByLabel("Choose an image")
@@ -153,6 +160,7 @@ test("camera tracks stop on source change and permission denial recovers", async
 	context,
 }) => {
 	await page.goto("./");
+	await mountPlayground(page);
 	await page.getByRole("button", { name: "Webcam" }).click();
 	await expect(page.locator("video")).toHaveJSProperty("readyState", 4, {
 		timeout: 30000,
@@ -205,6 +213,7 @@ test("empty native recordings are an explicit empty replay", async ({
 	page,
 }) => {
 	await page.goto("./");
+	await mountPlayground(page);
 	await page.getByRole("button", { name: "Replay", exact: true }).click();
 	const importRecording = page.getByLabel("Import landmark recording");
 	await importRecording.setInputFiles({
@@ -226,6 +235,7 @@ test("threshold edits keep invalid drafts and export only valid bounded values",
 }) => {
 	await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 	await page.goto("./");
+	await mountPlayground(page);
 	await page
 		.locator(".presets")
 		.getByRole("button", { name: "Arm feedback", exact: false })
