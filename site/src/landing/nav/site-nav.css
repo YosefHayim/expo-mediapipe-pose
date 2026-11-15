@@ -9,8 +9,15 @@
 		border-color var(--duration-fast);
 }
 .site-nav.is-scrolled {
-	background: rgba(13, 19, 17, 0.88);
 	border-bottom-color: var(--night-line);
+}
+/* The blur sits on a layer so it does not become the containing block of the fixed menu sheet. */
+.site-nav.is-scrolled::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: rgba(13, 19, 17, 0.88);
 	-webkit-backdrop-filter: blur(8px);
 	backdrop-filter: blur(8px);
 }
