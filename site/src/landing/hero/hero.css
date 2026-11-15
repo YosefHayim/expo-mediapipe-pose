@@ -195,7 +195,13 @@
 		align-items: center;
 	}
 }
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
+	.hero-group-one {
+		max-width: 620px;
+	}
+	.hero-lead {
+		max-width: 34rem;
+	}
 	.hero {
 		flex-direction: row;
 		align-items: center;
@@ -203,7 +209,7 @@
 	.hero-stage {
 		position: absolute;
 		inset: 0;
-		inset-inline-start: 28%;
+		inset-inline-start: 34%;
 		z-index: -1;
 		width: auto;
 		max-width: none;
