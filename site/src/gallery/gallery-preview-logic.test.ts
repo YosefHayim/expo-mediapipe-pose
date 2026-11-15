@@ -188,12 +188,12 @@ describe("pickContainedRegion", () => {
 		expect(region).toEqual({ left: 0, top: 45, width: 160, height: 90 });
 	});
 
-	test("fits a wide video inside a narrow slot and centers it across", () => {
+	test("fits a video inside a wider slot and centers it across", () => {
 		const slot = { left: 10, top: 0, width: 400, height: 90 };
 
 		const region = pickContainedRegion(slot, videoSize);
 
-		expect(region).toEqual({ left: 125, top: 0, width: 160, height: 90 });
+		expect(region).toEqual({ left: 130, top: 0, width: 160, height: 90 });
 	});
 });
 
