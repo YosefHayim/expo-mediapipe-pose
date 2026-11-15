@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="A body skeleton raises one arm and a pose rule turns from fail to pass">
+  <style>
+    .raised-arm { transform-origin: 1038px 240px; transform: rotate(-130deg); }
+    .raised-forearm { transform-origin: 1066px 310px; transform: rotate(-20deg); }
+    .feedback-wrist { fill: #c8f560; }
+    .status-fail { opacity: 0; }
+    @media (prefers-reduced-motion: no-preference) {
+      .raised-arm { animation: raise-arm 4.8s ease-in-out infinite; }
+      .raised-forearm { animation: bend-forearm 4.8s ease-in-out infinite; }
+      .feedback-wrist { animation: wrist-feedback 4.8s step-end infinite; }
+      .status-pass { animation: show-pass 4.8s step-end infinite; }
+      .status-fail { animation: show-fail 4.8s step-end infinite; }
+      .live-dot { animation: blink 1.2s ease-in-out infinite; }
+    }
+    @keyframes raise-arm {
+      0%, 18% { transform: rotate(0deg); }
+      42%, 70% { transform: rotate(-130deg); }
+      92%, 100% { transform: rotate(0deg); }
+    }
+    @keyframes bend-forearm {
+      0%, 18% { transform: rotate(0deg); }
+      42%, 70% { transform: rotate(-20deg); }
+      92%, 100% { transform: rotate(0deg); }
+    }
+    @keyframes wrist-feedback {
+      0% { fill: #ff8a5b; }
+      36% { fill: #c8f560; }
+      78% { fill: #ff8a5b; }
+    }
+    @keyframes show-pass {
+      0% { opacity: 0; }
+      36% { opacity: 1; }
+      78% { opacity: 0; }
+    }
+    @keyframes show-fail {
+      0% { opacity: 1; }
+      36% { opacity: 0; }
+      78% { opacity: 1; }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+  </style>
+
+  <rect width="1280" height="640" fill="#0d1311"/>
+
+  <g font-family="'Big Shoulders Display', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="76" letter-spacing="-1" fill="#edefe8">
+    <text x="64" y="138">TRACK EVERY JOINT,</text>
+    <text x="64" y="214">LIVE IN <tspan fill="#c8f560">EXPO.</tspan></text>
+  </g>
+  <text x="64" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#a5aaa3">On-device MediaPipe pose tracking for Expo and React Native.</text>
+
+  <g font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace" font-size="16">
+    <rect x="64" y="304" width="640" height="272" rx="14" fill="#151d1a" stroke="#26322d"/>
+    <text x="92" y="348" fill="#edefe8"><tspan fill="#c8f560">const</tspan> raisedArm = <tspan fill="#c8f560">usePoseRule</tspan>({</text>
+    <text x="111" y="378" fill="#edefe8">landmarks: [<tspan fill="#ff8a5b">"leftWrist"</tspan>, <tspan fill="#ff8a5b">"leftShoulder"</tspan>],</text>
+    <text x="111" y="408" fill="#edefe8">evaluate: pose =&gt;</text>
+    <text x="130" y="438" fill="#edefe8">pose.leftWrist.y &lt; pose.leftShoulder.y,</text>
+    <text x="92" y="468" fill="#edefe8">});</text>
+    <text x="92" y="516" fill="#edefe8">&lt;<tspan fill="#c8f560">PoseCameraView</tspan> onLandmark={raisedArm.update} /&gt;</text>
+  </g>
+
+  <rect x="760" y="64" width="456" height="512" rx="16" fill="#151d1a" stroke="#26322d"/>
+  <g stroke="#c8f560" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M784 112 V88 H808"/>
+    <path d="M1168 88 H1192 V112"/>
+    <path d="M784 476 V500 H808"/>
+    <path d="M1192 476 V500 H1168"/>
+  </g>
+  <circle class="live-dot" cx="806" cy="534" r="5" fill="#ff8a5b"/>
+  <g font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace" font-size="15">
+    <text x="822" y="539" fill="#a5aaa3">raisedArm.status</text>
+    <text class="status-pass" x="1192" y="539" text-anchor="end" fill="#c8f560">pass</text>
+    <text class="status-fail" x="1192" y="539" text-anchor="end" fill="#ff8a5b">fail</text>
+  </g>
+
+  <g stroke="#c8f560" stroke-width="5" stroke-linecap="round" fill="none">
+    <circle cx="988" cy="170" r="28"/>
+    <path d="M938 240 H1038"/>
+    <path d="M938 240 L950 370"/>
+    <path d="M1038 240 L1026 370"/>
+    <path d="M950 370 H1026"/>
+    <path d="M938 240 L910 310 L900 380"/>
+    <path d="M950 370 L944 430 L940 488"/>
+    <path d="M1026 370 L1034 430 L1040 488"/>
+  </g>
+  <g fill="#ff8a5b">
+    <circle cx="938" cy="240" r="7"/>
+    <circle cx="1038" cy="240" r="7"/>
+    <circle cx="950" cy="370" r="7"/>
+    <circle cx="1026" cy="370" r="7"/>
+    <circle cx="910" cy="310" r="7"/>
+    <circle cx="900" cy="380" r="7"/>
+    <circle cx="944" cy="430" r="7"/>
+    <circle cx="940" cy="488" r="7"/>
+    <circle cx="1034" cy="430" r="7"/>
+    <circle cx="1040" cy="488" r="7"/>
+  </g>
+
+  <g class="raised-arm">
+    <path d="M1038 240 L1066 310" stroke="#c8f560" stroke-width="5" stroke-linecap="round"/>
+    <g class="raised-forearm">
+      <path d="M1066 310 L1076 380" stroke="#c8f560" stroke-width="5" stroke-linecap="round"/>
+      <circle class="feedback-wrist" cx="1076" cy="380" r="9"/>
+    </g>
+    <circle cx="1066" cy="310" r="7" fill="#ff8a5b"/>
+  </g>
+  <circle cx="1038" cy="240" r="7" fill="#ff8a5b"/>
+</svg>
