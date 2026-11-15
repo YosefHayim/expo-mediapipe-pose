@@ -11,7 +11,7 @@ export const SiteFooter = () => {
 		version === null ? null : <p>Library version {version}.</p>;
 
 	return (
-		<footer className="site-footer ground-paper">
+		<footer className="site-footer">
 			<div className="container">
 				<Reveal className="site-footer-top">
 					<p className="site-footer-about">

@@ -34,6 +34,10 @@
 		position: absolute;
 		inset: auto 0 0 0;
 		padding: var(--space-6);
-		background: linear-gradient(to top, rgba(13, 19, 17, 0.92), transparent);
+		background: linear-gradient(
+			to top,
+			color-mix(in srgb, var(--ground) 92%, transparent),
+			transparent
+		);
 	}
 }

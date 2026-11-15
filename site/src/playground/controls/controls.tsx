@@ -7,6 +7,7 @@ import {
 } from "expo-mediapipe-pose/core";
 import { type ChangeEvent, useState } from "react";
 import { defaultRule, type Rule, type Settings } from "@/playground/config";
+import { AnimatedDetails } from "@/shared/animated-details";
 import { type BodyPart, BodyPartChip } from "./body-part-chip";
 import { Color } from "./color";
 import { createReadableLabel } from "./humanize";
@@ -211,10 +212,14 @@ export const Controls = ({
 
 	return (
 		<div className="control-groups">
-			<details open>
-				<summary>
-					Skeleton <span>Appearance</span>
-				</summary>
+			<AnimatedDetails
+				defaultOpen
+				summary={
+					<>
+						Skeleton <span>Appearance</span>
+					</>
+				}
+			>
 				<div className="group-body">
 					<Toggle
 						label="Show skeleton"
@@ -268,8 +273,7 @@ export const Controls = ({
 								})}
 						</div>
 					</fieldset>
-					<details>
-						<summary>Individual joints & connections</summary>
+					<AnimatedDetails summary={<>Individual joints & connections</>}>
 						<div className="group-body">
 							<Select
 								label="Joint to customize"
@@ -325,13 +329,16 @@ export const Controls = ({
 								Clear connection override
 							</button>
 						</div>
-					</details>
+					</AnimatedDetails>
 				</div>
-			</details>
-			<details>
-				<summary>
-					Detection <span>Model & confidence</span>
-				</summary>
+			</AnimatedDetails>
+			<AnimatedDetails
+				summary={
+					<>
+						Detection <span>Model & confidence</span>
+					</>
+				}
+			>
 				<div className="group-body">
 					<Range
 						label="Maximum poses"
@@ -388,11 +395,14 @@ export const Controls = ({
 						Selecting a different variant clears the local model.
 					</small>
 				</div>
-			</details>
-			<details>
-				<summary>
-					Timing <span>Capture & delivery</span>
-				</summary>
+			</AnimatedDetails>
+			<AnimatedDetails
+				summary={
+					<>
+						Timing <span>Capture & delivery</span>
+					</>
+				}
+			>
 				<div className="group-body">
 					{(["previewFps", "frameLimit", "callbackFps"] as const).map(
 						(key, i) => (
@@ -418,11 +428,14 @@ export const Controls = ({
 						work. Uploads are resized to at most 1280 px for browser inference.
 					</small>
 				</div>
-			</details>
-			<details>
-				<summary>
-					Segmentation <span>Person masks</span>
-				</summary>
+			</AnimatedDetails>
+			<AnimatedDetails
+				summary={
+					<>
+						Segmentation <span>Person masks</span>
+					</>
+				}
+			>
 				<div className="group-body">
 					<Toggle
 						label="Enable segmentation"
@@ -455,11 +468,14 @@ export const Controls = ({
 						file leases or backpressure.
 					</small>
 				</div>
-			</details>
-			<details>
-				<summary>
-					Feedback rules <span>{c.rules.length} active</span>
-				</summary>
+			</AnimatedDetails>
+			<AnimatedDetails
+				summary={
+					<>
+						Feedback rules <span>{c.rules.length} active</span>
+					</>
+				}
+			>
 				<div className="group-body">
 					<p className="muted">
 						Build your own conditions. Unknown means missing, uncertain, or
@@ -482,11 +498,14 @@ export const Controls = ({
 						+ Add a rule
 					</button>
 				</div>
-			</details>
-			<details>
-				<summary>
-					Expo device settings <span>Native only</span>
-				</summary>
+			</AnimatedDetails>
+			<AnimatedDetails
+				summary={
+					<>
+						Expo device settings <span>Native only</span>
+					</>
+				}
+			>
 				<div className="group-body">
 					<p className="muted">
 						Included in exported camera code. Verify these on a physical
@@ -524,7 +543,7 @@ export const Controls = ({
 						Use getCameraCapabilities before selecting native modes.
 					</small>
 				</div>
-			</details>
+			</AnimatedDetails>
 		</div>
 	);
 };

@@ -591,20 +591,20 @@ input::file-selector-button {
 	margin-top: 15px;
 }
 .code-panel {
-	background: var(--night-raised);
-	color: var(--text-on-night);
-	border: 1px solid var(--night-line);
+	background: var(--ground-raised);
+	color: var(--text);
+	border: 1px solid var(--line);
 	border-radius: var(--radius-card);
 	min-width: 0;
 	overflow: hidden;
 }
 .code-panel > div {
 	padding: 13px 17px;
-	background: var(--night);
+	background: var(--ground);
 	display: flex;
 	justify-content: space-between;
 	font-size: 10px;
-	color: var(--muted-on-night);
+	color: var(--muted);
 }
 .code-panel pre {
 	padding: 20px;
@@ -715,8 +715,8 @@ thead {
 	top: -100px;
 	left: 10px;
 	z-index: 10;
-	background: var(--paper-raised);
-	color: var(--text-on-paper);
+	background: var(--ground-raised);
+	color: var(--text);
 	padding: 12px;
 }
 .skip-link:focus {
