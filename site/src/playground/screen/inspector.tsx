@@ -73,7 +73,6 @@ export const Inspector = ({
 		<aside className="inspector" aria-label="Configuration">
 			<div className="inspector-heading">
 				<div>
-					<p className="eyebrow">MAKE IT YOURS</p>
 					<h2>Configuration</h2>
 				</div>
 				<button
