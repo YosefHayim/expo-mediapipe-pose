@@ -6,11 +6,11 @@ A static React/Vite client for evaluating pose configurations with MediaPipe's b
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm --filter pose-playground dev
+pnpm --filter pose-site dev
 # http://127.0.0.1:5173/expo-mediapipe-pose/
-pnpm --filter pose-playground build
-pnpm --filter pose-playground exec playwright install chromium
-pnpm --filter pose-playground test:e2e
+pnpm --filter pose-site build
+pnpm --filter pose-site exec playwright install chromium
+pnpm --filter pose-site test:e2e
 ```
 
 `pnpm check` includes playground types and behavioral tests, including compilation of generated Expo snippets against the native API. The Pages workflow tests real inference with public fixtures and deploys successful main builds. `version.json` identifies the deployed source commit. To roll back, revert the playground change and let main redeploy; no persistent server data is involved.

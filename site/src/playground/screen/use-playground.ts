@@ -5,24 +5,24 @@ import {
 	selectPose,
 } from "expo-mediapipe-pose/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createSkeletonSettings, generateCode } from "@/codegen";
+import { createSkeletonSettings, generateCode } from "@/playground/codegen";
 import {
 	createDefaultSettings,
 	parseSettings,
 	readPresetSettings,
 	type Settings,
-} from "@/config";
-import { useInference } from "@/inference/use-inference";
+} from "@/playground/config";
+import { useInference } from "@/playground/inference/use-inference";
 import {
 	MAX_RECORDING_FRAMES,
 	parseRecording,
 	RECORDING_ENVELOPE_BYTES,
 	type Recording,
 	readFrameAt,
-} from "@/recording";
-import { updateRules } from "@/rules";
-import { base } from "@/site";
-import type { BrowserFrame, BrowserMask, MediaMode } from "@/types";
+} from "@/playground/recording";
+import { updateRules } from "@/playground/rules";
+import { base } from "@/playground/site";
+import type { BrowserFrame, BrowserMask, MediaMode } from "@/playground/types";
 
 const readInitialConfiguration = (): {
 	config: Settings;

@@ -1,12 +1,12 @@
 import { type RefObject, useEffect, useRef, useState } from "react";
-import type { Settings } from "@/config";
+import type { Settings } from "@/playground/config";
 import type {
 	BrowserFrame,
 	BrowserMask,
 	MediaMode,
 	WorkerReply,
 	WorkerRequest,
-} from "@/types";
+} from "@/playground/types";
 import InferenceWorker from "./inference.worker?worker&inline";
 
 interface UseInferenceSettings {

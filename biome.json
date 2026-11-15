@@ -9,11 +9,11 @@
 			"example/*.json",
 			"scripts/*.mjs",
 			"*.json",
-			"playground/src/**",
-			"playground/e2e/**",
-			"playground/*.ts",
-			"playground/*.json",
-			"playground/scripts/*.mjs"
+			"site/src/**",
+			"site/e2e/**",
+			"site/*.ts",
+			"site/*.json",
+			"site/scripts/*.mjs"
 		]
 	},
 	"vcs": {

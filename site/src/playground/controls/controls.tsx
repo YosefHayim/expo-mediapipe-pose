@@ -6,7 +6,7 @@ import {
 	POSE_CONNECTIONS,
 } from "expo-mediapipe-pose/core";
 import { type ChangeEvent, useState } from "react";
-import { defaultRule, type Rule, type Settings } from "@/config";
+import { defaultRule, type Rule, type Settings } from "@/playground/config";
 import { type BodyPart, BodyPartChip } from "./body-part-chip";
 import { Color } from "./color";
 import { createReadableLabel } from "./humanize";

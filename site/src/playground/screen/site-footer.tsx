@@ -1,4 +1,4 @@
-import { base } from "@/site";
+import { base } from "@/playground/site";
 
 export const SiteFooter = () => {
 	return (

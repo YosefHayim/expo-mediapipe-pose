@@ -1,9 +1,9 @@
 import { initialPoseRuleState } from "expo-mediapipe-pose/core";
 import type { ChangeEvent, SyntheticEvent } from "react";
-import { Range } from "@/controls/range";
-import { Select } from "@/controls/select";
-import { readFrameAt } from "@/recording";
-import { base } from "@/site";
+import { Range } from "@/playground/controls/range";
+import { Select } from "@/playground/controls/select";
+import { readFrameAt } from "@/playground/recording";
+import { base } from "@/playground/site";
 import { MaskCanvas } from "./mask-canvas";
 import { TabButton } from "./tab-button";
 import type { PlaygroundScreen } from "./use-playground";

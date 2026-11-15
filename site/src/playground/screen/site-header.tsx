@@ -1,4 +1,4 @@
-import { base, repository } from "@/site";
+import { base, repository } from "@/playground/site";
 
 export const SiteHeader = () => {
 	return (
