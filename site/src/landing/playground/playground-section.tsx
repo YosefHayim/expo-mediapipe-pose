@@ -58,7 +58,6 @@ export const PlaygroundSection = ({
 	return (
 		<Section
 			id="playground"
-			ground="night"
 			title="Try it on your own movement."
 			intro="Pick a sample, your camera or a local file. Change the skeleton, add feedback rules, then copy the Expo code. Everything runs in your browser; frames never leave it."
 		>

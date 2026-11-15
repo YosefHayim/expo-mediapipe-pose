@@ -24,7 +24,6 @@ export const IntegrationSection = ({
 	return (
 		<Section
 			id="integration"
-			ground="paper"
 			title="Keep what works. Take the code."
 			intro="Your configuration, translated into the native Expo API. Choose the integration you need."
 		>

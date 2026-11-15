@@ -52,10 +52,10 @@ export const LandingPage = () => {
 			<main>
 				<Hero />
 				<FeatureGallery />
-				<TickRule ground="paper" />
+				<TickRule />
 				<PlaygroundSection onIntegrationChange={setLive} />
 				<BrowserNativeTable />
-				<TickRule ground="night" />
+				<TickRule />
 				<IntegrationSection {...integration} />
 				<AgentsSection />
 				<FaqSection />

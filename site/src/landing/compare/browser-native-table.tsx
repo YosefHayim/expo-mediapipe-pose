@@ -7,7 +7,6 @@ import "./browser-native-table.css";
 export const BrowserNativeTable = () => (
 	<Section
 		id="browser-vs-native"
-		ground="night"
 		title="What the browser shows, what the native module does."
 		intro="The playground helps you pick a skeleton and rules. The native module runs them on a phone. Treat the browser as a preview, not a benchmark."
 	>
