@@ -1,6 +1,6 @@
 # expo-mediapipe-pose
 
-An Expo native pose-detection library using Google's MediaPipe Tasks SDK. Read [README.md](README.md) for installation/scope before changing public behavior. This file is the canonical agent instruction source.
+An Expo native pose-detection library using Google's MediaPipe Tasks SDK. Read [README.md](README.md) for installation/scope before changing public behavior. This file is the canonical agent instruction source. For using the library in an app, see [skills/expo-mediapipe-pose/SKILL.md](skills/expo-mediapipe-pose/SKILL.md) and the public index [llms.txt](llms.txt); update both when the public API changes.
 
 ## Ownership
 
@@ -10,7 +10,9 @@ An Expo native pose-detection library using Google's MediaPipe Tasks SDK. Read [
 - `ios/`: Swift capture, file decoding, detector/mask ownership and Expo registration.
 - `android/src/main/java/expo/modules/mediapipepose/`: Kotlin equivalents; `android/src/test/` holds their JVM unit tests.
 - `example/`: one standalone Expo app exercising the public API; `example/fixtures/README.md` documents cold-launch native checks and mask pixel verification.
-- `site/`: the landing page and browser playground (Vite, deployed to GitHub Pages) that run the same pose code.
+- `site/`: the landing page and browser playground (Vite, deployed to GitHub Pages) that run the same pose code; see [site/README.md](site/README.md).
+- `skills/expo-mediapipe-pose/SKILL.md`: the Agent Skill for apps that use the library. It ships in the npm package.
+- `llms.txt`: the public documentation index for coding agents; every link must resolve.
 - `scripts/`: package verification (`verify-package.mjs`) and fixture generators/checkers.
 - `src/**/*.test.ts`: behavior tests next to their source, including a DOM harness for React-only hooks. `src/testing/` holds shared test helpers and expo stubs. `ios/PoseFrameTimingTests.swift`: the Swift frame-timing tests.
 - `assets/`: bundled Google full pose model; preserve provenance and checksum.
