@@ -16,7 +16,8 @@
 	cursor: pointer;
 	list-style: none;
 }
-.faq-summary::before {
+.faq-summary::before,
+details[open] > .faq-summary::before {
 	content: none;
 }
 .faq-summary::-webkit-details-marker {
