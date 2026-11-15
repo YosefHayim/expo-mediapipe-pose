@@ -40,11 +40,9 @@ details[open] > .faq-summary::before {
 .faq-toggle-icon {
 	flex: none;
 	color: var(--accent);
-	transition: transform var(--duration-reveal) var(--ease-out);
 }
 .faq-toggle-bar {
 	transform-origin: 12px 12px;
-	transition: transform var(--duration-reveal) var(--ease-out);
 }
 .faq-details[open] .faq-toggle-icon {
 	transform: rotate(180deg);
@@ -70,6 +68,10 @@ details[open] > .faq-summary::before {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+	.faq-toggle-icon,
+	.faq-toggle-bar {
+		transition: transform var(--duration-reveal) var(--ease-out);
+	}
 	.faq-details[open] .faq-answer {
 		animation: faq-answer-in var(--duration-reveal) var(--ease-out);
 	}

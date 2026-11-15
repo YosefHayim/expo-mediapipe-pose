@@ -21,7 +21,11 @@
 	height: 20px;
 	border-radius: 50%;
 	background: var(--signal);
-	transition: transform var(--duration-fast) var(--ease-out);
+}
+@media (prefers-reduced-motion: no-preference) {
+	.theme-toggle-knob {
+		transition: transform var(--duration-fast) var(--ease-out);
+	}
 }
 .theme-toggle[aria-checked="true"] .theme-toggle-knob {
 	transform: translateX(24px);
