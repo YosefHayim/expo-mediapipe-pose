@@ -287,11 +287,13 @@ pre:focus-visible,
 	background: #d6f98a;
 	border-color: #d6f98a;
 }
-.button-primary svg {
-	transition: transform var(--duration-fast) var(--ease-out);
-}
-.button-primary:hover svg {
-	transform: translateX(3px);
+@media (prefers-reduced-motion: no-preference) {
+	.button-primary svg {
+		transition: transform var(--duration-fast) var(--ease-out);
+	}
+	.button-primary:hover svg {
+		transform: translateX(3px);
+	}
 }
 .button-secondary {
 	background: transparent;
@@ -311,20 +313,4 @@ pre:focus-visible,
 	overflow: hidden;
 	clip-path: inset(50%);
 	white-space: nowrap;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
-		animation-duration: 0.01ms !important;
-		animation-delay: 0s !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: 0.01ms !important;
-		transition-delay: 0s !important;
-		scroll-behavior: auto !important;
-	}
-	.button-primary:hover svg {
-		transform: none;
-	}
 }

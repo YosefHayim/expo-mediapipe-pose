@@ -10,9 +10,6 @@
 	inset: 0 0 auto;
 	height: 1px;
 	background: var(--line);
-	transform: scaleX(0);
-	transform-origin: left;
-	transition: transform var(--duration-draw) var(--ease-out);
 }
 .tick {
 	position: absolute;
@@ -20,25 +17,26 @@
 	width: 1px;
 	height: 6px;
 	background: var(--line);
-	opacity: 0;
-	transition: opacity 0.4s var(--ease-out);
-	transition-delay: calc(var(--tick-index) * 0.012s + 0.2s);
 }
 .tick-long {
 	height: 14px;
 	background: var(--muted);
 }
-.is-drawn .tick-rule-line {
-	transform: none;
-}
-.is-drawn .tick {
-	opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: no-preference) {
 	.tick-rule-line {
-		transform: none;
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform var(--duration-draw) var(--ease-out);
 	}
 	.tick {
+		opacity: 0;
+		transition: opacity 0.4s var(--ease-out);
+		transition-delay: calc(var(--tick-index) * 0.012s + 0.2s);
+	}
+	.is-drawn .tick-rule-line {
+		transform: none;
+	}
+	.is-drawn .tick {
 		opacity: 1;
 	}
 }
