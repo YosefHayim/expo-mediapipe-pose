@@ -63,11 +63,13 @@ export const useGalleryPreview = ({
 			if (!isRunning) paintAt(stillElapsedMilliseconds);
 		};
 
+		// Resizing clears the canvas, so paint at once instead of waiting a frame.
+		const firstElapsedMilliseconds = isRunning ? 0 : stillElapsedMilliseconds;
 		resizeCanvas();
+		paintAt(firstElapsedMilliseconds);
 		const resizeObserver = new ResizeObserver(handleResize);
 		resizeObserver.observe(canvas);
 		if (isRunning) animationFrameId = requestAnimationFrame(loopFrames);
-		else paintAt(stillElapsedMilliseconds);
 
 		return () => {
 			cancelAnimationFrame(animationFrameId);
