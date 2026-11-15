@@ -30,7 +30,7 @@ interface SkeletonScene {
 
 const READOUT_LABEL_SIZE: Size = { width: 152, height: 26 };
 
-const BONES: readonly (readonly [number, number])[] = [
+export const BONES: readonly (readonly [number, number])[] = [
 	[11, 12],
 	[11, 13],
 	[13, 15],
@@ -50,7 +50,7 @@ const BONES: readonly (readonly [number, number])[] = [
 	[30, 32],
 	[28, 32],
 ];
-const JOINT_LANDMARKS = [
+export const JOINT_LANDMARKS = [
 	0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28, 31, 32,
 ];
 const LEFT_SHOULDER = 11;
