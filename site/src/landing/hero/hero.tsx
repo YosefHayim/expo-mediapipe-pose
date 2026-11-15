@@ -14,8 +14,6 @@ export const Hero = () => {
 			className="hero ground-night"
 			aria-labelledby="hero-title"
 		>
-			<HeroVideoStage />
-
 			<div className="container hero-inner">
 				<div className="hero-group-one">
 					<h1 id="hero-title">Track every joint, live in Expo.</h1>
@@ -39,6 +37,8 @@ export const Hero = () => {
 					<HeroInstallBox />
 				</div>
 			</div>
+
+			<HeroVideoStage />
 		</section>
 	);
 };

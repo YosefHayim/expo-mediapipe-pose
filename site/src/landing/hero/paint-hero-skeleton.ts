@@ -60,7 +60,7 @@ const BONE_WIDTH = 2;
 const JOINT_RADIUS = 4.5;
 const ARC_RADIUS = 22;
 const LEADER_WIDTH = 1;
-const MINIMUM_READOUT_WIDTH = 375;
+const MINIMUM_READOUT_WIDTH = 200;
 
 const paintBones = (
 	context: CanvasRenderingContext2D,

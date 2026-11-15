@@ -2,16 +2,22 @@
 	position: relative;
 	isolation: isolate;
 	display: flex;
-	align-items: flex-end;
+	flex-direction: column;
+	gap: var(--space-6);
 	min-height: calc(100svh - var(--nav-height));
 	padding-block: var(--space-9);
 	overflow: hidden;
 }
 .hero-stage {
-	position: absolute;
-	inset: 0;
-	z-index: -1;
+	position: relative;
+	width: calc(100% - 2 * var(--gutter));
+	max-width: var(--content-width);
+	margin-inline: auto;
+	aspect-ratio: 4 / 5;
+	border: 1px solid var(--night-line);
+	border-radius: var(--radius-card);
 	background: var(--night);
+	overflow: hidden;
 }
 .hero-backdrop,
 .hero-video,
@@ -26,12 +32,7 @@
 	object-fit: cover;
 }
 .hero-overlay {
-	background: linear-gradient(
-		to top,
-		color-mix(in srgb, var(--night) 94%, transparent) 0%,
-		color-mix(in srgb, var(--night) 78%, transparent) 45%,
-		color-mix(in srgb, var(--night) 30%, transparent) 100%
-	);
+	display: none;
 }
 .hero-readout-label {
 	position: absolute;
@@ -83,7 +84,6 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-6);
-	padding-bottom: var(--space-8);
 }
 .hero-group-one {
 	max-width: 700px;
@@ -128,7 +128,7 @@
 }
 .hero-install {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: space-between;
 	gap: var(--space-2);
 	min-width: 0;
@@ -140,10 +140,11 @@
 }
 .hero-install code {
 	min-width: 0;
+	padding-block: var(--space-3);
 	font-family: var(--font-mono);
-	font-size: 14px;
-	overflow-x: auto;
-	white-space: nowrap;
+	font-size: 0.875rem;
+	line-height: 1.5;
+	white-space: normal;
 }
 .hero-install-copy {
 	flex: none;
@@ -151,6 +152,7 @@
 	place-items: center;
 	width: 40px;
 	height: 40px;
+	margin-top: var(--space-1);
 	padding: 0;
 	border: 0;
 	border-radius: var(--radius-button);
@@ -195,26 +197,29 @@
 }
 @media (min-width: 1024px) {
 	.hero {
+		flex-direction: row;
 		align-items: center;
 	}
-	.hero-inner {
-		padding-bottom: 0;
-	}
 	.hero-stage {
+		position: absolute;
+		inset: 0;
 		inset-inline-start: 28%;
+		z-index: -1;
+		width: auto;
+		max-width: none;
+		margin: 0;
+		aspect-ratio: auto;
+		border: 0;
+		border-radius: 0;
 	}
 	.hero-overlay {
+		display: block;
 		background: linear-gradient(
 			to right,
 			var(--night) 0%,
 			color-mix(in srgb, var(--night) 70%, transparent) 30%,
 			color-mix(in srgb, var(--night) 10%, transparent) 100%
 		);
-	}
-}
-@media (max-width: 374px) {
-	.hero-readout-label {
-		display: none;
 	}
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -235,4 +240,7 @@
 		animation: hero-tick-in var(--duration-fast) var(--ease-out) both;
 		animation-delay: calc(0.4s + var(--tick-index) * 0.02s);
 	}
+}
+.hero-install-package {
+	white-space: nowrap;
 }

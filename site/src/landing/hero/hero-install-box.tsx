@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { CheckIcon, CopyIcon } from "@/landing/icons/icons";
 
 const installCommand = "npx expo install expo-mediapipe-pose";
+const installCommandStart = "npx expo install";
+const installPackageName = "expo-mediapipe-pose";
 
 export const HeroInstallBox = () => {
 	const [isCopied, setIsCopied] = useState(false);
@@ -22,7 +24,10 @@ export const HeroInstallBox = () => {
 
 	return (
 		<div className="hero-install">
-			<code>{installCommand}</code>
+			<code>
+				{installCommandStart}{" "}
+				<span className="hero-install-package">{installPackageName}</span>
+			</code>
 			<button
 				type="button"
 				className="hero-install-copy"
