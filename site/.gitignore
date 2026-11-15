@@ -2,3 +2,4 @@ public/
 dist/
 test-results/
 playwright-report/
+.generated-code-*/
