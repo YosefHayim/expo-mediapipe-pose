@@ -1,7 +1,15 @@
 import { expect, type Page, test } from "@playwright/test";
 
+/**
+ * Scrolling near the section loads the playground on its own, which replaces
+ * the "Load the live playground" button. Clicking that button races the swap,
+ * so wait for the workspace instead.
+ */
 const mountPlayground = async (page: Page) => {
-	await page.getByRole("button", { name: "Load the live playground" }).click();
+	await page.locator("#playground").scrollIntoViewIfNeeded();
+	await expect(
+		page.getByRole("region", { name: "Pose playground" }),
+	).toBeVisible();
 };
 
 test("real model detects a sample, styles update without reloading, and empty results clear", async ({
@@ -121,10 +129,12 @@ test("uploads, video sampling, recording and replay work", async ({ page }) => {
 	await expect(page.getByText("Ready", { exact: true })).toBeVisible({
 		timeout: 60000,
 	});
-	await page.locator("video").evaluate((video: HTMLVideoElement) => {
-		video.loop = true;
-		return video.play();
-	});
+	await page
+		.locator("#playground video")
+		.evaluate((video: HTMLVideoElement) => {
+			video.loop = true;
+			return video.play();
+		});
 	await expect(
 		page.getByRole("img", { name: /Skeleton overlay: [1-9]/ }),
 	).toBeVisible();
@@ -136,10 +146,12 @@ test("uploads, video sampling, recording and replay work", async ({ page }) => {
 		page.getByText(/\d+ frames captured · recording/),
 	).not.toHaveText("0 frames captured · recording");
 	await page.getByRole("button", { name: "Stop recording" }).click();
-	await page.locator("video").evaluate((element: HTMLVideoElement) => {
-		(window as unknown as { previousVideo: HTMLVideoElement }).previousVideo =
-			element;
-	});
+	await page
+		.locator("#playground video")
+		.evaluate((element: HTMLVideoElement) => {
+			(window as unknown as { previousVideo: HTMLVideoElement }).previousVideo =
+				element;
+		});
 	await page.getByRole("button", { name: "Replay", exact: true }).click();
 	expect(
 		await page.evaluate(
@@ -162,11 +174,15 @@ test("camera tracks stop on source change and permission denial recovers", async
 	await page.goto("./");
 	await mountPlayground(page);
 	await page.getByRole("button", { name: "Webcam" }).click();
-	await expect(page.locator("video")).toHaveJSProperty("readyState", 4, {
-		timeout: 30000,
-	});
+	await expect(page.locator("#playground video")).toHaveJSProperty(
+		"readyState",
+		4,
+		{
+			timeout: 30000,
+		},
+	);
 	await page.evaluate(() => {
-		const video = document.querySelector("video");
+		const video = document.querySelector<HTMLVideoElement>("#playground video");
 		(window as unknown as { oldStream: MediaStream }).oldStream =
 			video?.srcObject as MediaStream;
 	});

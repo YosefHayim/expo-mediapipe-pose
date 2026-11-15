@@ -10,7 +10,7 @@ import {
 	type Size,
 } from "./hero-skeleton-logic";
 
-export interface SkeletonColors {
+interface SkeletonColors {
 	bone: string;
 	joint: string;
 }
@@ -28,7 +28,7 @@ interface SkeletonScene {
 	colors: SkeletonColors;
 }
 
-export const READOUT_LABEL_SIZE: Size = { width: 152, height: 26 };
+const READOUT_LABEL_SIZE: Size = { width: 152, height: 26 };
 
 const BONES: readonly (readonly [number, number])[] = [
 	[11, 12],
