@@ -97,6 +97,11 @@
 .site-nav-sheet nav a {
 	padding-block: var(--space-4);
 	border-bottom: 1px solid var(--night-line);
+	font-family: var(--font-display);
+	font-size: var(--size-h3);
+	font-weight: 800;
+	line-height: 1.05;
+	letter-spacing: -0.02em;
 	text-decoration: none;
 }
 .site-nav-sheet .button-primary {

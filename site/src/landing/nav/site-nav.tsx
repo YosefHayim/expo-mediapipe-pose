@@ -136,7 +136,7 @@ export const SiteNav = () => {
 					<nav aria-label="Sections">
 						{navLinks.map((link) => (
 							<a key={link.href} href={link.href} onClick={handleLinkClick}>
-								<h3>{link.label}</h3>
+								{link.label}
 							</a>
 						))}
 					</nav>
