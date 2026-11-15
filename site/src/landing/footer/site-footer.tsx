@@ -1,39 +1,55 @@
-import { useEffect, useState } from "react";
-import { base, repository } from "@/playground/site";
+import { FOOTER_COLUMNS } from "@/landing/footer/footer-links";
+import { useLibraryVersion } from "@/landing/footer/use-library-version";
+import { ExternalIcon } from "@/landing/icons/icons";
+import { Reveal } from "@/landing/motion/reveal";
+import { base } from "@/playground/site";
 import "./site-footer.css";
 
-type BuildInformation = { library?: string };
-
 export const SiteFooter = () => {
-	const [version, setVersion] = useState<string | null>(null);
-
-	useEffect(() => {
-		const controller = new AbortController();
-		fetch(`${base}version.json`, { signal: controller.signal })
-			.then((response) => response.json() as Promise<BuildInformation>)
-			.then((info) => setVersion(info.library ?? null))
-			.catch(() => {});
-		return () => controller.abort();
-	}, []);
+	const version = useLibraryVersion();
+	const versionLine =
+		version === null ? null : <p>Library version {version}.</p>;
 
 	return (
 		<footer className="site-footer ground-paper">
-			<div className="container site-footer-inner">
-				<p>
-					expo-mediapipe-pose is community-maintained and not an official Google
-					or Expo package. MIT license.
-					{version !== null && ` Library version ${version}.`}
-				</p>
-				<nav aria-label="Project links">
-					<a href={repository} target="_blank" rel="noreferrer">
-						GitHub
-					</a>
-					<a href={`${base}LICENSE`}>License</a>
-					<a href={`${base}THIRD_PARTY_NOTICES.md`}>
-						MediaPipe and sample attribution
-					</a>
-					<a href={`${base}version.json`}>Build information</a>
-				</nav>
+			<div className="container">
+				<Reveal className="site-footer-top">
+					<p className="site-footer-about">
+						Community-maintained, on-device pose detection for Expo and React
+						Native. Not an official Google or Expo package.
+					</p>
+					<nav className="site-footer-columns" aria-label="Footer">
+						{FOOTER_COLUMNS.map((column) => (
+							<div key={column.id} className="site-footer-column">
+								<h2 className="site-footer-column-title">{column.title}</h2>
+								<ul>
+									{column.links.map((link) => (
+										<li key={link.href}>
+											<a
+												href={link.href}
+												target={link.isExternal ? "_blank" : undefined}
+												rel={link.isExternal ? "noreferrer" : undefined}
+											>
+												{link.label}
+												{link.isExternal ? <ExternalIcon size={12} /> : null}
+											</a>
+										</li>
+									))}
+								</ul>
+							</div>
+						))}
+					</nav>
+				</Reveal>
+				<div className="site-footer-legal">
+					<p>
+						MIT license. Pose detection uses MediaPipe by Google, Apache 2.0.
+						The camera integration is inspired by
+						ThinkSys/mediapipe-reactnative, MIT. Full notices are in{" "}
+						<a href={`${base}THIRD_PARTY_NOTICES.md`}>THIRD_PARTY_NOTICES.md</a>
+						.
+					</p>
+					{versionLine}
+				</div>
 			</div>
 		</footer>
 	);
