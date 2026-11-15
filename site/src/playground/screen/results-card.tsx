@@ -1,6 +1,6 @@
 import { LANDMARK_NAMES } from "expo-mediapipe-pose/core";
-import { download, RECORDING_ENVELOPE_BYTES } from "@/recording";
-import { measureRule } from "@/rules";
+import { download, RECORDING_ENVELOPE_BYTES } from "@/playground/recording";
+import { measureRule } from "@/playground/rules";
 import { TabButton } from "./tab-button";
 import type { PlaygroundScreen } from "./use-playground";
 

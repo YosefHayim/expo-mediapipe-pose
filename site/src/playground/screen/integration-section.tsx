@@ -1,6 +1,6 @@
 import libraryPackage from "expo-mediapipe-pose/package.json";
-import { Select } from "@/controls/select";
-import type { MediaMode } from "@/types";
+import { Select } from "@/playground/controls/select";
+import type { MediaMode } from "@/playground/types";
 import type { PlaygroundScreen } from "./use-playground";
 
 type IntegrationSectionProps = Pick<

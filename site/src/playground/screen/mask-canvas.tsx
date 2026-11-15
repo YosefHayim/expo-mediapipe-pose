@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { BrowserMask } from "@/types";
+import type { BrowserMask } from "@/playground/types";
 
 interface MaskCanvasProps {
 	mask: BrowserMask | undefined;

@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
-import { App } from "./app";
-import "./style.css";
+import { App } from "./playground/app";
+import "./playground/style.css";
 
 const root = document.getElementById("root");
 

@@ -1,0 +1,1513 @@
+{
+  "title": "expo-mediapipe-pose: a landing page you can try live",
+  "pages": [
+    {
+      "nav": "The parts",
+      "title": "Six PRs make one site",
+      "subtitle": "The playground stays. A real landing page grows around it.",
+      "legend": "Grey is a move. Blue is new work. Green is the release.",
+      "scene": {
+        "width": 1000,
+        "height": 470,
+        "nodes": [
+          {
+            "id": "partMove",
+            "kind": "box",
+            "x": 360,
+            "y": 40,
+            "w": 280,
+            "h": 64,
+            "fill": "grey",
+            "words": "1  Move playground/\nto site/"
+          },
+          {
+            "id": "partHero",
+            "kind": "box",
+            "x": 20,
+            "y": 170,
+            "w": 220,
+            "h": 80,
+            "fill": "blue",
+            "words": "2  Hero, nav\nand theme"
+          },
+          {
+            "id": "partGallery",
+            "kind": "box",
+            "x": 265,
+            "y": 170,
+            "w": 220,
+            "h": 80,
+            "fill": "blue",
+            "words": "3  Feature gallery\n9 live cards"
+          },
+          {
+            "id": "partSections",
+            "kind": "box",
+            "x": 510,
+            "y": 170,
+            "w": 220,
+            "h": 80,
+            "fill": "blue",
+            "words": "4  Table, agents,\nFAQ, footer"
+          },
+          {
+            "id": "partAgents",
+            "kind": "box",
+            "x": 755,
+            "y": 170,
+            "w": 220,
+            "h": 80,
+            "fill": "blue",
+            "words": "5  SKILL.md\nand llms.txt"
+          },
+          {
+            "id": "partReadme",
+            "kind": "box",
+            "x": 20,
+            "y": 320,
+            "w": 260,
+            "h": 70,
+            "fill": "blue",
+            "words": "6  README with an\nanimated hero"
+          },
+          {
+            "id": "release",
+            "kind": "box",
+            "x": 600,
+            "y": 320,
+            "w": 280,
+            "h": 70,
+            "fill": "green",
+            "words": "GitHub Pages\nafter your yes"
+          }
+        ],
+        "edges": [
+          {
+            "id": "moveToHero",
+            "from": "partMove",
+            "to": "partHero",
+            "route": "elbow",
+            "sides": [
+              "bottom",
+              "top"
+            ]
+          },
+          {
+            "id": "moveToGallery",
+            "from": "partMove",
+            "to": "partGallery",
+            "route": "elbow",
+            "sides": [
+              "bottom",
+              "top"
+            ]
+          },
+          {
+            "id": "moveToSections",
+            "from": "partMove",
+            "to": "partSections",
+            "route": "elbow",
+            "sides": [
+              "bottom",
+              "top"
+            ]
+          },
+          {
+            "id": "moveToAgents",
+            "from": "partMove",
+            "to": "partAgents",
+            "route": "elbow",
+            "sides": [
+              "bottom",
+              "top"
+            ]
+          },
+          {
+            "id": "heroToReadme",
+            "from": "partHero",
+            "to": "partReadme",
+            "label": "same skeleton data"
+          },
+          {
+            "id": "readmeToRelease",
+            "from": "partReadme",
+            "to": "release"
+          }
+        ],
+        "notes": [
+          {
+            "x": 680,
+            "y": 40,
+            "w": 280,
+            "link": "partMove",
+            "words": "Goes first: every other part\nworks inside site/."
+          },
+          {
+            "x": 600,
+            "y": 410,
+            "w": 320,
+            "link": "release",
+            "words": "Then pnpm check once, and a\ncheck on the live site."
+          }
+        ]
+      },
+      "code": {
+        "pseudo": "PR 1  Move playground/ to site/ (folders: landing, gallery, playground)\nPR 2  Hero clip + recorded skeleton, nav, light and dark\nPR 3  Feature gallery: 9 cards, each with a small demo and its code\nPR 4  Browser vs native table, agents section, FAQ, footer\nPR 5  SKILL.md, llms.txt, AGENTS.md\nPR 6  README rewrite, animated hero SVG, breaking changes to CHANGELOG\nThen: your yes, deploy to GitHub Pages, pnpm check once, prove it live."
+      }
+    },
+    {
+      "nav": "Top of page",
+      "title": "What you see first",
+      "subtitle": "A moving skeleton in the first second, the real playground one scroll down.",
+      "legend": "A sketch of the layout, not the final look.",
+      "scene": {
+        "width": 1000,
+        "height": 820,
+        "look": {
+          "notePlacement": "beside"
+        },
+        "nodes": [
+          {
+            "id": "topScreen",
+            "kind": "screen",
+            "x": 20,
+            "y": 20,
+            "w": 700,
+            "h": 780,
+            "html": "<div class='sk-browser-window w-full'><div class='sk-browser-url'>yosefhayim.github.io/expo-mediapipe-pose</div><nav class='sk-header-navigation' data-part='siteNav'><span class='font-bold'>expo-mediapipe-pose</span><div class='flex gap-1'><a class='sk-header-navigation-link'>Playground</a><a class='sk-header-navigation-link'>Features</a><a class='sk-header-navigation-link'>Agents</a><a class='sk-header-navigation-link'>FAQ</a><a class='sk-header-navigation-link'>GitHub</a></div><button type='button' class='sk-toggle' data-part='themeToggle'>Dark</button></nav><div class='grid grid-cols-2 items-center gap-6 p-6'><div class='space-y-3'><h2 class='sk-heading text-3xl'>Body tracking for Expo.<br><span class='opacity-50'>On the phone, in real time.</span></h2><p>33 body points from the camera, a photo or a video. Native MediaPipe, no server.</p><div class='sk-tabs sk-segmented' data-part='audienceTabs'><span class='sk-tabs-tab' data-status='selected'>For humans</span><span class='sk-tabs-tab'>For agents</span></div><div class='sk-code-snippet' data-part='installCommand'><p>npx expo install expo-mediapipe-pose</p></div><div class='flex gap-3'><button type='button' class='sk-button sk-main' data-part='tryLive'>Try it live</button><button type='button' class='sk-button'>Read the docs</button></div></div><div class='sk-video-player relative h-72 w-full' data-percent='40' data-part='heroClip'><p class='absolute start-3 top-3 text-sm'>A person moving, skeleton drawn on top</p></div></div><div class='space-y-3 p-6' data-part='playground'><h3 class='sk-heading text-xl'>Playground</h3><div class='sk-tabs'><span class='sk-tabs-tab' data-status='selected'>Camera</span><span class='sk-tabs-tab'>Photo</span><span class='sk-tabs-tab'>Video</span></div><div class='grid grid-cols-3 gap-3'><div class='sk-card col-span-2 h-36 p-3'><p>Preview with skeleton and mask</p></div><div class='sk-card h-36 p-3'><p>Controls, rules and the matching code</p></div></div></div></div>"
+          }
+        ],
+        "notes": [
+          {
+            "x": 750,
+            "y": 60,
+            "w": 230,
+            "link": "topScreen#siteNav",
+            "words": "Sections, GitHub, and a\nlight and dark switch."
+          },
+          {
+            "x": 750,
+            "y": 190,
+            "w": 230,
+            "link": "topScreen#heroClip",
+            "words": "Moves the moment the page\nopens. See Your call."
+          },
+          {
+            "x": 750,
+            "y": 320,
+            "w": 230,
+            "link": "topScreen#audienceTabs",
+            "words": "For agents swaps the command\nfor the SKILL.md line."
+          },
+          {
+            "x": 750,
+            "y": 440,
+            "w": 230,
+            "link": "topScreen#tryLive",
+            "words": "Scrolls to the playground\nand starts the camera."
+          },
+          {
+            "x": 750,
+            "y": 620,
+            "w": 230,
+            "link": "topScreen#playground",
+            "words": "Today's playground, kept.\nIts 9.4 MB model loads only\nwhen it scrolls into view."
+          }
+        ]
+      },
+      "code": {
+        "pseudo": "Hero, first second: <video> plays the clip. Each frame, read video.currentTime,\npick the recorded skeleton frame for that time, draw it on a <canvas> on top.\nNo model, no wasm before the hero moves.\n\nPlayground: the worker and model start when the section scrolls into view\nor when Try it live is pressed. Then the hero can switch to real results too.\n\nLook and motion, on every section:\n- Custom SVG icons drawn for this site (joint, angle, rule, replay, camera, mask...), no icon pack.\n- Sections and cards fade and rise in as they scroll into view (IntersectionObserver + CSS).\n- Small SVG animations: the skeleton draws its lines in, angle arcs sweep, a rule check ticks.\n- All motion turns off under prefers-reduced-motion.",
+        "docs": "// MediaPipe Pose Landmarker web guide (ai.google.dev/edge/mediapipe)\nconst vision = await FilesetResolver.forVisionTasks(\n  \"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm\"\n);\nconst poseLandmarker = await PoseLandmarker.createFromOptions(vision, {\n  baseOptions: {\n    modelAssetPath: \"pose_landmarker_full.task\",\n    delegate: \"GPU\"\n  },\n  runningMode: \"VIDEO\"\n});\nposeLandmarker.detectForVideo(video, performance.now(), (result) => {\n  for (const landmarks of result.landmarks) {\n    drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS);\n  }\n});\n// The site keeps serving the wasm and model from its own folder (CSP: connect-src 'self')."
+      }
+    },
+    {
+      "nav": "Rest of page",
+      "title": "What you see as you scroll",
+      "subtitle": "Every feature live, then what the demo is, then agents, FAQ and footer.",
+      "legend": "A sketch of the layout, not the final look.",
+      "scene": {
+        "width": 1000,
+        "height": 900,
+        "look": {
+          "notePlacement": "beside"
+        },
+        "nodes": [
+          {
+            "id": "restScreen",
+            "kind": "screen",
+            "x": 20,
+            "y": 20,
+            "w": 700,
+            "h": 860,
+            "html": "<div class='sk-browser-window w-full'><div class='space-y-4 p-5'><h3 class='sk-heading text-xl'>Every feature, live</h3><div class='grid grid-cols-3 gap-3' data-part='gallery'><div class='sk-card space-y-2 p-3'><div class='sk-video-player h-16 w-full'></div><p class='font-bold'>Skeleton style</p><div class='sk-code-snippet'><p>&lt;PoseSkeleton /&gt;</p></div><a class='sk-link text-sm'>Open in playground</a></div><div class='sk-card space-y-2 p-3'><div class='sk-video-player h-16 w-full'></div><p class='font-bold'>Rules and feedback</p><div class='sk-code-snippet'><p>usePoseRule(...)</p></div><a class='sk-link text-sm'>Open in playground</a></div><div class='sk-card space-y-2 p-3'><div class='sk-video-player h-16 w-full'></div><p class='font-bold'>Record and replay</p><div class='sk-code-snippet'><p>usePoseReplay(...)</p></div><a class='sk-link text-sm'>Open in playground</a></div></div><p class='text-sm opacity-60'>6 more cards</p><h3 class='sk-heading text-xl'>Browser demo or your app</h3><div class='sk-table w-full' data-part='compareTable'><div class='sk-table-row sk-table-head'><span></span><span>This site</span><span>Your Expo app</span></div><div class='sk-table-row'><span>Runs in</span><span>Browser, MediaPipe for web</span><span>iOS and Android, native</span></div><div class='sk-table-row'><span>Model</span><span>pose_landmarker_full</span><span>The same file</span></div><div class='sk-table-row'><span>Rules, angles, styles</span><span>Same logic</span><span>Same options</span></div></div><h3 class='sk-heading text-xl'>For agents</h3><div class='grid grid-cols-2 gap-3' data-part='agentsSection'><div class='sk-code-snippet'><p>Read SKILL.md, then add a squat counter</p></div><div class='sk-card p-3'><p>SKILL.md and llms.txt give an agent the API and the traps.</p></div></div><h3 class='sk-heading text-xl'>FAQ</h3><div class='sk-accordion w-full' data-part='faq'><div class='sk-accordion-item' data-checked><div class='sk-accordion-trigger'><span class='font-bold'>Does it work in Expo Go?</span></div><div class='sk-accordion-content'><p class='text-sm'>No. It is a native module, so it needs a development build.</p></div></div><div class='sk-accordion-item'><div class='sk-accordion-trigger'><span class='font-bold'>Does any video leave the phone?</span></div></div><div class='sk-accordion-item'><div class='sk-accordion-trigger'><span class='font-bold'>Which phones does it support?</span></div></div></div><div class='sk-separator'></div><div class='flex justify-between text-sm' data-part='footer'><span>expo-mediapipe-pose</span><span>GitHub · npm · License · Third-party notices</span></div></div></div>"
+          }
+        ],
+        "notes": [
+          {
+            "x": 750,
+            "y": 100,
+            "w": 230,
+            "link": "restScreen#gallery",
+            "words": "Each card: a small live demo,\nits code, Open in playground."
+          },
+          {
+            "x": 750,
+            "y": 360,
+            "w": 230,
+            "link": "restScreen#compareTable",
+            "words": "Says plainly what the\nbrowser demo is and is not."
+          },
+          {
+            "x": 750,
+            "y": 520,
+            "w": 230,
+            "link": "restScreen#agentsSection",
+            "words": "One line to paste into a\ncoding agent."
+          },
+          {
+            "x": 750,
+            "y": 660,
+            "w": 230,
+            "link": "restScreen#faq",
+            "words": "The long README FAQ\nmoves here."
+          }
+        ]
+      }
+    },
+    {
+      "nav": "On a phone",
+      "title": "The same page at 375 px",
+      "subtitle": "Built mobile first. Checked at 320, 375, 768, 1024 and 1440 px wide.",
+      "legend": "A sketch of the layout, not the final look.",
+      "scene": {
+        "width": 1000,
+        "height": 760,
+        "look": {
+          "notePlacement": "beside"
+        },
+        "nodes": [
+          {
+            "id": "phoneScreen",
+            "kind": "screen",
+            "x": 200,
+            "y": 20,
+            "w": 380,
+            "h": 720,
+            "html": "<div class='sk-phone mx-auto max-w-xs'><div class='sk-phone-notch'></div><div class='sk-phone-status'><span>9:41</span><span>5G 88%</span></div><div class='sk-phone-screen space-y-3'><div class='flex items-center justify-between' data-part='phoneNav'><span class='font-bold'>expo-mediapipe-pose</span><span>Menu</span></div><h2 class='sk-heading text-2xl'>Body tracking for Expo.<br><span class='opacity-50'>On the phone, in real time.</span></h2><div class='sk-video-player h-40 w-full' data-percent='40' data-part='phoneHero'></div><div class='sk-code-snippet'><p>npx expo install expo-mediapipe-pose</p></div><button type='button' class='sk-button sk-main w-full' data-part='phoneTry'>Try it live</button><div class='sk-card space-y-2 p-3' data-part='phoneCard'><div class='sk-video-player h-16 w-full'></div><p class='font-bold'>Skeleton style</p></div></div><div class='sk-phone-home'></div></div>"
+          }
+        ],
+        "notes": [
+          {
+            "x": 640,
+            "y": 70,
+            "w": 300,
+            "link": "phoneScreen#phoneNav",
+            "words": "Links fold into a menu\nunder 768 px."
+          },
+          {
+            "x": 640,
+            "y": 260,
+            "w": 300,
+            "link": "phoneScreen#phoneHero",
+            "words": "Hero stacks: heading,\nthen the moving clip."
+          },
+          {
+            "x": 640,
+            "y": 440,
+            "w": 300,
+            "link": "phoneScreen#phoneTry",
+            "words": "Full-width buttons,\neasy to tap."
+          },
+          {
+            "x": 640,
+            "y": 580,
+            "w": 300,
+            "link": "phoneScreen#phoneCard",
+            "words": "Gallery: 1 card a row on a phone,\n2 on a tablet, 3 on desktop.\nNo sideways scroll anywhere."
+          }
+        ]
+      },
+      "code": {
+        "pseudo": "Phone first: base styles are one column, wider screens add columns.\nPlaywright takes a screenshot at each width and fails on sideways scroll.",
+        "docs": "/* MDN: Using media queries, prefers-reduced-motion */\n@media (min-width: 768px) { .gallery { grid-template-columns: repeat(2, 1fr); } }\n@media (min-width: 1024px) { .gallery { grid-template-columns: repeat(3, 1fr); } }\n@media (prefers-reduced-motion: reduce) {\n  .fade-in { animation: none; opacity: 1; transform: none; }\n}"
+      }
+    },
+    {
+      "nav": "Gallery",
+      "title": "Nine features, three groups",
+      "subtitle": "Each README feature gets one live card.",
+      "legend": "Blue chips are features. Grey boxes are gallery rows.",
+      "scene": {
+        "width": 1000,
+        "height": 440,
+        "nodes": [
+          {
+            "id": "chipCamera",
+            "kind": "box",
+            "x": 14,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Live\ncamera"
+          },
+          {
+            "id": "chipSkeleton",
+            "kind": "box",
+            "x": 123,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Skeleton\nstyle"
+          },
+          {
+            "id": "chipMask",
+            "kind": "box",
+            "x": 232,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Body\nmask"
+          },
+          {
+            "id": "chipAngles",
+            "kind": "box",
+            "x": 341,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Angles and\ndistances"
+          },
+          {
+            "id": "chipPeople",
+            "kind": "box",
+            "x": 450,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Many\npeople"
+          },
+          {
+            "id": "chipPhoto",
+            "kind": "box",
+            "x": 559,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Photo and\nvideo"
+          },
+          {
+            "id": "chipRules",
+            "kind": "box",
+            "x": 668,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Rules and\nfeedback"
+          },
+          {
+            "id": "chipReplay",
+            "kind": "box",
+            "x": 777,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Record and\nreplay"
+          },
+          {
+            "id": "chipRates",
+            "kind": "box",
+            "x": 886,
+            "y": 80,
+            "w": 100,
+            "h": 52,
+            "fill": "blue",
+            "words": "Cameras\nand rates"
+          },
+          {
+            "id": "rowSee",
+            "kind": "box",
+            "x": 40,
+            "y": 250,
+            "w": 270,
+            "h": 100,
+            "fill": "grey",
+            "words": "See it\n3 cards"
+          },
+          {
+            "id": "rowMeasure",
+            "kind": "box",
+            "x": 365,
+            "y": 250,
+            "w": 270,
+            "h": 100,
+            "fill": "grey",
+            "words": "Measure it\n3 cards"
+          },
+          {
+            "id": "rowReact",
+            "kind": "box",
+            "x": 690,
+            "y": 250,
+            "w": 270,
+            "h": 100,
+            "fill": "grey",
+            "words": "React to it\n3 cards"
+          }
+        ],
+        "edges": [
+          {
+            "id": "cameraIn",
+            "from": "chipCamera",
+            "to": "rowSee"
+          },
+          {
+            "id": "skeletonIn",
+            "from": "chipSkeleton",
+            "to": "rowSee"
+          },
+          {
+            "id": "maskIn",
+            "from": "chipMask",
+            "to": "rowSee"
+          },
+          {
+            "id": "anglesIn",
+            "from": "chipAngles",
+            "to": "rowMeasure"
+          },
+          {
+            "id": "peopleIn",
+            "from": "chipPeople",
+            "to": "rowMeasure"
+          },
+          {
+            "id": "photoIn",
+            "from": "chipPhoto",
+            "to": "rowMeasure"
+          },
+          {
+            "id": "rulesIn",
+            "from": "chipRules",
+            "to": "rowReact"
+          },
+          {
+            "id": "replayIn",
+            "from": "chipReplay",
+            "to": "rowReact"
+          },
+          {
+            "id": "ratesIn",
+            "from": "chipRates",
+            "to": "rowReact"
+          }
+        ],
+        "labels": [
+          {
+            "x": 500,
+            "y": 40,
+            "anchor": "middle",
+            "weight": "bold",
+            "words": "The 9 features from the README, each one live"
+          },
+          {
+            "x": 500,
+            "y": 400,
+            "anchor": "middle",
+            "font": "mono",
+            "tone": "soft",
+            "words": "Cards replay a recorded skeleton, so 9 cards never run 9 models at once."
+          }
+        ]
+      },
+      "code": {
+        "pseudo": "Each card replays recorded skeleton frames over a fixture photo or clip.\nThe feature code itself is real: styles, angles, rules and replay run in the browser\non those frames, and the card's sliders change them live.\nOpen in playground runs the real model with the same settings.\nA card plays only while it is on screen.",
+        "docs": "// MDN: Intersection Observer API\nconst observer = new IntersectionObserver((entries) => {\n  entries.forEach((entry) => {\n    if (entry.isIntersecting) start(entry.target);\n    else stop(entry.target);\n  });\n}, { threshold: 0.1 });\nobserver.observe(card);"
+      }
+    },
+    {
+      "nav": "Folders",
+      "title": "playground/ becomes site/",
+      "subtitle": "One folder move. The Expo module folders stay as they are.",
+      "legend": "Red is the old path. Green is the new path.",
+      "scene": {
+        "width": 1000,
+        "height": 480,
+        "nodes": [
+          {
+            "id": "oldRoot",
+            "kind": "box",
+            "x": 40,
+            "y": 60,
+            "w": 400,
+            "h": 56,
+            "fill": "red",
+            "font": "mono",
+            "words": "playground/"
+          },
+          {
+            "id": "oldApp",
+            "kind": "box",
+            "x": 40,
+            "y": 140,
+            "w": 400,
+            "h": 56,
+            "fill": "red",
+            "font": "mono",
+            "words": "playground/src/ (today's app)"
+          },
+          {
+            "id": "newMarkLanding",
+            "kind": "bare",
+            "x": 40,
+            "y": 220,
+            "w": 400,
+            "h": 56,
+            "font": "mono",
+            "tone": "soft",
+            "words": "new"
+          },
+          {
+            "id": "newMarkGallery",
+            "kind": "bare",
+            "x": 40,
+            "y": 300,
+            "w": 400,
+            "h": 56,
+            "font": "mono",
+            "tone": "soft",
+            "words": "new"
+          },
+          {
+            "id": "newRoot",
+            "kind": "box",
+            "x": 560,
+            "y": 60,
+            "w": 400,
+            "h": 56,
+            "fill": "green",
+            "font": "mono",
+            "words": "site/"
+          },
+          {
+            "id": "newApp",
+            "kind": "box",
+            "x": 560,
+            "y": 140,
+            "w": 400,
+            "h": 56,
+            "fill": "green",
+            "font": "mono",
+            "words": "site/src/playground/"
+          },
+          {
+            "id": "newLanding",
+            "kind": "box",
+            "x": 560,
+            "y": 220,
+            "w": 400,
+            "h": 56,
+            "fill": "green",
+            "font": "mono",
+            "words": "site/src/landing/"
+          },
+          {
+            "id": "newGallery",
+            "kind": "box",
+            "x": 560,
+            "y": 300,
+            "w": 400,
+            "h": 56,
+            "fill": "green",
+            "font": "mono",
+            "words": "site/src/gallery/"
+          }
+        ],
+        "edges": [
+          {
+            "id": "moveRoot",
+            "from": "oldRoot",
+            "to": "newRoot",
+            "route": "curve"
+          },
+          {
+            "id": "moveApp",
+            "from": "oldApp",
+            "to": "newApp",
+            "route": "curve"
+          },
+          {
+            "id": "addLanding",
+            "from": "newMarkLanding",
+            "to": "newLanding",
+            "dashed": true
+          },
+          {
+            "id": "addGallery",
+            "from": "newMarkGallery",
+            "to": "newGallery",
+            "dashed": true
+          }
+        ],
+        "labels": [
+          {
+            "x": 40,
+            "y": 34,
+            "anchor": "start",
+            "weight": "bold",
+            "words": "Old path"
+          },
+          {
+            "x": 560,
+            "y": 34,
+            "anchor": "start",
+            "weight": "bold",
+            "words": "New path"
+          }
+        ],
+        "notes": [
+          {
+            "x": 40,
+            "y": 390,
+            "w": 900,
+            "words": "git mv keeps the history. Package pose-playground becomes pose-site. Paths change in\npnpm-workspace.yaml, package.json, turbo.json, knip.json, biome.json, pages.yml, check.yml, AGENTS.md."
+          }
+        ]
+      },
+      "code": {
+        "pseudo": "git mv playground site\ngit mv site/src/<today's app files> site/src/playground/\nmkdir site/src/landing site/src/gallery\nThe site URL stays /expo-mediapipe-pose/.",
+        "docs": "// Vite: Deploying a Static Site, GitHub Pages (vite.dev/guide/static-deploy)\n// If you are deploying to https://<USERNAME>.github.io/<REPO>/, set base to '/<REPO>/'.\nexport default defineConfig({\n  base: \"/expo-mediapipe-pose/\"\n});"
+      }
+    },
+    {
+      "nav": "README",
+      "title": "README: 302 lines to about 150",
+      "subtitle": "The README sells and starts you. Depth moves to the site, CHANGELOG and SKILL.md.",
+      "legend": "Grey is today. Blue is after. Struck rows move out.",
+      "scene": {
+        "width": 1000,
+        "height": 600,
+        "nodes": [
+          {
+            "id": "readmeToday",
+            "kind": "rows",
+            "x": 40,
+            "y": 60,
+            "w": 400,
+            "h": 450,
+            "fill": "grey",
+            "rows": [
+              "Title",
+              "Try it in your browser",
+              {
+                "words": "Who this helps",
+                "struck": true
+              },
+              "Features",
+              "Status and requirements",
+              "Documentation",
+              "Install",
+              {
+                "words": "Breaking changes in 0.4.0",
+                "struck": true
+              },
+              "Show a pose camera",
+              "Style joints and body parts",
+              "React to a condition",
+              "Develop",
+              "API and scope",
+              "FAQ (80 lines)",
+              "Integrate with a coding assistant (44 lines)",
+              "License and attribution"
+            ]
+          },
+          {
+            "id": "readmeAfter",
+            "kind": "rows",
+            "x": 560,
+            "y": 60,
+            "w": 400,
+            "h": 450,
+            "fill": "blue",
+            "rows": [
+              "Animated hero, light and dark",
+              "One-line pitch",
+              "Try it live: link to the site",
+              "Install",
+              "Show a pose camera",
+              "Style joints and body parts",
+              "React to a condition",
+              "Features: each links to its live card",
+              "For agents: SKILL.md and llms.txt",
+              "FAQ: top 5, the rest on the site",
+              "Develop",
+              "License and attribution"
+            ]
+          }
+        ],
+        "labels": [
+          {
+            "x": 40,
+            "y": 34,
+            "anchor": "start",
+            "weight": "bold",
+            "words": "Today"
+          },
+          {
+            "x": 560,
+            "y": 34,
+            "anchor": "start",
+            "weight": "bold",
+            "words": "After"
+          }
+        ],
+        "notes": [
+          {
+            "x": 40,
+            "y": 535,
+            "w": 400,
+            "link": "readmeToday",
+            "words": "Breaking changes move to CHANGELOG.md.\nWho this helps joins the pitch."
+          },
+          {
+            "x": 560,
+            "y": 535,
+            "w": 400,
+            "link": "readmeAfter",
+            "words": "The hero is an SVG of the skeleton moving,\nmade from the same data as the site hero."
+          }
+        ]
+      },
+      "code": {
+        "pseudo": "A script turns the recorded skeleton frames into two SVG files with CSS animation:\n.github/hero-light.svg and .github/hero-dark.svg.\nThe README shows the right one with <picture>.",
+        "docs": "<!-- GitHub Docs: Basic writing and formatting syntax,\n     Specifying the theme an image is shown to -->\n<picture>\n  <source media=\"(prefers-color-scheme: dark)\" srcset=\".github/hero-dark.svg\">\n  <source media=\"(prefers-color-scheme: light)\" srcset=\".github/hero-light.svg\">\n  <img alt=\"A skeleton tracking a person as they move\" src=\".github/hero-light.svg\">\n</picture>"
+      }
+    },
+    {
+      "nav": "Build order",
+      "title": "Who builds what, and when",
+      "subtitle": "Three waves. Up to four workers at once, each in its own worktree.",
+      "legend": "Grey is the move. Blue is new work. Green is the release.",
+      "scene": {
+        "width": 1000,
+        "height": 460,
+        "nodes": [
+          {
+            "id": "waveOne",
+            "kind": "lane",
+            "x": 20,
+            "y": 40,
+            "w": 190,
+            "h": 330,
+            "words": "Wave 1"
+          },
+          {
+            "id": "prMove",
+            "kind": "box",
+            "x": 35,
+            "y": 90,
+            "w": 160,
+            "h": 70,
+            "fill": "grey",
+            "words": "PR 1\nMove to site/"
+          },
+          {
+            "id": "waveTwo",
+            "kind": "lane",
+            "x": 230,
+            "y": 40,
+            "w": 290,
+            "h": 330,
+            "words": "Wave 2, at once"
+          },
+          {
+            "id": "prHero",
+            "kind": "box",
+            "x": 245,
+            "y": 85,
+            "w": 260,
+            "h": 56,
+            "fill": "blue",
+            "words": "PR 2  Hero, nav, theme"
+          },
+          {
+            "id": "prGallery",
+            "kind": "box",
+            "x": 245,
+            "y": 155,
+            "w": 260,
+            "h": 56,
+            "fill": "blue",
+            "words": "PR 3  Feature gallery"
+          },
+          {
+            "id": "prSections",
+            "kind": "box",
+            "x": 245,
+            "y": 225,
+            "w": 260,
+            "h": 56,
+            "fill": "blue",
+            "words": "PR 4  Table, agents, FAQ"
+          },
+          {
+            "id": "prAgents",
+            "kind": "box",
+            "x": 245,
+            "y": 295,
+            "w": 260,
+            "h": 56,
+            "fill": "blue",
+            "words": "PR 5  SKILL.md, llms.txt"
+          },
+          {
+            "id": "waveThree",
+            "kind": "lane",
+            "x": 540,
+            "y": 40,
+            "w": 200,
+            "h": 330,
+            "words": "Wave 3"
+          },
+          {
+            "id": "prReadme",
+            "kind": "box",
+            "x": 555,
+            "y": 85,
+            "w": 170,
+            "h": 80,
+            "fill": "blue",
+            "words": "PR 6\nREADME and\nhero SVG"
+          },
+          {
+            "id": "releaseLane",
+            "kind": "lane",
+            "x": 760,
+            "y": 40,
+            "w": 220,
+            "h": 330,
+            "words": "Release"
+          },
+          {
+            "id": "yourYes",
+            "kind": "box",
+            "x": 775,
+            "y": 85,
+            "w": 190,
+            "h": 56,
+            "fill": "green",
+            "words": "Your yes"
+          },
+          {
+            "id": "deploy",
+            "kind": "box",
+            "x": 775,
+            "y": 165,
+            "w": 190,
+            "h": 56,
+            "fill": "green",
+            "words": "Deploy Pages"
+          },
+          {
+            "id": "proof",
+            "kind": "box",
+            "x": 775,
+            "y": 245,
+            "w": 190,
+            "h": 66,
+            "fill": "green",
+            "words": "pnpm check and\nlive proof"
+          }
+        ],
+        "edges": [
+          {
+            "id": "toHero",
+            "from": "prMove",
+            "to": "prHero",
+            "route": "elbow",
+            "sides": [
+              "right",
+              "left"
+            ]
+          },
+          {
+            "id": "toGallery",
+            "from": "prMove",
+            "to": "prGallery",
+            "route": "elbow",
+            "sides": [
+              "right",
+              "left"
+            ]
+          },
+          {
+            "id": "toSections",
+            "from": "prMove",
+            "to": "prSections",
+            "route": "elbow",
+            "sides": [
+              "right",
+              "left"
+            ]
+          },
+          {
+            "id": "toAgents",
+            "from": "prMove",
+            "to": "prAgents",
+            "route": "elbow",
+            "sides": [
+              "right",
+              "left"
+            ]
+          },
+          {
+            "id": "heroToReadme",
+            "from": "prHero",
+            "to": "prReadme"
+          },
+          {
+            "id": "readmeToYes",
+            "from": "prReadme",
+            "to": "yourYes"
+          },
+          {
+            "id": "yesToDeploy",
+            "from": "yourYes",
+            "to": "deploy"
+          },
+          {
+            "id": "deployToProof",
+            "from": "deploy",
+            "to": "proof"
+          }
+        ],
+        "notes": [
+          {
+            "x": 230,
+            "y": 395,
+            "w": 520,
+            "words": "I review every diff before it merges. One fix round,\nthen I fix what is left myself."
+          }
+        ]
+      }
+    },
+    {
+      "nav": "Done means",
+      "title": "Done means",
+      "subtitle": "What must be true before I call it finished.",
+      "scene": {
+        "width": 1000,
+        "height": 460,
+        "nodes": [
+          {
+            "id": "doneCard",
+            "kind": "lane",
+            "x": 120,
+            "y": 30,
+            "w": 760,
+            "h": 400,
+            "words": "Done means"
+          },
+          {
+            "id": "checkMerged",
+            "kind": "box",
+            "x": 160,
+            "y": 85,
+            "w": 26,
+            "h": 26,
+            "words": ""
+          },
+          {
+            "id": "checkPnpm",
+            "kind": "box",
+            "x": 160,
+            "y": 140,
+            "w": 26,
+            "h": 26,
+            "words": ""
+          },
+          {
+            "id": "checkLive",
+            "kind": "box",
+            "x": 160,
+            "y": 195,
+            "w": 26,
+            "h": 26,
+            "words": ""
+          },
+          {
+            "id": "checkScreens",
+            "kind": "box",
+            "x": 160,
+            "y": 250,
+            "w": 26,
+            "h": 26,
+            "words": ""
+          },
+          {
+            "id": "checkReadme",
+            "kind": "box",
+            "x": 160,
+            "y": 305,
+            "w": 26,
+            "h": 26,
+            "words": ""
+          },
+          {
+            "id": "checkWorktrees",
+            "kind": "box",
+            "x": 160,
+            "y": 360,
+            "w": 26,
+            "h": 26,
+            "words": ""
+          },
+          {
+            "id": "rowPnpm",
+            "kind": "bare",
+            "x": 205,
+            "y": 138,
+            "w": 330,
+            "h": 30,
+            "words": "pnpm check passes on a fresh main"
+          }
+        ],
+        "labels": [
+          {
+            "x": 205,
+            "y": 98,
+            "anchor": "start",
+            "words": "Every part merged through a PR, issue #92 closed"
+          },
+          {
+            "x": 205,
+            "y": 208,
+            "anchor": "start",
+            "words": "Live site: the hero moves at once, every card plays"
+          },
+          {
+            "x": 205,
+            "y": 263,
+            "anchor": "start",
+            "words": "320 to 1440 px, light and dark, no sideways scroll, motion off when asked"
+          },
+          {
+            "x": 205,
+            "y": 318,
+            "anchor": "start",
+            "words": "README hero moves on GitHub in light and dark"
+          },
+          {
+            "x": 205,
+            "y": 373,
+            "anchor": "start",
+            "words": "Worktrees removed, branches kept"
+          }
+        ],
+        "notes": [
+          {
+            "x": 590,
+            "y": 125,
+            "w": 260,
+            "link": "rowPnpm",
+            "words": "lint, typecheck, test, build\nand the browser tests"
+          }
+        ]
+      }
+    },
+    {
+      "nav": "Your call",
+      "title": "Your call",
+      "subtitle": "The repo has no clip of a person moving. The hero needs one.",
+      "legend": "Each card is one way to make the hero move. Red is the risk.",
+      "scene": {
+        "width": 1000,
+        "height": 380,
+        "nodes": [
+          {
+            "id": "winnerA",
+            "kind": "ellipse",
+            "x": 288,
+            "y": 26,
+            "w": 204,
+            "h": 48,
+            "tone": "green",
+            "words": ""
+          }
+        ],
+        "rules": [
+          {
+            "x1": 60,
+            "y1": 30,
+            "x2": 940,
+            "y2": 30
+          },
+          {
+            "x1": 60,
+            "y1": 70,
+            "x2": 940,
+            "y2": 70
+          },
+          {
+            "x1": 60,
+            "y1": 130,
+            "x2": 940,
+            "y2": 130
+          },
+          {
+            "x1": 60,
+            "y1": 190,
+            "x2": 940,
+            "y2": 190
+          },
+          {
+            "x1": 60,
+            "y1": 250,
+            "x2": 940,
+            "y2": 250
+          },
+          {
+            "x1": 60,
+            "y1": 310,
+            "x2": 940,
+            "y2": 310
+          },
+          {
+            "x1": 60,
+            "y1": 30,
+            "x2": 60,
+            "y2": 310
+          },
+          {
+            "x1": 280,
+            "y1": 30,
+            "x2": 280,
+            "y2": 310
+          },
+          {
+            "x1": 500,
+            "y1": 30,
+            "x2": 500,
+            "y2": 310
+          },
+          {
+            "x1": 720,
+            "y1": 30,
+            "x2": 720,
+            "y2": 310
+          },
+          {
+            "x1": 940,
+            "y1": 30,
+            "x2": 940,
+            "y2": 310
+          }
+        ],
+        "labels": [
+          {
+            "x": 390,
+            "y": 50,
+            "anchor": "middle",
+            "weight": "bold",
+            "words": "A · Clip + recorded skeleton"
+          },
+          {
+            "x": 610,
+            "y": 50,
+            "anchor": "middle",
+            "weight": "bold",
+            "words": "B · Real model on load"
+          },
+          {
+            "x": 830,
+            "y": 50,
+            "anchor": "middle",
+            "weight": "bold",
+            "words": "C · Skeleton only"
+          },
+          {
+            "x": 70,
+            "y": 100,
+            "anchor": "start",
+            "words": "Moves when the page opens"
+          },
+          {
+            "x": 390,
+            "y": 100,
+            "anchor": "middle",
+            "tone": "green",
+            "words": "✓ at once"
+          },
+          {
+            "x": 610,
+            "y": 100,
+            "anchor": "middle",
+            "tone": "red",
+            "words": "✗ after 9.4 MB loads"
+          },
+          {
+            "x": 830,
+            "y": 100,
+            "anchor": "middle",
+            "tone": "green",
+            "words": "✓ at once"
+          },
+          {
+            "x": 70,
+            "y": 160,
+            "anchor": "start",
+            "words": "Page weight before Try it"
+          },
+          {
+            "x": 390,
+            "y": 160,
+            "anchor": "middle",
+            "tone": "red",
+            "words": "✗ 2 to 4 MB video"
+          },
+          {
+            "x": 610,
+            "y": 160,
+            "anchor": "middle",
+            "tone": "red",
+            "words": "✗ 9.4 MB model + wasm"
+          },
+          {
+            "x": 830,
+            "y": 160,
+            "anchor": "middle",
+            "tone": "green",
+            "words": "✓ under 200 KB"
+          },
+          {
+            "x": 70,
+            "y": 220,
+            "anchor": "start",
+            "words": "A real person on screen"
+          },
+          {
+            "x": 390,
+            "y": 220,
+            "anchor": "middle",
+            "tone": "green",
+            "words": "✓ yes"
+          },
+          {
+            "x": 610,
+            "y": 220,
+            "anchor": "middle",
+            "tone": "green",
+            "words": "✓ yes"
+          },
+          {
+            "x": 830,
+            "y": 220,
+            "anchor": "middle",
+            "tone": "red",
+            "words": "✗ no, lines only"
+          },
+          {
+            "x": 70,
+            "y": 280,
+            "anchor": "start",
+            "words": "Shows it really works"
+          },
+          {
+            "x": 390,
+            "y": 280,
+            "anchor": "middle",
+            "tone": "green",
+            "words": "✓ recorded from the model"
+          },
+          {
+            "x": 610,
+            "y": 280,
+            "anchor": "middle",
+            "tone": "green",
+            "words": "✓ live result"
+          },
+          {
+            "x": 830,
+            "y": 280,
+            "anchor": "middle",
+            "tone": "red",
+            "words": "✗ looks like a drawing"
+          },
+          {
+            "x": 60,
+            "y": 350,
+            "anchor": "start",
+            "weight": "bold",
+            "words": "Pick A: it moves at once and shows a real person. Try it live then runs the real model."
+          }
+        ]
+      },
+      "decision": {
+        "question": "Where should the hero's moving person come from?",
+        "options": [
+          {
+            "letter": "A",
+            "title": "Free stock clip + skeleton recorded once (recommended)",
+            "scene": {
+              "width": 300,
+              "height": 210,
+              "nodes": [
+                {
+                  "id": "clipA",
+                  "kind": "box",
+                  "x": 10,
+                  "y": 15,
+                  "w": 130,
+                  "h": 52,
+                  "fill": "grey",
+                  "words": "Pexels clip\nfree license"
+                },
+                {
+                  "id": "dataA",
+                  "kind": "box",
+                  "x": 160,
+                  "y": 15,
+                  "w": 130,
+                  "h": 52,
+                  "fill": "grey",
+                  "words": "skeleton\nrecorded once"
+                },
+                {
+                  "id": "heroA",
+                  "kind": "box",
+                  "x": 60,
+                  "y": 105,
+                  "w": 180,
+                  "h": 46,
+                  "fill": "green",
+                  "words": "moves at once"
+                }
+              ],
+              "edges": [
+                {
+                  "id": "clipToHeroA",
+                  "from": "clipA",
+                  "to": "heroA"
+                },
+                {
+                  "id": "dataToHeroA",
+                  "from": "dataA",
+                  "to": "heroA"
+                }
+              ],
+              "labels": [
+                {
+                  "x": 150,
+                  "y": 182,
+                  "anchor": "middle",
+                  "tone": "red",
+                  "words": "Adds a 2 to 4 MB video file."
+                }
+              ]
+            }
+          },
+          {
+            "letter": "B",
+            "title": "Run the real model on page load",
+            "scene": {
+              "width": 300,
+              "height": 210,
+              "nodes": [
+                {
+                  "id": "modelB",
+                  "kind": "box",
+                  "x": 60,
+                  "y": 15,
+                  "w": 180,
+                  "h": 52,
+                  "fill": "grey",
+                  "words": "9.4 MB model\nand wasm"
+                },
+                {
+                  "id": "heroB",
+                  "kind": "box",
+                  "x": 60,
+                  "y": 105,
+                  "w": 180,
+                  "h": 46,
+                  "fill": "blue",
+                  "words": "real result"
+                }
+              ],
+              "edges": [
+                {
+                  "id": "modelToHeroB",
+                  "from": "modelB",
+                  "to": "heroB",
+                  "label": "load first"
+                }
+              ],
+              "labels": [
+                {
+                  "x": 150,
+                  "y": 182,
+                  "anchor": "middle",
+                  "tone": "red",
+                  "words": "Hero stands still for seconds."
+                }
+              ]
+            }
+          },
+          {
+            "letter": "C",
+            "title": "Skeleton only, no video",
+            "scene": {
+              "width": 300,
+              "height": 210,
+              "nodes": [
+                {
+                  "id": "dataC",
+                  "kind": "box",
+                  "x": 60,
+                  "y": 15,
+                  "w": 180,
+                  "h": 52,
+                  "fill": "grey",
+                  "words": "skeleton\nrecorded once"
+                },
+                {
+                  "id": "heroC",
+                  "kind": "box",
+                  "x": 60,
+                  "y": 105,
+                  "w": 180,
+                  "h": 46,
+                  "fill": "blue",
+                  "words": "plain background"
+                }
+              ],
+              "edges": [
+                {
+                  "id": "dataToHeroC",
+                  "from": "dataC",
+                  "to": "heroC"
+                }
+              ],
+              "labels": [
+                {
+                  "x": 150,
+                  "y": 182,
+                  "anchor": "middle",
+                  "tone": "red",
+                  "words": "No real person to prove it."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

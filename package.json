@@ -22,8 +22,8 @@
 		"CHANGELOG.md"
 	],
 	"scripts": {
-		"dev": "pnpm --filter pose-playground dev",
-		"prod": "pnpm --filter pose-playground prod",
+		"dev": "pnpm --filter pose-site dev",
+		"prod": "pnpm --filter pose-site prod",
 		"build": "tsc -p tsconfig.build.json",
 		"test": "vitest run && pnpm test:swift",
 		"test:watch": "vitest",

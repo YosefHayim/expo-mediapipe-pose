@@ -10,7 +10,7 @@
 		"test": {},
 		"typecheck": {},
 		"pose-camera-example#typecheck": { "dependsOn": ["//#build"] },
-		"pose-playground#test": { "dependsOn": ["//#build"] },
-		"pose-playground#typecheck": { "dependsOn": ["//#build"] }
+		"pose-site#test": { "dependsOn": ["//#build"] },
+		"pose-site#typecheck": { "dependsOn": ["//#build"] }
 	}
 }

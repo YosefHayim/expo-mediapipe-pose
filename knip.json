@@ -9,7 +9,7 @@
 				"src/testing/*.ts"
 			]
 		},
-		"playground": {
+		"site": {
 			"includeEntryExports": true,
 			"entry": [
 				"src/main.tsx",

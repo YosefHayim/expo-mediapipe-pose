@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Rule } from "@/config";
+import type { Rule } from "@/playground/config";
 import { Color } from "./color";
 import { Range } from "./range";
 import {

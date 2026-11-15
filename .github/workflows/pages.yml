@@ -1,4 +1,4 @@
-name: Pose playground Pages
+name: Pose site Pages
 'on':
   push:
     branches:
@@ -17,20 +17,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup workspace
         uses: ./.github/actions/setup
-      - run: pnpm --filter pose-playground build
-      - run: pnpm --filter pose-playground exec playwright install --with-deps --only-shell chromium
-      - run: pnpm --filter pose-playground test:e2e
+      - run: pnpm --filter pose-site build
+      - run: pnpm --filter pose-site exec playwright install --with-deps --only-shell chromium
+      - run: pnpm --filter pose-site test:e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: playground-browser-failures
-          path: playground/test-results
+          path: site/test-results
           retention-days: 7
           if-no-files-found: ignore
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         if: github.ref == 'refs/heads/main'
         with:
-          path: playground/dist
+          path: site/dist
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: build

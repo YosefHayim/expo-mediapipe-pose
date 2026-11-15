@@ -8,7 +8,7 @@ Community-maintained; not an official Google or Expo package. Frames stay on the
 
 [Open the interactive playground](https://YosefHayim.github.io/expo-mediapipe-pose/) to try samples, webcam and local media, adjust skeletons and feedback rules, explore segmentation, and copy Expo integration code. Camera and files stay in your browser.
 
-The playground uses MediaPipe’s browser SDK with this library’s pure helpers. It does not add browser inference support to the npm package or verify native camera capabilities and phone performance. See [playground development and limits](playground/README.md).
+The playground uses MediaPipe’s browser SDK with this library’s pure helpers. It does not add browser inference support to the npm package or verify native camera capabilities and phone performance. See [playground development and limits](site/README.md).
 
 ## Who this helps
 
@@ -166,7 +166,7 @@ pnpm --filter pose-camera-example ios
 # or: pnpm --filter pose-camera-example android
 ```
 
-`pnpm check` runs lint ([Biome](https://biomejs.dev/) and [knip](https://knip.dev/)), [TypeScript](https://www.typescriptlang.org/) typechecks, tests and builds for the package, the example and the playground, through [Turborepo](https://turborepo.dev/). `pnpm test` also runs the Swift frame-timing tests on macOS and skips them on other systems. GitHub CI runs the tests, package verification and playground browser tests on pushes to `main`, and builds the Android example app; build the iOS example on a Mac with the command above. The [native fixture runner](example/fixtures/README.md) exercises real SDK inference on public images/videos; it runs separately from CI build checks. Use physical phones to assess front/back alignment, all interface orientations, zoom, interruptions, permissions, model changes, repeated mounts and sustained capture. Include device, OS, SDK and model details when reporting bugs through [GitHub Issues](https://github.com/YosefHayim/expo-mediapipe-pose/issues).
+`pnpm check` runs lint ([Biome](https://biomejs.dev/) and [knip](https://knip.dev/)), [TypeScript](https://www.typescriptlang.org/) typechecks, tests and builds for the package, the example and the site, through [Turborepo](https://turborepo.dev/). `pnpm test` also runs the Swift frame-timing tests on macOS and skips them on other systems. GitHub CI runs the tests, package verification and playground browser tests on pushes to `main`, and builds the Android example app; build the iOS example on a Mac with the command above. The [native fixture runner](example/fixtures/README.md) exercises real SDK inference on public images/videos; it runs separately from CI build checks. Use physical phones to assess front/back alignment, all interface orientations, zoom, interruptions, permissions, model changes, repeated mounts and sustained capture. Include device, OS, SDK and model details when reporting bugs through [GitHub Issues](https://github.com/YosefHayim/expo-mediapipe-pose/issues).
 
 ## API and scope
 

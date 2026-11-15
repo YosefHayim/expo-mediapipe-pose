@@ -10,7 +10,7 @@ An Expo native pose-detection library using Google's MediaPipe Tasks SDK. Read [
 - `ios/`: Swift capture, file decoding, detector/mask ownership and Expo registration.
 - `android/src/main/java/expo/modules/mediapipepose/`: Kotlin equivalents; `android/src/test/` holds their JVM unit tests.
 - `example/`: one standalone Expo app exercising the public API; `example/fixtures/README.md` documents cold-launch native checks and mask pixel verification.
-- `playground/`: browser demo (Vite, deployed to GitHub Pages) that runs the same pose code.
+- `site/`: the landing page and browser playground (Vite, deployed to GitHub Pages) that run the same pose code.
 - `scripts/`: package verification (`verify-package.mjs`) and fixture generators/checkers.
 - `src/**/*.test.ts`: behavior tests next to their source, including a DOM harness for React-only hooks. `src/testing/` holds shared test helpers and expo stubs. `ios/PoseFrameTimingTests.swift`: the Swift frame-timing tests.
 - `assets/`: bundled Google full pose model; preserve provenance and checksum.
@@ -37,7 +37,7 @@ git diff --check
 
 `pnpm check` is the one gate: lint (Biome and knip), typecheck, test and build through Turborepo. The pre-commit hook only runs Biome on staged files. `pnpm test` also runs the Swift frame-timing tests (`pnpm test:swift`) on macOS and skips them on other systems, so Linux CI still passes.
 
-knip reports unused entry exports only in the `playground/` workspace (a private app); the root `.` workspace is the published library, so its `src/index.ts` exports are its public API and stay.
+knip reports unused entry exports only in the `site/` workspace (a private app); the root `.` workspace is the published library, so its `src/index.ts` exports are its public API and stay.
 
 Use `pnpm lint:fix` for Biome formatting and import order. Format Swift with `xcrun swift-format format --in-place ios/*.swift`. After native changes, generate the example with `pnpm --filter pose-camera-example exec expo prebuild`, then build iOS with `pnpm --filter pose-camera-example ios` and Android with `pnpm --filter pose-camera-example android` (or the Gradle commands in `.github/workflows/check.yml`). Generated native projects and `scripts/dev/` artifacts stay untracked.
 

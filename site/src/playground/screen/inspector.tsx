@@ -1,7 +1,10 @@
 import type { ChangeEvent } from "react";
-import { createConfigurationLink, createDefaultSettings } from "@/config";
-import { Controls } from "@/controls/controls";
-import { download } from "@/recording";
+import {
+	createConfigurationLink,
+	createDefaultSettings,
+} from "@/playground/config";
+import { Controls } from "@/playground/controls/controls";
+import { download } from "@/playground/recording";
 import type { PlaygroundScreen } from "./use-playground";
 
 type InspectorProps = Pick<
