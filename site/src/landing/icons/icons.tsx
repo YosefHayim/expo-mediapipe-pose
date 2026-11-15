@@ -182,19 +182,6 @@ export const GaugeIcon = (props: IconProps) => (
 	</IconFrame>
 );
 
-export const PlayIcon = (props: IconProps) => (
-	<IconFrame {...props}>
-		<path d="M7 4.5v15l12-7.5z" />
-	</IconFrame>
-);
-
-export const PauseIcon = (props: IconProps) => (
-	<IconFrame {...props}>
-		<path d="M8 5v14" />
-		<path d="M16 5v14" />
-	</IconFrame>
-);
-
 export const TerminalIcon = (props: IconProps) => (
 	<IconFrame {...props}>
 		<rect x="3" y="4.5" width="18" height="15" rx="2" />
@@ -209,19 +196,6 @@ export const DocumentIcon = (props: IconProps) => (
 		<path d="M14 3v5h5" />
 		<path d="M9 13h7" />
 		<path d="M9 17h5" />
-	</IconFrame>
-);
-
-export const ChevronDownIcon = (props: IconProps) => (
-	<IconFrame {...props}>
-		<path d="M6 9.5l6 6 6-6" />
-	</IconFrame>
-);
-
-export const PlusIcon = (props: IconProps) => (
-	<IconFrame {...props}>
-		<path d="M12 5v14" />
-		<path d="M5 12h14" />
 	</IconFrame>
 );
 
