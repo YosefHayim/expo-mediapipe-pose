@@ -9,7 +9,7 @@ On-device pose detection for Expo and React Native, built on Google's MediaPipe 
 
 ## When to use it
 
-- Use it for a camera pose view with a skeleton, named landmarks, angles and distances, rules with hold times, local photo or video analysis, landmark recording and replay, and opt-in segmentation masks.
+- Use it for a camera pose view with a skeleton, named landmarks, angles and distances, rules with hold times, local photo or video analysis, landmark recording and replay, and opt-in person masks.
 - It needs an iOS or Android development build. Expo Go cannot load the native module, and there is no browser inference.
 - Do not use it for repetition counting, exercise scoring or medical judgments. Those stay in the app.
 - Do not use the internal Swift or Kotlin code as a standalone SDK.
@@ -41,7 +41,7 @@ pnpm exec expo run:ios
 # or: pnpm exec expo run:android
 ```
 
-Version 0.4.0 targets Expo SDK 58, React Native 0.88 and React 19.3. Native dependency or config changes need a new development build. Check the installed version before using any API.
+Version 0.5.0 targets Expo SDK 58, React Native 0.88 and React 19.3. Native dependency or config changes need a new development build. Check the installed version before using any API.
 
 ## Minimal example
 
@@ -155,15 +155,15 @@ for await (const sample of analyzePoseVideo(localVideoUri, { samplingFps: 5, sig
 }
 ```
 
-Inputs are local file locations. Video is sampled, and `signal` (an `AbortSignal`) cancels it. Image options include `segmentationEnabled`, `maskMaxDimension`, `maxPoses`, `modelVariant`, `modelPath`, `maxImageDimension` and the two confidence minimums.
+Inputs are local file locations. Video is sampled, and `signal` (an `AbortSignal`) cancels it. Image options include `personMaskEnabled`, `maskMaxDimension`, `maxPoses`, `modelVariant`, `modelPath`, `maxImageDimension` and the two confidence minimums.
 
 ### Multiple poses
 
 `maxPoses` allows up to six poses. `poseIndex` and `selectPose` pick one pose from a result. Indices are not persistent person identities. Reset rules and tracking when the selection changes.
 
-### Segmentation masks
+### Person masks
 
-Set `segmentationEnabled` and draw with `PoseSegmentationOverlay` (`segmentation`, `width`, `height`, `poseIndex`, `color`, `opacity`). At most two mask results can be outstanding. Call `releasePoseSegmentation` when you finish with one, including on errors and on unmount. The overlay does not release files for you.
+Set `personMaskEnabled` and draw with `PosePersonMaskOverlay` (`personMask`, `width`, `height`, `poseIndex`, `color`, `opacity`). At most two mask results can be outstanding. Call `releasePosePersonMask` when you finish with one, including on errors and on unmount. The overlay does not release files for you.
 
 ## Landmark names
 
@@ -177,7 +177,7 @@ The 33 landmarks are in the exported `LANDMARK_NAMES` array. The array position 
 - Treating `unknown` as failure, or ignoring the `unavailable` measurement case.
 - Mirroring coordinates twice for the front camera.
 - Treating a pose index as a person identity across frames.
-- Not releasing segmentation masks. Call `releasePoseSegmentation`.
+- Not releasing person masks. Call `releasePosePersonMask`.
 - Expecting a lower `callbackFps` to save detector work, or a guaranteed frame rate.
 - Using lite or heavy models without a local `modelPath`. Only the full model is bundled.
 - Importing from the main entry in plain Node tests. Use `expo-mediapipe-pose/core`.
@@ -186,6 +186,6 @@ The 33 landmarks are in the exported `LANDMARK_NAMES` array. The array position 
 ## Links
 
 - README: https://github.com/YosefHayim/expo-mediapipe-pose#readme
-- Live site and playground: https://yosefhayim.github.io/expo-mediapipe-pose/
+- Hello world app: https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/hello-world/app.tsx
 - Index for tools: https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/llms.txt
 - Runnable example: https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/example/app.tsx

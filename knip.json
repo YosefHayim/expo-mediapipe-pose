@@ -8,6 +8,9 @@
 				"src/**/*.test.ts",
 				"src/testing/*.ts"
 			]
+		},
+		"hello-world": {
+			"entry": ["index.ts", "app.tsx"]
 		}
 	}
 }

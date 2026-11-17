@@ -7,6 +7,9 @@
 			"example/**/*.ts",
 			"example/**/*.tsx",
 			"example/*.json",
+			"hello-world/*.ts",
+			"hello-world/*.tsx",
+			"hello-world/*.json",
 			"*.json"
 		]
 	},
