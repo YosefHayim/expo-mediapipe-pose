@@ -29,7 +29,7 @@ private final class PoseVideoSession {
     configuration.baseOptions.delegate = .CPU
     configuration.runningMode = .video
     configuration.numPoses = options.maxPoses
-    configuration.shouldOutputSegmentationMasks = options.segmentationEnabled
+    configuration.shouldOutputSegmentationMasks = options.personMaskEnabled
     configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(trackingConfidence)
@@ -110,8 +110,8 @@ internal final class PoseVideoAnalysis {
           let result = try detector.detect(videoFrame: image, timestampInMilliseconds: timestampMs)
           let inferenceDurationMs = (ProcessInfo.processInfo.systemUptime - started) * 1000
           var detection = try PoseLandmarkPayload.make(result)
-          if current.options.segmentationEnabled {
-            detection["segmentation"] = try self.masks.save(
+          if current.options.personMaskEnabled {
+            detection["personMask"] = try self.masks.save(
               result, width: decoded.image.width, height: decoded.image.height,
               maximumDimension: current.options.maskMaxDimension)
           }

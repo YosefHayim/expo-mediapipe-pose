@@ -4,7 +4,7 @@ import MediaPipeTasksVision
 import UIKit
 
 internal struct PoseImageOptions: Record {
-  @Field var segmentationEnabled: Bool = false
+  @Field var personMaskEnabled: Bool = false
   @Field var maskMaxDimension: Int = 256
   @Field var maxPoses: Int = 1
   @Field var modelVariant: String = "full"
@@ -64,7 +64,7 @@ internal enum PoseImageAnalysis {
       configuration.baseOptions.delegate = .CPU
       configuration.runningMode = .image
       configuration.numPoses = options.maxPoses
-      configuration.shouldOutputSegmentationMasks = options.segmentationEnabled
+      configuration.shouldOutputSegmentationMasks = options.personMaskEnabled
       configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
       configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
       let detector = try PoseLandmarker(options: configuration)
@@ -73,8 +73,8 @@ internal enum PoseImageAnalysis {
       let result = try detector.detect(image: image)
       let duration = (ProcessInfo.processInfo.systemUptime - started) * 1000
       var payload = try PoseLandmarkPayload.make(result)
-      if options.segmentationEnabled {
-        payload["segmentation"] = try masks.save(
+      if options.personMaskEnabled {
+        payload["personMask"] = try masks.save(
           result, width: pixels.width, height: pixels.height,
           maximumDimension: options.maskMaxDimension)
       }

@@ -183,7 +183,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                 .setBaseOptions(PoseModel.options(requested.modelVariant, requested.modelPath))
                 .setRunningMode(RunningMode.VIDEO)
                 .setNumPoses(requested.maxPoses)
-                .setOutputSegmentationMasks(requested.segmentationEnabled)
+                .setOutputSegmentationMasks(requested.personMaskEnabled)
                 .setMinPoseDetectionConfidence(requested.minPoseDetectionConfidence.toFloat())
                 .setMinPosePresenceConfidence(requested.minPosePresenceConfidence.toFloat())
                 .setMinTrackingConfidence(requested.minTrackingConfidence.toFloat())
@@ -337,8 +337,8 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                             if (requested.modelPath == null) "bundled" else "local",
                     )
                 val landmarkPayload = PoseLandmarkPayload.make(inference)
-                val segmentation =
-                    if (requested.segmentationEnabled)
+                val personMask =
+                    if (requested.personMaskEnabled)
                         requireNotNull(maskStore)
                             .save(
                                 context,
@@ -351,9 +351,9 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                 val frame =
                     landmarkPayload +
                         mapOf("additionalData" to metadata) +
-                        (if (segmentation == null) emptyMap()
-                        else mapOf("segmentation" to segmentation))
-                emit(token, segmentation) { onLandmark(frame) }
+                        (if (personMask == null) emptyMap()
+                        else mapOf("personMask" to personMask))
+                emit(token, personMask) { onLandmark(frame) }
             } catch (_: Exception) {
                 failed = true
                 emitFailure("inferenceRuntime", token)
@@ -442,12 +442,12 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         }
     }
 
-    private fun emit(token: Int, segmentation: Map<String, Any>? = null, callback: () -> Unit) {
+    private fun emit(token: Int, personMask: Map<String, Any>? = null, callback: () -> Unit) {
         val store = maskStore
         mainExecutor.execute {
             val currentGeneration = generation.get() == token && requestedOptions != null
             if (destroyed || !currentGeneration) {
-                store?.discard(segmentation)
+                store?.discard(personMask)
                 return@execute
             }
             callback()

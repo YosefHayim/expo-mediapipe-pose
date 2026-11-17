@@ -50,7 +50,7 @@ internal class PoseMaskStore {
         if (leases.size >= 2) return mapOf("status" to "backpressure")
         val masks =
             result.segmentationMasks().orElseThrow {
-                IllegalStateException("Segmentation masks are missing")
+                IllegalStateException("Person masks are missing")
             }
         check(masks.size == result.landmarks().size)
         val id = UUID.randomUUID().toString()
@@ -90,8 +90,8 @@ internal class PoseMaskStore {
         folder.parentFile?.delete()
     }
 
-    fun discard(segmentation: Map<String, Any>?) {
-        val id = segmentation?.get("leaseId") as? String ?: return
+    fun discard(personMask: Map<String, Any>?) {
+        val id = personMask?.get("leaseId") as? String ?: return
         CompletableFuture.runAsync {
             try {
                 release(id)

@@ -51,8 +51,8 @@ internal final class PoseMaskStore {
     }
   }
   func release(_ id: String) throws { try worker.sync { try remove(id) } }
-  func discard(_ segmentation: [String: Any]?) {
-    guard let id = segmentation?["leaseId"] as? String else { return }
+  func discard(_ personMask: [String: Any]?) {
+    guard let id = personMask?["leaseId"] as? String else { return }
     worker.async {
       do { try self.remove(id) } catch {
         NSLog("Pose mask cleanup failed: %@", String(describing: error))

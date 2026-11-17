@@ -48,7 +48,7 @@ class ExpoMediaPipePoseModule : Module() {
         AsyncFunction("closePoseVideo") { id: String, promise: Promise ->
             videos.close(id, promise)
         }
-        AsyncFunction("releasePoseSegmentation") Coroutine
+        AsyncFunction("releasePosePersonMask") Coroutine
             { id: String ->
                 withContext(Dispatchers.IO) { masks.release(id) }
             }
@@ -82,8 +82,8 @@ class ExpoMediaPipePoseModule : Module() {
             Prop("performanceMetricsEnabled") { view: ExpoMediaPipePoseView, enabled: Boolean ->
                 view.processingOptions = view.processingOptions.copy(metricsEnabled = enabled)
             }
-            Prop("segmentationEnabled") { view: ExpoMediaPipePoseView, enabled: Boolean ->
-                view.options = view.options.copy(segmentationEnabled = enabled)
+            Prop("personMaskEnabled") { view: ExpoMediaPipePoseView, enabled: Boolean ->
+                view.options = view.options.copy(personMaskEnabled = enabled)
             }
             Prop("maskMaxDimension") { view: ExpoMediaPipePoseView, dimension: Int ->
                 view.options = view.options.copy(maskMaxDimension = dimension)
