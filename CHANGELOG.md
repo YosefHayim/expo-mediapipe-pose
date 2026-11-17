@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.0
+
+Breaking: "segmentation" is renamed to "person mask" in every public name, option and native event key, and the browser playground site is removed.
+
+- `PoseSegmentation` -> `PosePersonMask`
+- `PoseSegmentationMask` -> `PosePersonMaskImage`
+- `SegmentationLeaseId` -> `PersonMaskLeaseId`
+- `releasePoseSegmentation` -> `releasePosePersonMask`
+- `PoseSegmentationOverlay` and `PoseSegmentationOverlayProps` -> `PosePersonMaskOverlay` and `PosePersonMaskOverlayProps`
+- `segmentationEnabled` (camera prop and image and video option) -> `personMaskEnabled`
+- `segmentation` (field on frame events and file detections) -> `personMask`
+- Error code `"segmentationCleanup"` -> `"personMaskCleanup"`
+- Remove the browser playground and landing page. The npm package is unchanged by this.
+- Add `hello-world/`, a small Expo app with numbered steps, and rewrite the README as a top-to-bottom guide with an API reference by job.
+
+MediaPipe's own `segmentationMasks` names are unchanged.
+
 ## 0.4.0
 
 Breaking: the `effect` peer dependency is removed, and exported schemas are zod schemas now. See "Breaking changes in 0.4.0" in the README.

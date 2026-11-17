@@ -1,0 +1,25 @@
+{
+	"expo": {
+		"name": "Pose Hello World",
+		"slug": "pose-hello-world",
+		"version": "1.0.0",
+		"orientation": "portrait",
+		"updates": { "enabled": false },
+		"ios": {
+			"bundleIdentifier": "dev.expopose.helloworld",
+			"supportsTablet": true
+		},
+		"android": {
+			"package": "dev.expopose.helloworld"
+		},
+		"plugins": [
+			[
+				"expo-camera",
+				{
+					"cameraPermission": "Allow the hello world app to track your pose on this device.",
+					"recordAudioAndroid": false
+				}
+			]
+		]
+	}
+}
