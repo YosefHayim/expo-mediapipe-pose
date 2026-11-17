@@ -1,37 +1,35 @@
 import { requireNativeModule } from "expo";
-import { SegmentationLeaseId } from "./person-mask";
+import { PersonMaskLeaseId } from "./person-mask";
 
-export const releasePoseSegmentation = async (
-	leaseId: string,
-): Promise<void> => {
-	SegmentationLeaseId.parse(leaseId);
+export const releasePosePersonMask = async (leaseId: string): Promise<void> => {
+	PersonMaskLeaseId.parse(leaseId);
 	await requireNativeModule<{
-		releasePoseSegmentation(id: string): Promise<void>;
-	}>("ExpoMediaPipePose").releasePoseSegmentation(leaseId);
+		releasePosePersonMask(id: string): Promise<void>;
+	}>("ExpoMediaPipePose").releasePosePersonMask(leaseId);
 };
-export const discardReportSegmentation = async (
+export const discardReportPersonMask = async (
 	candidateAnalysis: unknown,
 ): Promise<void> => {
 	const isCandidateAnalysisNotObject =
 		typeof candidateAnalysis !== "object" || candidateAnalysis === null;
 	if (isCandidateAnalysisNotObject) return;
 
-	const isAnalysisWithoutSegmentation = !("segmentation" in candidateAnalysis);
-	if (isAnalysisWithoutSegmentation) return;
+	const isAnalysisWithoutPersonMask = !("personMask" in candidateAnalysis);
+	if (isAnalysisWithoutPersonMask) return;
 
-	const segmentation = candidateAnalysis.segmentation;
+	const personMask = candidateAnalysis.personMask;
 
-	const isSegmentationNotObject =
-		typeof segmentation !== "object" || segmentation === null;
-	if (isSegmentationNotObject) return;
+	const isPersonMaskNotObject =
+		typeof personMask !== "object" || personMask === null;
+	if (isPersonMaskNotObject) return;
 
-	const isSegmentationWithoutLease = !("leaseId" in segmentation);
-	if (isSegmentationWithoutLease) return;
+	const isPersonMaskWithoutLease = !("leaseId" in personMask);
+	if (isPersonMaskWithoutLease) return;
 
-	const leaseIdReply = SegmentationLeaseId.safeParse(segmentation.leaseId);
+	const leaseIdReply = PersonMaskLeaseId.safeParse(personMask.leaseId);
 
 	const isLeaseIdRejected = !leaseIdReply.success;
 	if (isLeaseIdRejected) return;
 
-	await releasePoseSegmentation(leaseIdReply.data);
+	await releasePosePersonMask(leaseIdReply.data);
 };

@@ -80,10 +80,10 @@ export {
 	PoseImageOptions,
 	PoseLandmarks,
 	PosePerformanceMetrics,
+	PosePersonMask,
+	PosePersonMaskImage,
 	PoseRecording,
 	PoseResults,
-	PoseSegmentation,
-	PoseSegmentationMask,
 	PoseVideoFrame,
 	PoseVideoSampling,
 	parsePoseDetectionRecording,
@@ -100,9 +100,9 @@ export {
 	validatePoseRuleOptions,
 } from "./core";
 export { analyzePoseImage } from "./image/native";
-export type { PoseSegmentationOverlayProps } from "./person-mask/person-mask-overlay";
-export { PoseSegmentationOverlay } from "./person-mask/person-mask-overlay";
-export { releasePoseSegmentation } from "./person-mask/release-person-mask";
+export type { PosePersonMaskOverlayProps } from "./person-mask/person-mask-overlay";
+export { PosePersonMaskOverlay } from "./person-mask/person-mask-overlay";
+export { releasePosePersonMask } from "./person-mask/release-person-mask";
 export { usePoseReplay } from "./replay/use-pose-replay";
 export { usePoseRule } from "./rules/use-pose-rule";
 export { usePoseRules } from "./rules/use-pose-rules";

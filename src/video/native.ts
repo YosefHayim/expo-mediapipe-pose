@@ -1,7 +1,7 @@
 import { requireNativeModule } from "expo";
 import { z } from "zod";
 import { validateLocalFileLocation } from "../image/analysis";
-import { discardReportSegmentation } from "../person-mask/release-person-mask";
+import { discardReportPersonMask } from "../person-mask/release-person-mask";
 import {
 	createVideoSamplePlan,
 	PoseVideoFrame,
@@ -127,7 +127,7 @@ export const analyzePoseVideo = async function* (
 	} finally {
 		signal?.removeEventListener("abort", closeOnAbort);
 		try {
-			await discardReportSegmentation(undelivered);
+			await discardReportPersonMask(undelivered);
 		} catch (error) {
 			failures.push(error);
 		}

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MaskMaxDimension, PoseSegmentation } from "../person-mask/person-mask";
+import { MaskMaxDimension, PosePersonMask } from "../person-mask/person-mask";
 import {
 	createLandmarkSchema,
 	createObjectSchema,
@@ -10,7 +10,7 @@ import {
 
 const Confidence = z.number().min(0).max(1);
 export const PoseImageOptions = z.strictObject({
-	segmentationEnabled: z.boolean().default(false),
+	personMaskEnabled: z.boolean().default(false),
 	maskMaxDimension: MaskMaxDimension.default(256),
 	maxPoses: MaxPoses.default(1),
 	modelVariant: ModelVariant.default("full"),
@@ -20,7 +20,7 @@ export const PoseImageOptions = z.strictObject({
 	minPosePresenceConfidence: Confidence.default(0.35),
 });
 export type PoseImageOptions = z.input<typeof PoseImageOptions>;
-// Shared by PoseDetection and the strict detection recording schema, which drops `segmentation` first.
+// Shared by PoseDetection and the strict detection recording schema, which drops `personMask` first.
 export const createPoseDetectionFields = (isStrict: boolean) => ({
 	poses: createPoseResultsSchema(isStrict).optional(),
 	landmarks: z.array(createLandmarkSchema(isStrict)),
@@ -43,7 +43,7 @@ export const createPoseDetectionFields = (isStrict: boolean) => ({
 	),
 });
 export const PoseDetection = z.object({
-	segmentation: PoseSegmentation.optional(),
+	personMask: PosePersonMask.optional(),
 	...createPoseDetectionFields(false),
 });
 export type PoseDetection = z.infer<typeof PoseDetection>;

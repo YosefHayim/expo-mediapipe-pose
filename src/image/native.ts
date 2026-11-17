@@ -1,5 +1,5 @@
 import { requireNativeModule } from "expo";
-import { discardReportSegmentation } from "../person-mask/release-person-mask";
+import { discardReportPersonMask } from "../person-mask/release-person-mask";
 import {
 	PoseDetection,
 	type PoseImageOptions,
@@ -24,7 +24,7 @@ export const analyzePoseImage = async (
 		return PoseDetection.parse(analysis);
 	} catch (error) {
 		try {
-			await discardReportSegmentation(analysis);
+			await discardReportPersonMask(analysis);
 		} catch (cleanupError) {
 			throw new AggregateError(
 				[error, cleanupError],

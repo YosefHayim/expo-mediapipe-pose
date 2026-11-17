@@ -35,7 +35,7 @@ describe("resolvePoseImageOptions", () => {
 		assert.deepEqual(resolvePoseImageOptions(), {
 			modelVariant: "full",
 			maxPoses: 1,
-			segmentationEnabled: false,
+			personMaskEnabled: false,
 			maskMaxDimension: 256,
 			maxImageDimension: 2048,
 			minPoseDetectionConfidence: 0.35,

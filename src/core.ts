@@ -42,8 +42,8 @@ export {
 } from "./landmarks/names";
 export {
 	MaskMaxDimension,
-	PoseSegmentation,
-	PoseSegmentationMask,
+	PosePersonMask,
+	PosePersonMaskImage,
 } from "./person-mask/person-mask";
 export type { PoseRecorderStatus } from "./replay/pose-recording";
 export {
