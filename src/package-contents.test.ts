@@ -49,7 +49,10 @@ function listNativeSourceFiles(): string[] {
 	const swiftFiles = readdirSync("ios")
 		.filter((name) => name.endsWith(".swift") && !name.endsWith("Tests.swift"))
 		.map((name) => `ios/${name}`);
-	const kotlinFiles = readdirSync("android/src/main", { recursive: true })
+	const kotlinFiles = readdirSync("android/src/main", {
+		recursive: true,
+		encoding: "utf8",
+	})
 		.filter((name) => name.endsWith(".kt"))
 		.map((name) => `android/src/main/${name}`);
 	return [...swiftFiles, ...kotlinFiles];
