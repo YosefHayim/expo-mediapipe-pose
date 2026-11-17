@@ -7,6 +7,8 @@ import {
 	type ViewProps,
 } from "react-native";
 import type { z } from "zod";
+import { MaskMaxDimension } from "../person-mask/person-mask";
+import { discardReportSegmentation } from "../person-mask/release-person-mask";
 import {
 	CameraConfiguration,
 	type CameraFacing,
@@ -16,11 +18,9 @@ import {
 	type ModelVariant,
 	PoseFrame,
 	PosePerformanceMetrics,
-} from "../contracts";
-import { MaskMaxDimension } from "../segmentation/mask";
-import { discardReportSegmentation } from "../segmentation/native";
-import type { SkeletonOptions } from "../skeleton/logic";
-import { PoseSkeleton } from "../skeleton/view";
+} from "../shared-contracts";
+import type { SkeletonOptions } from "../skeleton/create-skeleton";
+import { PoseSkeleton } from "../skeleton/pose-skeleton";
 import { getOverlayStaleAfterMs } from "./frame-rates";
 import { usePoseOverlayFrame } from "./use-overlay-frame";
 

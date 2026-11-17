@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PoseSegmentation } from "./segmentation/mask";
+import { PoseSegmentation } from "./person-mask/person-mask";
 
 // zod numbers reject NaN and Infinity, so no separate finite check is needed.
 const Finite = z.number();

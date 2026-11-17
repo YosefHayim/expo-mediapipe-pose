@@ -1,12 +1,12 @@
 import { z } from "zod";
+import { MaskMaxDimension, PoseSegmentation } from "../person-mask/person-mask";
 import {
 	createLandmarkSchema,
 	createObjectSchema,
 	createPoseResultsSchema,
 	MaxPoses,
 	ModelVariant,
-} from "../contracts";
-import { MaskMaxDimension, PoseSegmentation } from "../segmentation/mask";
+} from "../shared-contracts";
 
 const Confidence = z.number().min(0).max(1);
 export const PoseImageOptions = z.strictObject({

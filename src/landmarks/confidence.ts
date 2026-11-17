@@ -1,4 +1,4 @@
-import type { Landmark } from "../contracts";
+import type { Landmark } from "../shared-contracts";
 
 export const hasLandmarkConfidence = (joint: Landmark, minimum: number) => {
 	const visibility = joint.visibility;

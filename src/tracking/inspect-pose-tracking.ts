@@ -1,7 +1,7 @@
-import type { PoseFrame } from "../contracts";
 import { hasLandmarkConfidence } from "../landmarks/confidence";
 import { LANDMARK_NAMES, type LandmarkName } from "../landmarks/names";
 import { type PoseRuleOptions, validatePoseRuleOptions } from "../rules/rule";
+import type { PoseFrame } from "../shared-contracts";
 
 export type PoseTrackingStatus =
 	| "searching"

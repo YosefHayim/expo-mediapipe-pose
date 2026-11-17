@@ -1,16 +1,16 @@
 import * as React from "react";
-import type { PoseFrame } from "../contracts";
 import {
 	advancePoseRule,
 	initialPoseRuleState,
 	validatePoseRuleOptions,
 } from "../rules/rule";
+import type { PoseFrame } from "../shared-contracts";
 import {
 	inspectPoseTracking,
 	type PoseTrackingOptions,
 	type PoseTrackingState,
 	trackingState,
-} from "./logic";
+} from "./inspect-pose-tracking";
 
 export const usePoseTracking = (trackingSettings: PoseTrackingOptions) => {
 	validatePoseRuleOptions(trackingSettings);

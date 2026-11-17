@@ -1,11 +1,11 @@
 import * as React from "react";
+import type { PoseRecording } from "./pose-recording";
 import {
 	createPoseReplay,
 	type PoseReplay,
 	type PoseReplayCallbacks,
 	type PoseReplayState,
-} from "./logic";
-import type { PoseRecording } from "./recording";
+} from "./replay-player";
 
 export const usePoseReplay = (
 	recording: PoseRecording,

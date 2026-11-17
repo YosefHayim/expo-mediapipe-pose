@@ -1,6 +1,6 @@
 import * as React from "react";
-import type { PoseFrame } from "../contracts";
 import type { LandmarkName } from "../landmarks/names";
+import type { PoseFrame } from "../shared-contracts";
 import {
 	advancePoseRule,
 	evaluatePoseRule,

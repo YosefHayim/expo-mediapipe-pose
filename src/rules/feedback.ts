@@ -1,4 +1,4 @@
-import type { SkeletonOptions } from "../skeleton/logic";
+import type { SkeletonOptions } from "../skeleton/create-skeleton";
 import type { PoseRuleStatus } from "./rule";
 
 export type SkeletonAppearance = Pick<

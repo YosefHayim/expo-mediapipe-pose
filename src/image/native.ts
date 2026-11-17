@@ -1,5 +1,5 @@
 import { requireNativeModule } from "expo";
-import { discardReportSegmentation } from "../segmentation/native";
+import { discardReportSegmentation } from "../person-mask/release-person-mask";
 import {
 	PoseDetection,
 	type PoseImageOptions,

@@ -18,7 +18,9 @@ describe("getCameraCapabilities", () => {
 		});
 
 		try {
-			const { getCameraCapabilities } = await import("./native");
+			const { getCameraCapabilities } = await import(
+				"./get-camera-capabilities"
+			);
 
 			assert.deepEqual(await getCameraCapabilities(), {
 				status: "permissionRequired",

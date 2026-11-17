@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { createPoseFrameFields, type PoseFrame } from "../contracts";
 import {
 	createPoseDetectionFields,
 	type PoseDetection,
 } from "../image/analysis";
+import { createPoseFrameFields, type PoseFrame } from "../shared-contracts";
 
 const RECORDING_VERSION = 1 as const;
 const MAXIMUM_FRAMES = 10_000;

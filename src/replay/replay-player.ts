@@ -1,11 +1,11 @@
-import type { PoseFrame } from "../contracts";
 import type { PoseDetection } from "../image/analysis";
+import type { PoseFrame } from "../shared-contracts";
 import {
 	copyPoseDetectionRecording,
 	copyPoseRecording,
 	type PoseDetectionRecording,
 	type PoseRecording,
-} from "./recording";
+} from "./pose-recording";
 
 const copyPoseReports = (frame: Pick<PoseFrame, "poses">) => {
 	const poses = frame.poses;

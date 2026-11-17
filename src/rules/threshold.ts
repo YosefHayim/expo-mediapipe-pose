@@ -1,5 +1,5 @@
-import type { Landmark, PoseFrame } from "../contracts";
 import type { LandmarkName } from "../landmarks/names";
+import type { Landmark, PoseFrame } from "../shared-contracts";
 import {
 	type PoseRuleOptions,
 	type PoseRuleStatus,

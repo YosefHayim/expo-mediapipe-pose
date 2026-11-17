@@ -142,7 +142,7 @@ describe("releasePoseSegmentation", () => {
 
 		try {
 			const { releasePoseSegmentation, discardReportSegmentation } =
-				await import("./native");
+				await import("./release-person-mask");
 			await assert.rejects(releasePoseSegmentation("../../file"));
 			assert.deepEqual(calls, []);
 

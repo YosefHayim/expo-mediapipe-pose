@@ -1,5 +1,5 @@
 import { requireNativeModule } from "expo";
-import { SegmentationLeaseId } from "./mask";
+import { SegmentationLeaseId } from "./person-mask";
 
 export const releasePoseSegmentation = async (
 	leaseId: string,

@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { PoseFrame } from "../contracts";
+import type { PoseFrame } from "../shared-contracts";
 
 export const usePoseOverlayFrame = (staleAfterMs: number) => {
 	const [frame, setFrame] = React.useState<PoseFrame | null>(null);

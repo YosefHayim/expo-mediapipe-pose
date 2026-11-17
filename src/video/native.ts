@@ -1,7 +1,7 @@
 import { requireNativeModule } from "expo";
 import { z } from "zod";
 import { validateLocalFileLocation } from "../image/analysis";
-import { discardReportSegmentation } from "../segmentation/native";
+import { discardReportSegmentation } from "../person-mask/release-person-mask";
 import {
 	createVideoSamplePlan,
 	PoseVideoFrame,

@@ -1,7 +1,11 @@
 import { strict as assert } from "node:assert";
 import { describe, test } from "vitest";
 
-import { CameraConfiguration, InferenceError, PoseFrame } from "./contracts";
+import {
+	CameraConfiguration,
+	InferenceError,
+	PoseFrame,
+} from "./shared-contracts";
 
 const frameMetadata = {
 	width: 720,
