@@ -1,11 +1,9 @@
-import { requireNativeModule } from "expo";
+import { getNativeModule } from "../native-module";
 import { PersonMaskLeaseId } from "./person-mask";
 
 export const releasePosePersonMask = async (leaseId: string): Promise<void> => {
 	PersonMaskLeaseId.parse(leaseId);
-	await requireNativeModule<{
-		releasePosePersonMask(id: string): Promise<void>;
-	}>("ExpoMediaPipePose").releasePosePersonMask(leaseId);
+	await getNativeModule().releasePosePersonMask(leaseId);
 };
 export const discardReportPersonMask = async (
 	candidateAnalysis: unknown,

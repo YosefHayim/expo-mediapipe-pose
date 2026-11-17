@@ -1,5 +1,5 @@
-import { requireNativeModule } from "expo";
 import { z } from "zod";
+import { getNativeModule } from "../native-module";
 import { discardReportPersonMask } from "../person-mask/release-person-mask";
 import {
 	createVideoSamplePlan,
@@ -18,27 +18,12 @@ const FileKindLabel: Record<PoseFileKind, string> = {
 	image: "Image",
 	video: "Video",
 };
-interface NativeImageAnalysis {
-	analyzePoseImage(
-		location: string,
-		checkedSettings: ReturnType<typeof resolvePoseImageOptions>,
-	): Promise<unknown>;
-}
 const VideoHandle = z.object({
 	id: z.string().min(1),
 });
 const VideoSession = VideoHandle.extend({
 	durationMs: z.number().positive(),
 });
-interface NativeVideoAnalysis {
-	openPoseVideo(
-		location: string,
-		settings: ReturnType<typeof resolvePoseVideoOptions>["image"],
-		trackingConfidence: number,
-	): Promise<unknown>;
-	readPoseVideoFrame(id: string, timestampMs: number): Promise<unknown>;
-	closePoseVideo(id: string): Promise<void>;
-}
 const createAbortError = () => {
 	const error = new Error("Video analysis was cancelled");
 	error.name = "AbortError";
@@ -107,7 +92,7 @@ export const analyzePoseImage = async (
 ): Promise<PoseDetection> => {
 	validateLocalFileLocation(location);
 	const checkedSettings = resolvePoseImageOptions(imageSettings);
-	const native = requireNativeModule<NativeImageAnalysis>("ExpoMediaPipePose");
+	const native = getNativeModule();
 	const analysis = await native.analyzePoseImage(location, checkedSettings);
 	return parseReplyOrReleaseMask("image", PoseDetection, analysis);
 };
@@ -120,7 +105,7 @@ export const analyzePoseVideo = async function* (
 	const { image, sampling, signal, onProgress } =
 		resolvePoseVideoOptions(videoSettings);
 	throwIfAborted(signal);
-	const native = requireNativeModule<NativeVideoAnalysis>("ExpoMediaPipePose");
+	const native = getNativeModule();
 	const unparsedSession = await native.openPoseVideo(
 		location,
 		image,
