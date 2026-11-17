@@ -10,7 +10,6 @@ local.properties
 example/ios/
 example/android/
 *.tgz
-/scripts/dev/
 
 # editor and OS
 .DS_Store

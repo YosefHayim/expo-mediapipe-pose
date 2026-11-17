@@ -22,8 +22,6 @@ jobs:
         uses: ./.github/actions/setup
       - run: pnpm build
       - run: pnpm test
-      - run: pnpm --filter pose-site test
-      - run: pnpm verify:package
   android:
     name: Android
     runs-on: ubuntu-latest

@@ -8,21 +8,6 @@
 				"src/**/*.test.ts",
 				"src/testing/*.ts"
 			]
-		},
-		"site": {
-			"includeEntryExports": true,
-			"entry": [
-				"src/main.tsx",
-				"src/**/*.test.ts",
-				"e2e/*.spec.ts",
-				"scripts/assets.mjs"
-			],
-			"ignoreDependencies": [
-				"@fontsource-variable/big-shoulders-display",
-				"@fontsource-variable/instrument-sans",
-				"@fontsource/ibm-plex-mono"
-			],
-			"ignoreUnresolved": ["/vision_bundle.mjs"]
 		}
 	}
 }
