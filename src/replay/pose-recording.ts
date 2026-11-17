@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
 	createPoseDetectionFields,
 	type PoseDetection,
-} from "../image/analysis";
+} from "../file-analysis/file-analysis-options";
 import { createPoseFrameFields, type PoseFrame } from "../shared-contracts";
 
 const RECORDING_VERSION = 1 as const;

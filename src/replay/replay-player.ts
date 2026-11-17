@@ -1,4 +1,4 @@
-import type { PoseDetection } from "../image/analysis";
+import type { PoseDetection } from "../file-analysis/file-analysis-options";
 import type { PoseFrame } from "../shared-contracts";
 import {
 	copyPoseDetectionRecording,

@@ -150,7 +150,9 @@ describe("releasePosePersonMask", () => {
 			await discardReportPersonMask({ personMask: { leaseId: "invalid" } });
 			assert.deepEqual(calls, []);
 
-			const { analyzePoseImage } = await import("../image/native");
+			const { analyzePoseImage } = await import(
+				"../file-analysis/analyze-pose-file"
+			);
 			await assert.rejects(analyzePoseImage("/photo.jpg"));
 			assert.deepEqual(calls, [leaseId]);
 
@@ -168,7 +170,9 @@ describe("releasePosePersonMask", () => {
 
 			releaseFailure = null;
 			calls.length = 0;
-			const { analyzePoseVideo } = await import("../video/native");
+			const { analyzePoseVideo } = await import(
+				"../file-analysis/analyze-pose-file"
+			);
 			const controller = new AbortController();
 			await assert.rejects(
 				analyzePoseVideo("/video.mp4", {

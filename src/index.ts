@@ -99,7 +99,10 @@ export {
 	validateLocalFileLocation,
 	validatePoseRuleOptions,
 } from "./core";
-export { analyzePoseImage } from "./image/native";
+export {
+	analyzePoseImage,
+	analyzePoseVideo,
+} from "./file-analysis/analyze-pose-file";
 export type { PosePersonMaskOverlayProps } from "./person-mask/person-mask-overlay";
 export { PosePersonMaskOverlay } from "./person-mask/person-mask-overlay";
 export { releasePosePersonMask } from "./person-mask/release-person-mask";
@@ -109,4 +112,3 @@ export { usePoseRules } from "./rules/use-pose-rules";
 export type { PoseSkeletonProps } from "./skeleton/pose-skeleton";
 export { PoseSkeleton } from "./skeleton/pose-skeleton";
 export { usePoseTracking } from "./tracking/use-pose-tracking";
-export { analyzePoseVideo } from "./video/native";

@@ -1,14 +1,29 @@
 import { requireNativeModule } from "expo";
 import { z } from "zod";
-import { validateLocalFileLocation } from "../image/analysis";
 import { discardReportPersonMask } from "../person-mask/release-person-mask";
 import {
 	createVideoSamplePlan,
+	PoseDetection,
+	type PoseImageOptions,
 	PoseVideoFrame,
 	type PoseVideoOptions,
+	resolvePoseImageOptions,
 	resolvePoseVideoOptions,
-} from "./analysis";
+	validateLocalFileLocation,
+} from "./file-analysis-options";
 
+type PoseFileKind = "image" | "video";
+
+const FileKindLabel: Record<PoseFileKind, string> = {
+	image: "Image",
+	video: "Video",
+};
+interface NativeImageAnalysis {
+	analyzePoseImage(
+		location: string,
+		checkedSettings: ReturnType<typeof resolvePoseImageOptions>,
+	): Promise<unknown>;
+}
 const VideoHandle = z.object({
 	id: z.string().min(1),
 });
@@ -63,6 +78,39 @@ const readVideoDetection = (frame: unknown): unknown => {
 
 	return frame.detection;
 };
+const readMaskHolder = (kind: PoseFileKind, reply: unknown): unknown => {
+	const isVideo = kind === "video";
+	return isVideo ? readVideoDetection(reply) : reply;
+};
+const parseReplyOrReleaseMask = async <Schema extends z.ZodType>(
+	kind: PoseFileKind,
+	schema: Schema,
+	reply: unknown,
+): Promise<z.infer<Schema>> => {
+	const result = schema.safeParse(reply);
+	if (result.success) return result.data;
+
+	try {
+		await discardReportPersonMask(readMaskHolder(kind, reply));
+	} catch (cleanupError) {
+		throw new AggregateError(
+			[result.error, cleanupError],
+			`${FileKindLabel[kind]} result validation and mask cleanup failed`,
+			{ cause: result.error },
+		);
+	}
+	throw result.error;
+};
+export const analyzePoseImage = async (
+	location: string,
+	imageSettings: PoseImageOptions = {},
+): Promise<PoseDetection> => {
+	validateLocalFileLocation(location);
+	const checkedSettings = resolvePoseImageOptions(imageSettings);
+	const native = requireNativeModule<NativeImageAnalysis>("ExpoMediaPipePose");
+	const analysis = await native.analyzePoseImage(location, checkedSettings);
+	return parseReplyOrReleaseMask("image", PoseDetection, analysis);
+};
 // An arrow cannot be a generator, so this stays a const function expression.
 export const analyzePoseVideo = async function* (
 	location: string,
@@ -102,8 +150,12 @@ export const analyzePoseVideo = async function* (
 				session.id,
 				timestampMs,
 			);
-			undelivered = readVideoDetection(unparsedFrame);
-			const frame = PoseVideoFrame.parse(unparsedFrame);
+			const frame = await parseReplyOrReleaseMask(
+				"video",
+				PoseVideoFrame,
+				unparsedFrame,
+			);
+			undelivered = frame.detection;
 			throwIfAborted(signal);
 
 			const isTimestampMismatched = frame.timestampMs !== timestampMs;

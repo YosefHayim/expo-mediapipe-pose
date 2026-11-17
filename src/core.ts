@@ -8,12 +8,20 @@ export {
 	getOverlayStaleAfterMs,
 	validateFrameRates,
 } from "./camera/frame-rates";
+export type {
+	PoseVideoOptions,
+	PoseVideoProgress,
+} from "./file-analysis/file-analysis-options";
 export {
+	createVideoSamplePlan,
 	PoseDetection,
 	PoseImageOptions,
+	PoseVideoFrame,
+	PoseVideoSampling,
 	resolvePoseImageOptions,
+	resolvePoseVideoOptions,
 	validateLocalFileLocation,
-} from "./image/analysis";
+} from "./file-analysis/file-analysis-options";
 export type {
 	GeometryOptions,
 	ImageGeometryInput,
@@ -128,13 +136,3 @@ export {
 	inspectPoseTracking,
 	trackingState,
 } from "./tracking/inspect-pose-tracking";
-export type {
-	PoseVideoOptions,
-	PoseVideoProgress,
-} from "./video/analysis";
-export {
-	createVideoSamplePlan,
-	PoseVideoFrame,
-	PoseVideoSampling,
-	resolvePoseVideoOptions,
-} from "./video/analysis";
