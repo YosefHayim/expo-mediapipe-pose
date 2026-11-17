@@ -14,7 +14,7 @@ import expo.modules.kotlin.records.Record
 import java.io.File
 
 internal class PoseImageOptions : Record {
-    @Field var segmentationEnabled: Boolean = false
+    @Field var personMaskEnabled: Boolean = false
     @Field var maskMaxDimension: Int = 256
     @Field var maxPoses: Int = 1
     @Field var modelVariant: String = "full"
@@ -47,7 +47,7 @@ internal object PoseImageAnalysis {
                     .setBaseOptions(PoseModel.options(options.modelVariant, options.modelPath))
                     .setRunningMode(RunningMode.IMAGE)
                     .setNumPoses(options.maxPoses)
-                    .setOutputSegmentationMasks(options.segmentationEnabled)
+                    .setOutputSegmentationMasks(options.personMaskEnabled)
                     .setMinPoseDetectionConfidence(options.minPoseDetectionConfidence.toFloat())
                     .setMinPosePresenceConfidence(options.minPosePresenceConfidence.toFloat())
                     .build()
@@ -60,10 +60,10 @@ internal object PoseImageAnalysis {
                     outputMasks = result.segmentationMasks().orElse(emptyList())
                     val duration = (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
                     val landmarkPayload = PoseLandmarkPayload.make(result)
-                    val segmentation =
-                        if (options.segmentationEnabled)
+                    val personMask =
+                        if (options.personMaskEnabled)
                             mapOf(
-                                "segmentation" to
+                                "personMask" to
                                     masks.save(
                                         context,
                                         result,
@@ -74,7 +74,7 @@ internal object PoseImageAnalysis {
                             )
                         else emptyMap()
                     return landmarkPayload +
-                        segmentation +
+                        personMask +
                         mapOf(
                             "imageSize" to
                                 mapOf("width" to pixels.width, "height" to pixels.height),

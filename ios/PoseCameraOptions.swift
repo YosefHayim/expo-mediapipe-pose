@@ -5,7 +5,7 @@ struct PoseCameraOptions: Equatable {
   var lens = "auto"
   var zoom = 1.0
   var previewFps = 30
-  var segmentationEnabled: Bool = false
+  var personMaskEnabled: Bool = false
   var maskMaxDimension: Int = 256
   var maxPoses = 1
   var modelVariant = "full"

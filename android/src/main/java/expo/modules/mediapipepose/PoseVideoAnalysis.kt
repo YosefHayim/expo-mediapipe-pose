@@ -99,7 +99,7 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                         .setBaseOptions(PoseModel.options(options.modelVariant, options.modelPath))
                         .setRunningMode(RunningMode.VIDEO)
                         .setNumPoses(options.maxPoses)
-                        .setOutputSegmentationMasks(options.segmentationEnabled)
+                        .setOutputSegmentationMasks(options.personMaskEnabled)
                         .setMinPoseDetectionConfidence(options.minPoseDetectionConfidence.toFloat())
                         .setMinPosePresenceConfidence(options.minPosePresenceConfidence.toFloat())
                         .setMinTrackingConfidence(trackingConfidence.toFloat())
@@ -159,10 +159,10 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                             (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
                         outputMasks = result.segmentationMasks().orElse(emptyList())
                         val landmarkPayload = PoseLandmarkPayload.make(result)
-                        val segmentation =
-                            if (current.options.segmentationEnabled)
+                        val personMask =
+                            if (current.options.personMaskEnabled)
                                 mapOf(
-                                    "segmentation" to
+                                    "personMask" to
                                         masks.save(
                                             current.context,
                                             result,
@@ -174,7 +174,7 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                             else emptyMap()
                         val detection =
                             landmarkPayload +
-                                segmentation +
+                                personMask +
                                 mapOf(
                                     "imageSize" to
                                         mapOf("width" to pixels.width, "height" to pixels.height),

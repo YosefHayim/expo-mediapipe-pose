@@ -5,7 +5,7 @@ data class PoseCameraOptions(
     val lens: String = "auto",
     val zoom: Double = 1.0,
     val previewFps: Int = 30,
-    val segmentationEnabled: Boolean = false,
+    val personMaskEnabled: Boolean = false,
     val maskMaxDimension: Int = 256,
     val maxPoses: Int = 1,
     val modelVariant: String = "full",

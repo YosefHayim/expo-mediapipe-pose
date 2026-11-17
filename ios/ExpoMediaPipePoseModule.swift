@@ -20,7 +20,7 @@ public class ExpoMediaPipePoseModule: Module {
     }
     AsyncFunction("closePoseVideo") { (id: String) in self.videos.close(id) }.runOnQueue(
       mediaWorker)
-    AsyncFunction("releasePoseSegmentation") { (id: String) in try self.videos.masks.release(id) }
+    AsyncFunction("releasePosePersonMask") { (id: String) in try self.videos.masks.release(id) }
       .runOnQueue(mediaWorker)
     OnDestroy {
       self.mediaWorker.async {
@@ -49,8 +49,8 @@ public class ExpoMediaPipePoseModule: Module {
       Prop("performanceMetricsEnabled") { (view: ExpoMediaPipePoseView, enabled: Bool) in
         view.processingOptions.metricsEnabled = enabled
       }
-      Prop("segmentationEnabled") { (view: ExpoMediaPipePoseView, enabled: Bool) in
-        view.options.segmentationEnabled = enabled
+      Prop("personMaskEnabled") { (view: ExpoMediaPipePoseView, enabled: Bool) in
+        view.options.personMaskEnabled = enabled
       }
       Prop("maskMaxDimension") { (view: ExpoMediaPipePoseView, dimension: Int) in
         view.options.maskMaxDimension = dimension

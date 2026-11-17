@@ -175,7 +175,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     // AVCaptureVideoDataOutput drops frames while this worker is busy.
     configuration.runningMode = .video
     configuration.numPoses = requested.maxPoses
-    configuration.shouldOutputSegmentationMasks = requested.segmentationEnabled
+    configuration.shouldOutputSegmentationMasks = requested.personMaskEnabled
     configuration.minPoseDetectionConfidence = Float(requested.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(requested.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(requested.minTrackingConfidence)
@@ -290,9 +290,9 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
       ]
       var event = try PoseLandmarkPayload.make(inference)
       event["additionalData"] = metadata
-      if requested.segmentationEnabled {
+      if requested.personMaskEnabled {
         guard let maskStore else { throw PoseMediaError.maskUnavailable }
-        event["segmentation"] = try maskStore.save(
+        event["personMask"] = try maskStore.save(
           inference, width: width, height: height, maximumDimension: requested.maskMaxDimension)
       }
       emit(onLandmark, event, token: token)
@@ -338,7 +338,7 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     let store = maskStore
     DispatchQueue.main.async { [weak self] in
       guard let self, self.generation == token, self.requestedOptions != nil else {
-        store?.discard(event["segmentation"] as? [String: Any])
+        store?.discard(event["personMask"] as? [String: Any])
         return
       }
       dispatcher(event)
