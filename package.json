@@ -1,6 +1,6 @@
 {
 	"name": "expo-mediapipe-pose",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"description": "On-device pose camera for Expo with customizable skeletons, named landmarks, and pose feedback rules.",
 	"main": "build/index.js",
 	"types": "build/index.d.ts",
@@ -23,17 +23,14 @@
 		"CHANGELOG.md"
 	],
 	"scripts": {
-		"dev": "pnpm --filter pose-site dev",
-		"prod": "pnpm --filter pose-site prod",
 		"build": "tsc -p tsconfig.build.json",
 		"test": "vitest run && pnpm test:swift",
 		"test:watch": "vitest",
-		"test:swift": "node scripts/swift-tests.mjs",
+		"test:swift": "node -e \"if(process.platform!=='darwin'){console.log('Swift frame-timing tests skipped: they run only on macOS.');process.exit(0)}const{mkdirSync}=require('fs'),{spawnSync}=require('child_process');mkdirSync('node_modules/.cache',{recursive:true});const o='node_modules/.cache/frame-timing-tests';const c=spawnSync('xcrun',['swiftc','ios/PoseFrameTiming.swift','ios/PoseFrameTimingTests.swift','-o',o],{stdio:'inherit'});if(c.status!==0)process.exit(1);process.exit(spawnSync(o,{stdio:'inherit'}).status??1)\"",
 		"lint": "biome check . && knip",
 		"lint:fix": "biome check --write .",
 		"typecheck": "tsc --noEmit",
 		"check": "turbo run lint typecheck test build --output-logs=errors-only",
-		"verify:package": "node scripts/verify-package.mjs",
 		"prepack": "pnpm build",
 		"prepare": "husky && pnpm build"
 	},
@@ -65,7 +62,6 @@
 		"react-native-svg": "15.16.1",
 		"turbo": "2.11.10",
 		"typescript": "6.0.3",
-		"vite": "8.3.7",
 		"vitest": "5.1.0"
 	},
 	"author": "Yosef Hayim Sabag",

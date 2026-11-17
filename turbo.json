@@ -9,8 +9,6 @@
 		"lint": {},
 		"test": {},
 		"typecheck": {},
-		"pose-camera-example#typecheck": { "dependsOn": ["//#build"] },
-		"pose-site#test": { "dependsOn": ["//#build"] },
-		"pose-site#typecheck": { "dependsOn": ["//#build"] }
+		"pose-camera-example#typecheck": { "dependsOn": ["//#build"] }
 	}
 }
