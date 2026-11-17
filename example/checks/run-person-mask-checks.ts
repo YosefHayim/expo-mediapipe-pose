@@ -3,47 +3,41 @@ import {
 	analyzePoseImage,
 	analyzePoseVideo,
 	type PoseDetection,
-	type PoseSegmentation,
-	releasePoseSegmentation,
+	type PosePersonMask,
+	releasePosePersonMask,
 } from "expo-mediapipe-pose";
+import { verifyCheck } from "./verify-check";
 
-const verify: (condition: boolean, message: string) => asserts condition = (
-	condition,
-	message,
-) => {
-	const isCheckFailed = !condition;
-	if (isCheckFailed) throw new Error(message);
-};
-const readAvailableSegmentation = (detection: PoseDetection) => {
-	const segmentation = detection.segmentation;
-	verify(
-		segmentation?.status === "available",
-		"Segmentation must return a mask lease",
+const readAvailablePersonMask = (detection: PoseDetection) => {
+	const personMask = detection.personMask;
+	verifyCheck(
+		personMask?.status === "available",
+		"Person mask must return a mask lease",
 	);
-	return segmentation;
+	return personMask;
 };
 const inspectMask = (
-	segmentation: Extract<PoseSegmentation, { status: "available" }>,
+	personMask: Extract<PosePersonMask, { status: "available" }>,
 	name: string,
 ) => {
-	const mask = segmentation.masks[0];
-	verify(mask != null, "First mask must exist");
-	verify(
+	const mask = personMask.masks[0];
+	verifyCheck(mask != null, "First mask must exist");
+	verifyCheck(
 		Math.max(mask.width, mask.height) <= 256,
 		"Mask dimensions must be bounded",
 	);
 	const maskFile = new File(mask.uri);
 	const png = maskFile.bytesSync();
-	verify(
+	verifyCheck(
 		png[0] === 137 && png[1] === 80 && png[2] === 78 && png[3] === 71,
 		"Mask must be a PNG",
 	);
 	const header = new DataView(png.buffer, png.byteOffset, png.byteLength);
-	verify(
+	verifyCheck(
 		header.getUint32(16) === mask.width && header.getUint32(20) === mask.height,
 		"PNG dimensions must match metadata",
 	);
-	verify(png[24] === 8 && png[25] === 6, "Mask PNG must use RGBA8");
+	verifyCheck(png[24] === 8 && png[25] === 6, "Mask PNG must use RGBA8");
 
 	const artifact = new File(Paths.document, name);
 	if (artifact.exists) artifact.delete();
@@ -64,7 +58,7 @@ const maskFiles = () => {
 		return isFolderInstanceDirectory ? folder.list() : [];
 	}).length;
 };
-export interface RunSegmentationChecksDetails {
+export interface RunPersonMaskChecksDetails {
 	photo: string;
 	rotated: string;
 	empty: string;
@@ -73,20 +67,20 @@ export interface RunSegmentationChecksDetails {
 	cases: string[];
 }
 
-export const runSegmentationChecks = async ({
+export const runPersonMaskChecks = async ({
 	photo,
 	rotated,
 	empty,
 	multiple,
 	video,
 	cases,
-}: RunSegmentationChecksDetails) => {
+}: RunPersonMaskChecksDetails) => {
 	const leases = new Set<string>();
 	const failures: unknown[] = [];
-	const trackSegmentation = (detection: PoseDetection) => {
-		const segmentation = readAvailableSegmentation(detection);
-		leases.add(segmentation.leaseId);
-		return segmentation;
+	const trackPersonMask = (detection: PoseDetection) => {
+		const personMask = readAvailablePersonMask(detection);
+		leases.add(personMask.leaseId);
+		return personMask;
 	};
 	try {
 		const orphan = new Directory(
@@ -97,89 +91,92 @@ export const runSegmentationChecks = async ({
 		new File(orphan, "interrupted.txt").write("interrupted earlier process");
 		const beforeDisabled = maskFiles();
 		const disabled = await analyzePoseImage(photo);
-		verify(
-			disabled.segmentation == null,
-			"Segmentation must be disabled by default",
+		verifyCheck(
+			disabled.personMask == null,
+			"Person mask must be disabled by default",
 		);
-		verify(
+		verifyCheck(
 			maskFiles() === beforeDisabled,
 			"Disabled mode must not write mask files",
 		);
-		cases.push("segmentation disabled without mask output");
+		cases.push("person mask disabled without mask output");
 		const noPerson = await analyzePoseImage(empty, {
-			segmentationEnabled: true,
+			personMaskEnabled: true,
 		});
-		verify(
-			noPerson.segmentation?.status === "empty",
-			"No pose must report empty segmentation",
+		verifyCheck(
+			noPerson.personMask?.status === "empty",
+			"No pose must report empty person mask",
 		);
-		verify(
+		verifyCheck(
 			!orphan.exists,
 			"First enabled no-pose request must clear previous-process files",
 		);
 		cases.push("previous-process mask cleanup after an empty detection");
-		const first = trackSegmentation(
-			await analyzePoseImage(photo, { segmentationEnabled: true }),
+		const first = trackPersonMask(
+			await analyzePoseImage(photo, { personMaskEnabled: true }),
 		);
 		const firstFile = inspectMask(first, "mask-upright.png");
-		const second = trackSegmentation(
-			await analyzePoseImage(rotated, { segmentationEnabled: true }),
+		const second = trackPersonMask(
+			await analyzePoseImage(rotated, { personMaskEnabled: true }),
 		);
 		const secondFile = inspectMask(second, "mask-rotated.png");
-		verify(
+		verifyCheck(
 			first.imageSize.width === second.imageSize.width &&
 				first.imageSize.height === second.imageSize.height,
 			"Mask image orientation must be upright",
 		);
 		cases.push("bounded RGBA masks and orientation metadata");
 		const blocked = await analyzePoseImage(photo, {
-			segmentationEnabled: true,
+			personMaskEnabled: true,
 		});
-		verify(
-			blocked.segmentation?.status === "backpressure",
+		verifyCheck(
+			blocked.personMask?.status === "backpressure",
 			"Two outstanding leases must apply backpressure",
 		);
-		verify(
+		verifyCheck(
 			firstFile.exists && secondFile.exists,
 			"Backpressure must preserve leased masks",
 		);
-		await releasePoseSegmentation(first.leaseId);
-		await releasePoseSegmentation(first.leaseId);
-		verify(
+		await releasePosePersonMask(first.leaseId);
+		await releasePosePersonMask(first.leaseId);
+		verifyCheck(
 			!firstFile.exists && secondFile.exists,
 			"Release is idempotent and only deletes its own lease",
 		);
 		cases.push("mask backpressure and explicit isolated cleanup");
-		const people = trackSegmentation(
+		const people = trackPersonMask(
 			await analyzePoseImage(multiple, {
 				maxPoses: 2,
-				segmentationEnabled: true,
+				personMaskEnabled: true,
 				maskMaxDimension: 64,
 			}),
 		);
-		verify(people.masks.length === 2, "Each detected person must have a mask");
-		verify(
+		verifyCheck(
+			people.masks.length === 2,
+			"Each detected person must have a mask",
+		);
+		verifyCheck(
 			people.masks.every((mask) => Math.max(mask.width, mask.height) <= 64),
 			"Custom mask dimension must apply to every pose",
 		);
-		await releasePoseSegmentation(people.leaseId);
-		await releasePoseSegmentation(second.leaseId);
-		verify(!secondFile.exists, "Second lease must be removed");
+		await releasePosePersonMask(people.leaseId);
+		await releasePosePersonMask(second.leaseId);
+		verifyCheck(!secondFile.exists, "Second lease must be removed");
 		cases.push("multiple masks and custom bounds");
 		for await (const sample of analyzePoseVideo(video, {
-			segmentationEnabled: true,
+			personMaskEnabled: true,
 		})) {
-			const masks = trackSegmentation(sample.detection);
-			await releasePoseSegmentation(masks.leaseId);
+			const masks = trackPersonMask(sample.detection);
+			await releasePosePersonMask(masks.leaseId);
 			break;
 		}
-		verify(maskFiles() === 0, "Fixture must release every mask lease");
-		cases.push("empty segmentation and video mask cleanup");
+		verifyCheck(maskFiles() === 0, "Fixture must release every mask lease");
+		cases.push("empty person mask and video mask cleanup");
 	} catch (error) {
 		failures.push(error);
 	} finally {
 		const cleanup = await Promise.allSettled(
-			[...leases].map(releasePoseSegmentation),
+			[...leases].map(releasePosePersonMask),
 		);
 		for (const report of cleanup) {
 			const isStatusRejected = report.status === "rejected";

@@ -64,10 +64,12 @@ const App = () => {
 	const cameraInForeground = foreground && liveCameraVisible;
 	const isActive = cameraInForeground && !paused;
 	const displayedMetrics = isActive ? metrics : null;
-	React.useEffect(() => {
+	const [wasActive, setWasActive] = React.useState(isActive);
+	if (wasActive !== isActive) {
+		setWasActive(isActive);
 		const isInactive = !isActive;
 		if (isInactive) setMetrics(null);
-	}, [isActive]);
+	}
 	const feedback = usePoseRules({
 		raisedArm: {
 			...raisedArmRule,

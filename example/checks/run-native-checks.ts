@@ -3,19 +3,16 @@ import { File, Paths } from "expo-file-system";
 import { analyzePoseImage, getCameraCapabilities } from "expo-mediapipe-pose";
 import { Platform } from "react-native";
 import { runMultiplePoseChecks } from "./run-multiple-pose-checks";
-import { runSegmentationChecks } from "./run-segmentation-checks";
+import { runPersonMaskChecks } from "./run-person-mask-checks";
 import { runVideoChecks } from "./run-video-checks";
+import { verifyCheck } from "./verify-check";
 
-const verify: (condition: boolean, message: string) => asserts condition = (
-	condition,
-	message,
-) => {
-	const isCheckFailed = !condition;
-	if (isCheckFailed) throw new Error(message);
-};
 const readLocalAssetUri = async (module: number) => {
 	const asset = await Asset.fromModule(module).downloadAsync();
-	verify(asset.localUri !== null, "Fixture must be downloaded before analysis");
+	verifyCheck(
+		asset.localUri !== null,
+		"Fixture must be downloaded before analysis",
+	);
 	return asset.localUri;
 };
 export const runNativeChecks = async () => {
@@ -29,18 +26,18 @@ export const runNativeChecks = async () => {
 		try {
 			await operation();
 		} catch (error) {
-			verify(
+			verifyCheck(
 				typeof error === "object" && error !== null,
 				`${label}: expected native error`,
 			);
-			verify(
+			verifyCheck(
 				"code" in error && typeof error.code === "string",
 				`${label}: expected native error code`,
 			);
 			const message = String(error);
 
 			if (expectedMessage)
-				verify(
+				verifyCheck(
 					message.includes(expectedMessage),
 					`${label}: unexpected error: ${message}`,
 				);
@@ -56,16 +53,16 @@ export const runNativeChecks = async () => {
 		cases.push(`camera discovery: ${capabilities.status}`);
 		const photo = await readLocalAssetUri(require("../fixtures/pose.jpg"));
 		const report = await analyzePoseImage(photo);
-		verify(
+		verifyCheck(
 			report.landmarks.length === 33,
 			"Pose image must produce 33 image landmarks",
 		);
-		verify(
+		verifyCheck(
 			report.worldLandmarks.length === 33,
 			"Pose image must produce 33 world landmarks",
 		);
-		verify(report.model.delegate === "CPU", "Photo analysis uses CPU");
-		verify(
+		verifyCheck(report.model.delegate === "CPU", "Photo analysis uses CPU");
+		verifyCheck(
 			!("additionalData" in report),
 			"Photo results must not invent camera metadata",
 		);
@@ -75,7 +72,7 @@ export const runNativeChecks = async () => {
 			photo.replace(/^file:\/\//, "file://LOCALHOST"),
 		]) {
 			const cased = await analyzePoseImage(location);
-			verify(
+			verifyCheck(
 				cased.landmarks.length === 33,
 				"Local URI scheme and host are case insensitive",
 			);
@@ -92,26 +89,26 @@ export const runNativeChecks = async () => {
 		];
 		for (const [index, module] of orientations.entries()) {
 			const oriented = await analyzePoseImage(await readLocalAssetUri(module));
-			verify(
+			verifyCheck(
 				oriented.imageSize.width === report.imageSize.width,
 				"EXIF upright width must match",
 			);
-			verify(
+			verifyCheck(
 				oriented.imageSize.height === report.imageSize.height,
 				"EXIF upright height must match",
 			);
-			verify(
+			verifyCheck(
 				oriented.landmarks.length === 33,
 				"EXIF image must produce a pose",
 			);
 			for (const [jointIndex, landmark] of oriented.landmarks.entries()) {
 				const reference = report.landmarks[jointIndex];
-				verify(reference != null, "Reference landmark must exist");
-				verify(
+				verifyCheck(reference != null, "Reference landmark must exist");
+				verifyCheck(
 					Math.abs(landmark.x - reference.x) < 0.05,
 					"EXIF x must align with upright reference",
 				);
-				verify(
+				verifyCheck(
 					Math.abs(landmark.y - reference.y) < 0.05,
 					"EXIF y must align with upright reference",
 				);
@@ -123,13 +120,13 @@ export const runNativeChecks = async () => {
 			require("../fixtures/burger.jpg"),
 		);
 		const empty = await analyzePoseImage(emptyImage);
-		verify(
+		verifyCheck(
 			empty.landmarks.length === 0,
 			"No-pose image must return empty landmarks",
 		);
 		cases.push("real no-pose image");
 		const bounded = await analyzePoseImage(photo, { maxImageDimension: 256 });
-		verify(
+		verifyCheck(
 			Math.max(bounded.imageSize.width, bounded.imageSize.height) <= 256,
 			"Decode must respect maximum dimension",
 		);
@@ -163,7 +160,7 @@ export const runNativeChecks = async () => {
 		cases.push("oversized source rejected before pixel decoding");
 
 		const recovery = await analyzePoseImage(photo);
-		verify(
+		verifyCheck(
 			recovery.landmarks.length === 33,
 			"Analysis must recover after invalid input",
 		);
@@ -180,7 +177,7 @@ export const runNativeChecks = async () => {
 			await readLocalAssetUri(require("../fixtures/man-woman-okay.jpg")),
 			cases,
 		);
-		await runSegmentationChecks({
+		await runPersonMaskChecks({
 			photo,
 			rotated: await readLocalAssetUri(require("../fixtures/pose-exif-6.jpg")),
 			empty: emptyImage,
