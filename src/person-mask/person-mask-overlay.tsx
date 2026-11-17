@@ -1,10 +1,10 @@
 import * as React from "react";
 import { Image, type ImageProps, View } from "react-native";
-import { projectLandmark } from "../skeleton/logic";
-import type { PoseSegmentation } from "./mask";
+import { projectLandmark } from "../skeleton/create-skeleton";
+import type { PosePersonMask } from "./person-mask";
 
-export interface PoseSegmentationOverlayProps {
-	segmentation: PoseSegmentation;
+export interface PosePersonMaskOverlayProps {
+	personMask: PosePersonMask;
 	width: number;
 	height: number;
 	poseIndex?: number;
@@ -12,16 +12,16 @@ export interface PoseSegmentationOverlayProps {
 	opacity?: number;
 	onError?: ImageProps["onError"];
 }
-export const PoseSegmentationOverlay = React.memo(
+export const PosePersonMaskOverlay = React.memo(
 	({
-		segmentation,
+		personMask,
 		width,
 		height,
 		poseIndex = 0,
 		color = "#22c55e",
 		opacity = 0.5,
 		onError,
-	}: PoseSegmentationOverlayProps) => {
+	}: PosePersonMaskOverlayProps) => {
 		const isPoseIndexOutOfRange =
 			!Number.isInteger(poseIndex) || poseIndex < 0 || poseIndex > 5;
 		if (isPoseIndexOutOfRange)
@@ -32,29 +32,27 @@ export const PoseSegmentationOverlay = React.memo(
 		if (isOpacityOutOfRange)
 			throw new RangeError("opacity must be between 0 and 1");
 
-		const isSegmentationUnavailable = segmentation.status !== "available";
-		if (isSegmentationUnavailable) return null;
+		const isPersonMaskUnavailable = personMask.status !== "available";
+		if (isPersonMaskUnavailable) return null;
 
 		const isSizeEmpty = width <= 0 || height <= 0;
 		if (isSizeEmpty) return null;
 
-		const mask = segmentation.masks.find(
+		const mask = personMask.masks.find(
 			(overlay) => overlay.poseIndex === poseIndex,
 		);
 
 		const isMaskMissing = mask == null;
 		if (isMaskMissing) return null;
 
-		const origin = projectLandmark(
-			{ x: 0, y: 0, z: 0 },
-			segmentation.imageSize,
-			{ width, height },
-		);
-		const corner = projectLandmark(
-			{ x: 1, y: 1, z: 0 },
-			segmentation.imageSize,
-			{ width, height },
-		);
+		const origin = projectLandmark({ x: 0, y: 0, z: 0 }, personMask.imageSize, {
+			width,
+			height,
+		});
+		const corner = projectLandmark({ x: 1, y: 1, z: 0 }, personMask.imageSize, {
+			width,
+			height,
+		});
 		return (
 			<View
 				pointerEvents="none"

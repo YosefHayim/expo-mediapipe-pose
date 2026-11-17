@@ -1,4 +1,3 @@
-import type { Landmark, PoseFrame } from "../contracts";
 import {
 	BODY_PARTS,
 	type BodyPart,
@@ -7,8 +6,9 @@ import {
 	type LandmarkName,
 	POSE_CONNECTIONS,
 } from "../landmarks/names";
+import type { Landmark, PoseFrame } from "../shared-contracts";
 
-import { type SelectablePose, selectPose } from "./selection";
+import { type SelectablePose, selectPose } from "./select-pose";
 
 export interface JointStyle {
 	color?: string;

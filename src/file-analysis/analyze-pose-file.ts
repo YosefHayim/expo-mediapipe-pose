@@ -1,29 +1,29 @@
-import { requireNativeModule } from "expo";
 import { z } from "zod";
-import { validateLocalFileLocation } from "../image/analysis";
-import { discardReportSegmentation } from "../segmentation/native";
+import { getNativeModule } from "../native-module";
+import { discardReportPersonMask } from "../person-mask/release-person-mask";
 import {
 	createVideoSamplePlan,
+	PoseDetection,
+	type PoseImageOptions,
 	PoseVideoFrame,
 	type PoseVideoOptions,
+	resolvePoseImageOptions,
 	resolvePoseVideoOptions,
-} from "./analysis";
+	validateLocalFileLocation,
+} from "./file-analysis-options";
 
+type PoseFileKind = "image" | "video";
+
+const FileKindLabel: Record<PoseFileKind, string> = {
+	image: "Image",
+	video: "Video",
+};
 const VideoHandle = z.object({
 	id: z.string().min(1),
 });
 const VideoSession = VideoHandle.extend({
 	durationMs: z.number().positive(),
 });
-interface NativeVideoAnalysis {
-	openPoseVideo(
-		location: string,
-		settings: ReturnType<typeof resolvePoseVideoOptions>["image"],
-		trackingConfidence: number,
-	): Promise<unknown>;
-	readPoseVideoFrame(id: string, timestampMs: number): Promise<unknown>;
-	closePoseVideo(id: string): Promise<void>;
-}
 const createAbortError = () => {
 	const error = new Error("Video analysis was cancelled");
 	error.name = "AbortError";
@@ -63,6 +63,39 @@ const readVideoDetection = (frame: unknown): unknown => {
 
 	return frame.detection;
 };
+const readMaskHolder = (kind: PoseFileKind, reply: unknown): unknown => {
+	const isVideo = kind === "video";
+	return isVideo ? readVideoDetection(reply) : reply;
+};
+const parseReplyOrReleaseMask = async <Schema extends z.ZodType>(
+	kind: PoseFileKind,
+	schema: Schema,
+	reply: unknown,
+): Promise<z.infer<Schema>> => {
+	const result = schema.safeParse(reply);
+	if (result.success) return result.data;
+
+	try {
+		await discardReportPersonMask(readMaskHolder(kind, reply));
+	} catch (cleanupError) {
+		throw new AggregateError(
+			[result.error, cleanupError],
+			`${FileKindLabel[kind]} result validation and mask cleanup failed`,
+			{ cause: result.error },
+		);
+	}
+	throw result.error;
+};
+export const analyzePoseImage = async (
+	location: string,
+	imageSettings: PoseImageOptions = {},
+): Promise<PoseDetection> => {
+	validateLocalFileLocation(location);
+	const checkedSettings = resolvePoseImageOptions(imageSettings);
+	const native = getNativeModule();
+	const analysis = await native.analyzePoseImage(location, checkedSettings);
+	return parseReplyOrReleaseMask("image", PoseDetection, analysis);
+};
 // An arrow cannot be a generator, so this stays a const function expression.
 export const analyzePoseVideo = async function* (
 	location: string,
@@ -72,7 +105,7 @@ export const analyzePoseVideo = async function* (
 	const { image, sampling, signal, onProgress } =
 		resolvePoseVideoOptions(videoSettings);
 	throwIfAborted(signal);
-	const native = requireNativeModule<NativeVideoAnalysis>("ExpoMediaPipePose");
+	const native = getNativeModule();
 	const unparsedSession = await native.openPoseVideo(
 		location,
 		image,
@@ -102,8 +135,12 @@ export const analyzePoseVideo = async function* (
 				session.id,
 				timestampMs,
 			);
-			undelivered = readVideoDetection(unparsedFrame);
-			const frame = PoseVideoFrame.parse(unparsedFrame);
+			const frame = await parseReplyOrReleaseMask(
+				"video",
+				PoseVideoFrame,
+				unparsedFrame,
+			);
+			undelivered = frame.detection;
 			throwIfAborted(signal);
 
 			const isTimestampMismatched = frame.timestampMs !== timestampMs;
@@ -127,7 +164,7 @@ export const analyzePoseVideo = async function* (
 	} finally {
 		signal?.removeEventListener("abort", closeOnAbort);
 		try {
-			await discardReportSegmentation(undelivered);
+			await discardReportPersonMask(undelivered);
 		} catch (error) {
 			failures.push(error);
 		}

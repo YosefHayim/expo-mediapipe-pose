@@ -1,4 +1,4 @@
-import type { Landmark } from "../contracts";
+import type { Landmark } from "../shared-contracts";
 import { hasLandmarkConfidence } from "./confidence";
 import { LANDMARK_NAMES, type LandmarkName } from "./names";
 

@@ -3,14 +3,14 @@ import { describe, test, vi } from "vitest";
 import {
 	createPoseDetectionRecorder,
 	createPoseRecorder,
-	PoseSegmentation,
+	PosePersonMask,
 	parsePoseRecording,
 	resolvePoseImageOptions,
 } from "../core";
 import { createPoseFrame } from "../testing/fixtures";
 
 const leaseId = "a766dfac-4266-4dac-8de2-e8c9983ce558";
-const segmentation = {
+const personMask = {
 	status: "available" as const,
 	leaseId,
 	imageSize: { width: 1000, height: 667 },
@@ -21,36 +21,36 @@ const segmentation = {
 
 vi.mock("expo", async () => import("../testing/expo-video-stub"));
 
-describe("PoseSegmentation", () => {
-	test("segmentation is opt-in and validates bounded mask contracts", () => {
-		assert.equal(resolvePoseImageOptions().segmentationEnabled, false);
+describe("PosePersonMask", () => {
+	test("personMask is opt-in and validates bounded mask contracts", () => {
+		assert.equal(resolvePoseImageOptions().personMaskEnabled, false);
 		for (const maskMaxDimension of [0, 63, 513, 255.5, NaN])
 			assert.throws(() => resolvePoseImageOptions({ maskMaxDimension }));
 
-		const decode = (candidate: unknown) => PoseSegmentation.parse(candidate);
-		assert.deepEqual(decode(segmentation), segmentation);
+		const decode = (candidate: unknown) => PosePersonMask.parse(candidate);
+		assert.deepEqual(decode(personMask), personMask);
 		assert.deepEqual(decode({ status: "backpressure" }), {
 			status: "backpressure",
 		});
-		assert.throws(() => decode({ ...segmentation, masks: [] }));
-		assert.throws(() => decode({ ...segmentation, leaseId: "../../file" }));
+		assert.throws(() => decode({ ...personMask, masks: [] }));
+		assert.throws(() => decode({ ...personMask, leaseId: "../../file" }));
 		assert.throws(() =>
 			decode({
-				...segmentation,
-				masks: [{ ...segmentation.masks[0], width: 513 }],
+				...personMask,
+				masks: [{ ...personMask.masks[0], width: 513 }],
 			}),
 		);
 		assert.throws(() =>
 			decode({
-				...segmentation,
-				masks: [{ ...segmentation.masks[0], poseIndex: 1 }],
+				...personMask,
+				masks: [{ ...personMask.masks[0], poseIndex: 1 }],
 			}),
 		);
 		assert.throws(() =>
 			decode({
-				...segmentation,
+				...personMask,
 				masks: [
-					{ ...segmentation.masks[0], uri: "https://example.com/mask.png" },
+					{ ...personMask.masks[0], uri: "https://example.com/mask.png" },
 				],
 			}),
 		);
@@ -59,7 +59,7 @@ describe("PoseSegmentation", () => {
 
 describe("createPoseRecorder", () => {
 	test("landmark recordings exclude ephemeral mask handles without releasing consumer-owned files", () => {
-		const frame = { ...createPoseFrame(), segmentation };
+		const frame = { ...createPoseFrame(), personMask };
 		const recorder = createPoseRecorder();
 		recorder.start();
 		recorder.append(frame, 0);
@@ -67,8 +67,8 @@ describe("createPoseRecorder", () => {
 
 		const recorded = recording.frames[0];
 		assert.ok(recorded);
-		assert.equal("segmentation" in recorded.frame, false);
-		assert.equal(frame.segmentation.leaseId, leaseId);
+		assert.equal("personMask" in recorded.frame, false);
+		assert.equal(frame.personMask.leaseId, leaseId);
 		assert.throws(() =>
 			parsePoseRecording(
 				JSON.stringify({ version: 1, frames: [{ timestampMs: 0, frame }] }),
@@ -78,7 +78,7 @@ describe("createPoseRecorder", () => {
 		const detection = {
 			landmarks: frame.landmarks,
 			worldLandmarks: frame.worldLandmarks,
-			segmentation,
+			personMask,
 			imageSize: { width: 1000, height: 667 },
 			inferenceDurationMs: 1,
 			model: {
@@ -93,11 +93,11 @@ describe("createPoseRecorder", () => {
 		const recordedDetection = media.stop().frames[0];
 
 		assert.ok(recordedDetection);
-		assert.equal("segmentation" in recordedDetection.frame, false);
+		assert.equal("personMask" in recordedDetection.frame, false);
 	});
 });
 
-describe("releasePoseSegmentation", () => {
+describe("releasePosePersonMask", () => {
 	test("native mask cleanup validates handles and reclaims malformed or undelivered results", async () => {
 		const calls: string[] = [];
 		let releaseFailure: Error | null = null;
@@ -109,12 +109,12 @@ describe("releasePoseSegmentation", () => {
 			imageSize: { width: 1000, height: 667 },
 			inferenceDurationMs: 1,
 			model: { variant: "full", source: "bundled", delegate: "CPU" },
-			segmentation,
+			personMask,
 		};
 		Object.defineProperty(globalThis, nativeKey, {
 			configurable: true,
 			value: {
-				async releasePoseSegmentation(id: string) {
+				async releasePosePersonMask(id: string) {
 					calls.push(id);
 
 					if (releaseFailure) throw releaseFailure;
@@ -141,15 +141,18 @@ describe("releasePoseSegmentation", () => {
 		});
 
 		try {
-			const { releasePoseSegmentation, discardReportSegmentation } =
-				await import("./native");
-			await assert.rejects(releasePoseSegmentation("../../file"));
+			const { releasePosePersonMask, discardReportPersonMask } = await import(
+				"./release-person-mask"
+			);
+			await assert.rejects(releasePosePersonMask("../../file"));
 			assert.deepEqual(calls, []);
 
-			await discardReportSegmentation({ segmentation: { leaseId: "invalid" } });
+			await discardReportPersonMask({ personMask: { leaseId: "invalid" } });
 			assert.deepEqual(calls, []);
 
-			const { analyzePoseImage } = await import("../image/native");
+			const { analyzePoseImage } = await import(
+				"../file-analysis/analyze-pose-file"
+			);
 			await assert.rejects(analyzePoseImage("/photo.jpg"));
 			assert.deepEqual(calls, [leaseId]);
 
@@ -167,7 +170,9 @@ describe("releasePoseSegmentation", () => {
 
 			releaseFailure = null;
 			calls.length = 0;
-			const { analyzePoseVideo } = await import("../video/native");
+			const { analyzePoseVideo } = await import(
+				"../file-analysis/analyze-pose-file"
+			);
 			const controller = new AbortController();
 			await assert.rejects(
 				analyzePoseVideo("/video.mp4", {
@@ -188,7 +193,7 @@ describe("releasePoseSegmentation", () => {
 				"A yielded mask remains owned by its consumer",
 			);
 
-			await releasePoseSegmentation(leaseId);
+			await releasePosePersonMask(leaseId);
 			assert.deepEqual(calls, ["close", leaseId]);
 
 			calls.length = 0;

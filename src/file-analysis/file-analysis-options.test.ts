@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { describe, test } from "vitest";
 import {
 	createDetectionSkeleton,
+	createVideoSamplePlan,
 	getNamedLandmarks,
 	PoseDetection,
 	resolvePoseImageOptions,
+	resolvePoseVideoOptions,
 	validateLocalFileLocation,
 } from "../core";
 import { createPoseFrame } from "../testing/fixtures";
@@ -35,7 +37,7 @@ describe("resolvePoseImageOptions", () => {
 		assert.deepEqual(resolvePoseImageOptions(), {
 			modelVariant: "full",
 			maxPoses: 1,
-			segmentationEnabled: false,
+			personMaskEnabled: false,
 			maskMaxDimension: 256,
 			maxImageDimension: 2048,
 			minPoseDetectionConfidence: 0.35,
@@ -78,5 +80,40 @@ describe("PoseDetection", () => {
 			33,
 		);
 		assert.equal("additionalData" in detection, false);
+	});
+});
+
+describe("createVideoSamplePlan", () => {
+	test("video sampling is bounded, monotonic and excludes the range end", () => {
+		const plan = createVideoSamplePlan(1000, { samplingFps: 30 });
+		const times = Array.from({ length: plan.frameCount }, (_, index) =>
+			plan.timestampMsAt(index),
+		);
+		assert.equal(times.length, 30);
+		assert.deepEqual(times.slice(0, 4), [0, 33, 66, 100]);
+		assert.equal(times.at(-1), 966);
+		assert.equal(new Set(times).size, 30);
+		assert.throws(() => plan.timestampMsAt(-1));
+		assert.throws(() => plan.timestampMsAt(30));
+		const ranged = createVideoSamplePlan(5000, {
+			startMs: 200,
+			endMs: 1201,
+			samplingFps: 2,
+		});
+		assert.deepEqual(
+			Array.from({ length: ranged.frameCount }, (_, i) =>
+				ranged.timestampMsAt(i),
+			),
+			[200, 700, 1200],
+		);
+		assert.throws(() => createVideoSamplePlan(1000, { startMs: 1000 }));
+		assert.throws(() => createVideoSamplePlan(1000, { endMs: 1001 }));
+		assert.throws(
+			() => createVideoSamplePlan(1_000_000, { maxFrames: 1 }),
+			/maxFrames/,
+		);
+		assert.throws(() => createVideoSamplePlan(Infinity));
+		assert.throws(() => resolvePoseVideoOptions({ samplingFps: 61 }));
+		assert.throws(() => resolvePoseVideoOptions({ minTrackingConfidence: -1 }));
 	});
 });

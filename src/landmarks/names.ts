@@ -1,4 +1,4 @@
-import type { Landmark, PoseFrame } from "../contracts";
+import type { Landmark, PoseFrame } from "../shared-contracts";
 
 export const LANDMARK_NAMES = [
 	"nose",

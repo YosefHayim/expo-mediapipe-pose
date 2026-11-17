@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { createPoseFrameFields, type PoseFrame } from "../contracts";
 import {
 	createPoseDetectionFields,
 	type PoseDetection,
-} from "../image/analysis";
+} from "../file-analysis/file-analysis-options";
+import { createPoseFrameFields, type PoseFrame } from "../shared-contracts";
 
 const RECORDING_VERSION = 1 as const;
 const MAXIMUM_FRAMES = 10_000;
@@ -54,15 +54,14 @@ const createRecordingSchema = <FrameSchema extends z.ZodType>(
 	return recordingShapeSchema.refine(hasIncreasingTimestamps);
 };
 
-const stripSegmentation = (candidateFrame: unknown): unknown => {
+const stripPersonMask = (candidateFrame: unknown): unknown => {
 	const isObjectFrame =
 		typeof candidateFrame === "object" && candidateFrame !== null;
 
-	const hasNoSegmentation =
-		!isObjectFrame || !("segmentation" in candidateFrame);
-	if (hasNoSegmentation) return candidateFrame;
+	const hasNoPersonMask = !isObjectFrame || !("personMask" in candidateFrame);
+	if (hasNoPersonMask) return candidateFrame;
 
-	const { segmentation: _segmentation, ...landmarks } = candidateFrame;
+	const { personMask: _personMask, ...landmarks } = candidateFrame;
 	return landmarks;
 };
 
@@ -79,13 +78,13 @@ export const PoseDetectionRecording = createRecordingSchema(RecordedDetection);
 export type PoseDetectionRecording = z.infer<typeof PoseDetectionRecording>;
 
 const decodeFrame = (candidateFrame: unknown) => {
-	const frameWithoutSegmentation = stripSegmentation(candidateFrame);
-	return RecordedFrame.parse(frameWithoutSegmentation);
+	const frameWithoutPersonMask = stripPersonMask(candidateFrame);
+	return RecordedFrame.parse(frameWithoutPersonMask);
 };
 
 const decodeDetection = (candidateDetection: unknown) => {
-	const detectionWithoutSegmentation = stripSegmentation(candidateDetection);
-	return RecordedDetection.parse(detectionWithoutSegmentation);
+	const detectionWithoutPersonMask = stripPersonMask(candidateDetection);
+	return RecordedDetection.parse(detectionWithoutPersonMask);
 };
 
 const assertWithinSerializedLimit = (serializedRecording: string) => {

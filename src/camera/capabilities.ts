@@ -3,7 +3,7 @@ import {
 	CameraFacing,
 	type CameraLens,
 	CameraLensWithoutAuto,
-} from "../contracts";
+} from "../shared-contracts";
 
 const Zoom = z.number().min(1).max(100);
 const ZoomRange = z

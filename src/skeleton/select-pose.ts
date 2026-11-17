@@ -1,4 +1,4 @@
-import type { Landmark, PoseLandmarks } from "../contracts";
+import type { Landmark, PoseLandmarks } from "../shared-contracts";
 
 export type SelectablePose = {
 	readonly landmarks: readonly Landmark[];

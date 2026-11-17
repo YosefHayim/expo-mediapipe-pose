@@ -1,6 +1,6 @@
-export { getCameraCapabilities } from "./camera/native";
-export type { PoseCameraViewProps } from "./camera/view";
-export { PoseCameraView } from "./camera/view";
+export { getCameraCapabilities } from "./camera/get-camera-capabilities";
+export type { PoseCameraViewProps } from "./camera/pose-camera-view";
+export { PoseCameraView } from "./camera/pose-camera-view";
 export type {
 	BodyPart,
 	ConnectionName,
@@ -80,10 +80,10 @@ export {
 	PoseImageOptions,
 	PoseLandmarks,
 	PosePerformanceMetrics,
+	PosePersonMask,
+	PosePersonMaskImage,
 	PoseRecording,
 	PoseResults,
-	PoseSegmentation,
-	PoseSegmentationMask,
 	PoseVideoFrame,
 	PoseVideoSampling,
 	parsePoseDetectionRecording,
@@ -99,14 +99,16 @@ export {
 	validateLocalFileLocation,
 	validatePoseRuleOptions,
 } from "./core";
-export { analyzePoseImage } from "./image/native";
+export {
+	analyzePoseImage,
+	analyzePoseVideo,
+} from "./file-analysis/analyze-pose-file";
+export type { PosePersonMaskOverlayProps } from "./person-mask/person-mask-overlay";
+export { PosePersonMaskOverlay } from "./person-mask/person-mask-overlay";
+export { releasePosePersonMask } from "./person-mask/release-person-mask";
 export { usePoseReplay } from "./replay/use-pose-replay";
 export { usePoseRule } from "./rules/use-pose-rule";
 export { usePoseRules } from "./rules/use-pose-rules";
-export { releasePoseSegmentation } from "./segmentation/native";
-export type { PoseSegmentationOverlayProps } from "./segmentation/overlay";
-export { PoseSegmentationOverlay } from "./segmentation/overlay";
-export type { PoseSkeletonProps } from "./skeleton/view";
-export { PoseSkeleton } from "./skeleton/view";
+export type { PoseSkeletonProps } from "./skeleton/pose-skeleton";
+export { PoseSkeleton } from "./skeleton/pose-skeleton";
 export { usePoseTracking } from "./tracking/use-pose-tracking";
-export { analyzePoseVideo } from "./video/native";

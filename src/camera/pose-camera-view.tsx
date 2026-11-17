@@ -7,6 +7,8 @@ import {
 	type ViewProps,
 } from "react-native";
 import type { z } from "zod";
+import { MaskMaxDimension } from "../person-mask/person-mask";
+import { discardReportPersonMask } from "../person-mask/release-person-mask";
 import {
 	CameraConfiguration,
 	type CameraFacing,
@@ -16,11 +18,9 @@ import {
 	type ModelVariant,
 	PoseFrame,
 	PosePerformanceMetrics,
-} from "../contracts";
-import { MaskMaxDimension } from "../segmentation/mask";
-import { discardReportSegmentation } from "../segmentation/native";
-import type { SkeletonOptions } from "../skeleton/logic";
-import { PoseSkeleton } from "../skeleton/view";
+} from "../shared-contracts";
+import type { SkeletonOptions } from "../skeleton/create-skeleton";
+import { PoseSkeleton } from "../skeleton/pose-skeleton";
 import { getOverlayStaleAfterMs } from "./frame-rates";
 import { usePoseOverlayFrame } from "./use-overlay-frame";
 
@@ -38,7 +38,7 @@ interface CameraSettings {
 	minPosePresenceConfidence?: number;
 	minTrackingConfidence?: number;
 	maxPoses?: number;
-	segmentationEnabled?: boolean;
+	personMaskEnabled?: boolean;
 	maskMaxDimension?: number;
 }
 
@@ -86,7 +86,7 @@ export const PoseCameraView = ({
 	minPosePresenceConfidence = 0.35,
 	minTrackingConfidence = 0.35,
 	maxPoses = 1,
-	segmentationEnabled = false,
+	personMaskEnabled = false,
 	maskMaxDimension = 256,
 	skeleton = true,
 	onCameraConfigured,
@@ -101,10 +101,10 @@ export const PoseCameraView = ({
 	MaxPoses.parse(maxPoses);
 	MaskMaxDimension.parse(maskMaxDimension);
 
-	const isMaskWithoutLandmarkHandler = segmentationEnabled && !onLandmark;
+	const isMaskWithoutLandmarkHandler = personMaskEnabled && !onLandmark;
 	if (isMaskWithoutLandmarkHandler)
 		throw new Error(
-			"Segmentation requires an onLandmark consumer to release mask handles",
+			"PersonMask requires an onLandmark consumer to release mask handles",
 		);
 
 	const overlayStaleAfterMs = getOverlayStaleAfterMs({
@@ -131,7 +131,7 @@ export const PoseCameraView = ({
 		minPosePresenceConfidence,
 		minTrackingConfidence,
 		maxPoses,
-		segmentationEnabled,
+		personMaskEnabled,
 		maskMaxDimension,
 	});
 	const previousCaptureIdentity = React.useRef(captureIdentity);
@@ -156,15 +156,15 @@ export const PoseCameraView = ({
 
 	const handleFrame = React.useCallback(
 		(event: { nativeEvent: unknown }) => {
-			const discardEventSegmentation = () => {
-				void discardReportSegmentation(event.nativeEvent).catch(() =>
-					onInferenceError?.({ code: "segmentationCleanup" }),
+			const discardEventPersonMask = () => {
+				void discardReportPersonMask(event.nativeEvent).catch(() =>
+					onInferenceError?.({ code: "personMaskCleanup" }),
 				);
 			};
 
 			const isInactive = !isActive;
 			if (isInactive) {
-				discardEventSegmentation();
+				discardEventPersonMask();
 				return;
 			}
 
@@ -173,7 +173,7 @@ export const PoseCameraView = ({
 			const isDecodeFailed = !decoded.success;
 			if (isDecodeFailed) {
 				clear();
-				discardEventSegmentation();
+				discardEventPersonMask();
 				onInferenceError?.({ code: "invalidNativeEvent" });
 				return;
 			}
@@ -184,14 +184,14 @@ export const PoseCameraView = ({
 
 			const isOnLandmarkMissing = onLandmark == null;
 			if (isOnLandmarkMissing) {
-				discardEventSegmentation();
+				discardEventPersonMask();
 				return;
 			}
 
 			try {
 				onLandmark(decoded.data);
 			} catch (error) {
-				discardEventSegmentation();
+				discardEventPersonMask();
 				throw error;
 			}
 		},
@@ -292,7 +292,7 @@ export const PoseCameraView = ({
 				minPosePresenceConfidence={minPosePresenceConfidence}
 				minTrackingConfidence={minTrackingConfidence}
 				maxPoses={maxPoses}
-				segmentationEnabled={segmentationEnabled}
+				personMaskEnabled={personMaskEnabled}
 				maskMaxDimension={maskMaxDimension}
 				onLandmark={handleFrame}
 				onCameraConfigured={handleConfiguration}

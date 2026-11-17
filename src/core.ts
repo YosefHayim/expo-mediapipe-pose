@@ -8,25 +8,20 @@ export {
 	getOverlayStaleAfterMs,
 	validateFrameRates,
 } from "./camera/frame-rates";
+export type {
+	PoseVideoOptions,
+	PoseVideoProgress,
+} from "./file-analysis/file-analysis-options";
 export {
-	CameraConfiguration,
-	CameraFacing,
-	CameraLens,
-	InferenceError,
-	Landmark,
-	MaxPoses,
-	ModelVariant,
-	PoseFrame,
-	PoseLandmarks,
-	PosePerformanceMetrics,
-	PoseResults,
-} from "./contracts";
-export {
+	createVideoSamplePlan,
 	PoseDetection,
 	PoseImageOptions,
+	PoseVideoFrame,
+	PoseVideoSampling,
 	resolvePoseImageOptions,
+	resolvePoseVideoOptions,
 	validateLocalFileLocation,
-} from "./image/analysis";
+} from "./file-analysis/file-analysis-options";
 export type {
 	GeometryOptions,
 	ImageGeometryInput,
@@ -53,17 +48,12 @@ export {
 	LANDMARK_NAMES,
 	POSE_CONNECTIONS,
 } from "./landmarks/names";
-export type {
-	PoseReplay,
-	PoseReplayCallbacks,
-	PoseReplayState,
-	PoseReplayStatus,
-} from "./replay/logic";
 export {
-	createPoseDetectionReplay,
-	createPoseReplay,
-} from "./replay/logic";
-export type { PoseRecorderStatus } from "./replay/recording";
+	MaskMaxDimension,
+	PosePersonMask,
+	PosePersonMaskImage,
+} from "./person-mask/person-mask";
+export type { PoseRecorderStatus } from "./replay/pose-recording";
 export {
 	copyPoseDetectionRecording,
 	copyPoseRecording,
@@ -75,7 +65,17 @@ export {
 	parsePoseRecording,
 	serializePoseDetectionRecording,
 	serializePoseRecording,
-} from "./replay/recording";
+} from "./replay/pose-recording";
+export type {
+	PoseReplay,
+	PoseReplayCallbacks,
+	PoseReplayState,
+	PoseReplayStatus,
+} from "./replay/replay-player";
+export {
+	createPoseDetectionReplay,
+	createPoseReplay,
+} from "./replay/replay-player";
 export type {
 	SkeletonAppearance,
 	SkeletonFeedback,
@@ -102,39 +102,37 @@ export {
 	evaluatePoseThreshold,
 } from "./rules/threshold";
 export {
-	MaskMaxDimension,
-	PoseSegmentation,
-	PoseSegmentationMask,
-} from "./segmentation/mask";
+	CameraConfiguration,
+	CameraFacing,
+	CameraLens,
+	InferenceError,
+	Landmark,
+	MaxPoses,
+	ModelVariant,
+	PoseFrame,
+	PoseLandmarks,
+	PosePerformanceMetrics,
+	PoseResults,
+} from "./shared-contracts";
 export type {
 	ConnectionStyle,
 	Dimensions,
 	JointStyle,
 	SkeletonOptions,
-} from "./skeleton/logic";
+} from "./skeleton/create-skeleton";
 export {
 	createDetectionSkeleton,
 	createSkeleton,
 	projectLandmark,
-} from "./skeleton/logic";
-export type { SelectablePose } from "./skeleton/selection";
-export { selectPose } from "./skeleton/selection";
+} from "./skeleton/create-skeleton";
+export type { SelectablePose } from "./skeleton/select-pose";
+export { selectPose } from "./skeleton/select-pose";
 export type {
 	PoseTrackingOptions,
 	PoseTrackingState,
 	PoseTrackingStatus,
-} from "./tracking/logic";
+} from "./tracking/inspect-pose-tracking";
 export {
 	inspectPoseTracking,
 	trackingState,
-} from "./tracking/logic";
-export type {
-	PoseVideoOptions,
-	PoseVideoProgress,
-} from "./video/analysis";
-export {
-	createVideoSamplePlan,
-	PoseVideoFrame,
-	PoseVideoSampling,
-	resolvePoseVideoOptions,
-} from "./video/analysis";
+} from "./tracking/inspect-pose-tracking";

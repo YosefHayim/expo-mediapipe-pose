@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PoseSegmentation } from "./segmentation/mask";
+import { PosePersonMask } from "./person-mask/person-mask";
 
 // zod numbers reject NaN and Infinity, so no separate finite check is needed.
 const Finite = z.number();
@@ -68,7 +68,7 @@ export const InferenceError = z.object({
 		"modelInitialization",
 		"nativeViewInitialization",
 		"invalidNativeEvent",
-		"segmentationCleanup",
+		"personMaskCleanup",
 	]),
 });
 export type InferenceError = z.infer<typeof InferenceError>;
@@ -86,7 +86,7 @@ export const PosePerformanceMetrics = z.object({
 });
 export type PosePerformanceMetrics = z.infer<typeof PosePerformanceMetrics>;
 
-// Shared by PoseFrame and the strict recording schema, which drops `segmentation` first.
+// Shared by PoseFrame and the strict recording schema, which drops `personMask` first.
 export const createPoseFrameFields = (isStrict: boolean) => ({
 	poses: createPoseResultsSchema(isStrict).optional(),
 	landmarks: z.array(createLandmarkSchema(isStrict)),
@@ -119,7 +119,7 @@ export const createPoseFrameFields = (isStrict: boolean) => ({
 	),
 });
 export const PoseFrame = z.object({
-	segmentation: PoseSegmentation.optional(),
+	personMask: PosePersonMask.optional(),
 	...createPoseFrameFields(false),
 });
 export type PoseFrame = z.infer<typeof PoseFrame>;
