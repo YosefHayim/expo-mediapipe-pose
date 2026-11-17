@@ -4,6 +4,7 @@
 		"slug": "pose-hello-world",
 		"version": "1.0.0",
 		"orientation": "portrait",
+		"updates": { "enabled": false },
 		"ios": {
 			"bundleIdentifier": "dev.expopose.helloworld",
 			"supportsTablet": true

@@ -46,11 +46,11 @@ export default function HelloPose() {
 		return <Button title="Allow camera" onPress={requestPermission} />;
 	}
 
-	// 6. Color the skeleton by the rule status: green when both hands are up.
+	// 5. Color the skeleton by the rule status: green when both hands are up.
 	const isHandsUp = handsUp.status === "pass";
 	const skeletonColor = isHandsUp ? "#22c55e" : "#ffffff";
 
-	// 5. Show the camera. PoseCameraView draws the skeleton for you.
+	// 6. Show the camera. PoseCameraView draws the skeleton for you.
 	return (
 		<View style={styles.screen}>
 			<PoseCameraView

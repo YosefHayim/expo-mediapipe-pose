@@ -10,7 +10,7 @@
 			]
 		},
 		"hello-world": {
-			"entry": ["index.ts", "app.tsx"]
+			"entry": ["app.tsx"]
 		}
 	}
 }
