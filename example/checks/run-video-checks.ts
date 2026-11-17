@@ -1,13 +1,7 @@
 import { File, Paths } from "expo-file-system";
 import { analyzePoseVideo, type PoseDetection } from "expo-mediapipe-pose";
+import { verifyCheck } from "./verify-check";
 
-const verify: (condition: boolean, message: string) => asserts condition = (
-	condition,
-	message,
-) => {
-	const isCheckFailed = !condition;
-	if (isCheckFailed) throw new Error(message);
-};
 export interface RunVideoChecksDetails {
 	video: string;
 	rotated: string;
@@ -31,28 +25,28 @@ export const runVideoChecks = async ({
 			maxImageDimension: 1024,
 		})) {
 			timestamps.push(frame.timestampMs);
-			verify(
+			verifyCheck(
 				frame.detection.landmarks.length === 33,
 				"Video must detect a pose",
 			);
-			verify(
+			verifyCheck(
 				frame.detection.imageSize.width > frame.detection.imageSize.height,
 				"Video orientation must produce upright dimensions",
 			);
 			for (const [index, landmark] of frame.detection.landmarks.entries()) {
 				const joint = reference.landmarks[index];
-				verify(joint != null, "Reference landmark must exist");
-				verify(
+				verifyCheck(joint != null, "Reference landmark must exist");
+				verifyCheck(
 					Math.abs(landmark.x - joint.x) < 0.06,
 					`${label} video x must align with reference`,
 				);
-				verify(
+				verifyCheck(
 					Math.abs(landmark.y - joint.y) < 0.06,
 					`${label} video y must align with reference`,
 				);
 			}
 		}
-		verify(
+		verifyCheck(
 			JSON.stringify(timestamps) === "[0,500,1000,1500]",
 			"Video samples must have monotonic media timestamps",
 		);
@@ -63,13 +57,13 @@ export const runVideoChecks = async ({
 		samplingFps: 30,
 		endMs: 100,
 	})) {
-		verify(
+		verifyCheck(
 			sample.detection.landmarks.length === 33,
 			"Between-frame requests must decode a pose",
 		);
 		fractionalSamples += 1;
 	}
-	verify(
+	verifyCheck(
 		fractionalSamples === 3,
 		"Fractional frame intervals must remain bounded",
 	);
@@ -80,11 +74,11 @@ export const runVideoChecks = async ({
 	try {
 		await analyzePoseVideo(invalid.uri).next();
 	} catch (error) {
-		verify(
+		verifyCheck(
 			typeof error === "object" && error !== null,
 			"Invalid video must reject with a native error",
 		);
-		verify(
+		verifyCheck(
 			"code" in error && typeof error.code === "string",
 			"Invalid video must fail at the native boundary",
 		);
@@ -92,7 +86,7 @@ export const runVideoChecks = async ({
 	} finally {
 		invalid.delete();
 	}
-	verify(invalidRejected, "Invalid video must reject");
+	verifyCheck(invalidRejected, "Invalid video must reject");
 	cases.push("invalid native video rejected");
 	const active = analyzePoseVideo(video);
 	try {
@@ -101,19 +95,19 @@ export const runVideoChecks = async ({
 		try {
 			await analyzePoseVideo(video).next();
 		} catch (error) {
-			verify(
+			verifyCheck(
 				typeof error === "object" && error !== null,
 				"Concurrent video must reject with a native error",
 			);
-			verify(
+			verifyCheck(
 				"code" in error && typeof error.code === "string",
 				"Concurrent video must fail at the native boundary",
 			);
 			concurrentRejected = true;
 		}
-		verify(concurrentRejected, "Only one video session may be open");
+		verifyCheck(concurrentRejected, "Only one video session may be open");
 		const continued = await active.next();
-		verify(
+		verifyCheck(
 			continued.value?.timestampMs === 200,
 			"Rejected second session must preserve the active session",
 		);
@@ -131,12 +125,12 @@ export const runVideoChecks = async ({
 	} catch (error) {
 		cancelled = error instanceof Error && error.name === "AbortError";
 	}
-	verify(cancelled, "Cancellation must reject with AbortError");
+	verifyCheck(cancelled, "Cancellation must reject with AbortError");
 	cases.push("video cancellation");
 	for await (const frame of analyzePoseVideo(video, {
 		maxImageDimension: 256,
 	})) {
-		verify(
+		verifyCheck(
 			Math.max(
 				frame.detection.imageSize.width,
 				frame.detection.imageSize.height,
@@ -146,7 +140,7 @@ export const runVideoChecks = async ({
 		break;
 	}
 	for await (const frame of analyzePoseVideo(video)) {
-		verify(
+		verifyCheck(
 			frame.detection.landmarks.length === 33,
 			"Video must reopen after early break",
 		);

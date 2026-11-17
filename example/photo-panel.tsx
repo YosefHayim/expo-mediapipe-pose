@@ -2,9 +2,9 @@ import { Asset } from "expo-asset";
 import {
 	analyzePoseImage,
 	type PoseDetection,
-	PoseSegmentationOverlay,
+	PosePersonMaskOverlay,
 	PoseSkeleton,
-	releasePoseSegmentation,
+	releasePosePersonMask,
 } from "expo-mediapipe-pose";
 import * as React from "react";
 import {
@@ -19,17 +19,17 @@ import { panelStyles } from "./panel-styles";
 import { PoseIndexButton } from "./pose-index-button";
 
 const releaseMasks = async (detection: PoseDetection | undefined) => {
-	const segmentation = detection?.segmentation;
-	const isSegmentationAvailable = segmentation?.status === "available";
-	if (!isSegmentationAvailable) return;
+	const personMask = detection?.personMask;
+	const isPersonMaskAvailable = personMask?.status === "available";
+	if (!isPersonMaskAvailable) return;
 
-	await releasePoseSegmentation(segmentation.leaseId);
+	await releasePosePersonMask(personMask.leaseId);
 };
 
 export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 	const [location, setLocation] = React.useState("");
 	const [maxPoses, setMaxPoses] = React.useState(1);
-	const [segmentationEnabled, setSegmentationEnabled] = React.useState(false);
+	const [personMaskEnabled, setPersonMaskEnabled] = React.useState(false);
 	const [poseIndex, setPoseIndex] = React.useState(0);
 	const [report, setReport] = React.useState<{
 		location: string;
@@ -64,7 +64,7 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 		try {
 			const detection = await analyzePoseImage(location, {
 				maxPoses,
-				segmentationEnabled,
+				personMaskEnabled,
 			});
 			const isAbsoluteLocation = location.startsWith("/");
 			const imageUri = isAbsoluteLocation
@@ -117,11 +117,11 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 		{ length: report?.detection.poses?.length ?? 0 },
 		(_, index) => index,
 	);
-	const segmentationStatusLabel = segmentationEnabled ? "on" : "off";
+	const personMaskStatusLabel = personMaskEnabled ? "on" : "off";
 	const analyzeButtonLabel = busy ? "Analyzing…" : "Analyze";
 
-	const handleSegmentationTogglePress = () =>
-		setSegmentationEnabled((isEnabled) => !isEnabled);
+	const handlePersonMaskTogglePress = () =>
+		setPersonMaskEnabled((isEnabled) => !isEnabled);
 
 	const handleMaxPosesTogglePress = () => {
 		const isSinglePose = maxPoses === 1;
@@ -134,15 +134,15 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 	const hasError = error != null;
 
 	const hasReport = report != null;
-	const reportSegmentation = report?.detection.segmentation;
-	const hasSegmentation = reportSegmentation != null;
+	const reportPersonMask = report?.detection.personMask;
+	const hasPersonMask = reportPersonMask != null;
 
 	return (
 		<View style={panelStyles.panel}>
 			<Text style={panelStyles.label}>Analyze a local photo</Text>
 			<Button
-				title={`Segmentation: ${segmentationStatusLabel}`}
-				onPress={handleSegmentationTogglePress}
+				title={`Person mask: ${personMaskStatusLabel}`}
+				onPress={handlePersonMaskTogglePress}
 				disabled={busy}
 			/>
 			<Button
@@ -180,7 +180,7 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 			{hasError && <Text style={panelStyles.errorLabel}>{error}</Text>}
 			{hasReport && (
 				<Text style={panelStyles.label}>
-					{hasSegmentation && `Masks: ${reportSegmentation.status} · `}
+					{hasPersonMask && `Masks: ${reportPersonMask.status} · `}
 					{report.detection.landmarks.length} landmarks ·{" "}
 					{report.detection.inferenceDurationMs.toFixed(1)} ms inference
 				</Text>
@@ -197,9 +197,9 @@ export const PhotoPanel = ({ onClose }: { onClose: () => void }) => {
 								height: size.height,
 							}}
 						/>
-						{hasSegmentation && (
-							<PoseSegmentationOverlay
-								segmentation={reportSegmentation}
+						{hasPersonMask && (
+							<PosePersonMaskOverlay
+								personMask={reportPersonMask}
 								poseIndex={poseIndex}
 								{...size}
 							/>

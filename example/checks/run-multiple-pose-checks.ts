@@ -1,63 +1,59 @@
 import { analyzePoseImage, selectPose } from "expo-mediapipe-pose";
+import { verifyCheck } from "./verify-check";
 
-// An assertion call needs an explicit type on the const it calls.
-const verify: (condition: boolean, message: string) => asserts condition = (
-	condition,
-	message,
-) => {
-	const isCheckFailed = !condition;
-	if (isCheckFailed) throw new Error(message);
-};
 export const runMultiplePoseChecks = async (
 	location: string,
 	cases: string[],
 ) => {
 	const detection = await analyzePoseImage(location, { maxPoses: 2 });
-	verify(
+	verifyCheck(
 		detection.poses?.length === 2,
 		`Expected two people, received ${detection.poses?.length}`,
 	);
 	for (const pose of detection.poses) {
-		verify(
+		verifyCheck(
 			pose.landmarks.length === 33,
 			"Every pose must expose image landmarks",
 		);
-		verify(
+		verifyCheck(
 			pose.worldLandmarks.length === 33,
 			"Every pose must expose world landmarks",
 		);
 	}
-	verify(
+	verifyCheck(
 		JSON.stringify(detection.poses[0]) !== JSON.stringify(detection.poses[1]),
 		"The two-person fixture must return distinct pose data",
 	);
-	verify(
+	verifyCheck(
 		JSON.stringify(detection.landmarks) ===
 			JSON.stringify(detection.poses[0]?.landmarks),
 		"First-pose image alias must match index zero",
 	);
-	verify(
+	verifyCheck(
 		JSON.stringify(detection.worldLandmarks) ===
 			JSON.stringify(detection.poses[0]?.worldLandmarks),
 		"First-pose world alias must match index zero",
 	);
 	const second = selectPose(detection, 1);
-	verify(
+	verifyCheck(
 		JSON.stringify(second.landmarks) ===
 			JSON.stringify(detection.poses[1]?.landmarks),
 		"Selection must expose the second pose image landmarks",
 	);
-	verify(
+	verifyCheck(
 		JSON.stringify(second.worldLandmarks) ===
 			JSON.stringify(detection.poses[1]?.worldLandmarks),
 		"Selection must expose the second pose world landmarks",
 	);
-	verify(
+	verifyCheck(
 		selectPose(detection, 2).landmarks.length === 0,
 		"Missing selection must be empty",
 	);
 	cases.push("real two-person image and explicit pose selection");
 	const single = await analyzePoseImage(location, { maxPoses: 1 });
-	verify(single.poses?.length === 1, "maxPoses must limit native detections");
+	verifyCheck(
+		single.poses?.length === 1,
+		"maxPoses must limit native detections",
+	);
 	cases.push("native maximum pose count");
 };
