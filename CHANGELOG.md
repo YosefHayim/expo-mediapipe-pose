@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+Breaking: the public API is pose landmarks only.
+
+- Remove rules, replay, tracking, person masks, joint angles, camera capability listing, the `expo-mediapipe-pose/core` entry, zod, the hello-world app, and the agent skill.
+- `PoseCameraView` reports `onPoseFrame` and `onPoseFailure`. `isCameraRunning` replaces `isActive`. `skeletonRendering` is `"shown"` or `"hidden"`.
+- `requestCameraPermission()` shows the one camera dialog. The config plugin `setIosCameraUsageText` writes the iOS usage sentence.
+- `readPosePhoto` and `readPoseVideo` return the same `PoseFrame` as the camera. Joints are named (`landmarks.leftWrist`). A missing joint is `null`.
+- Ship the lite, full, and heavy pose models. `poseModel` defaults to `"full"`. `poseDelegate` defaults to `"gpu"`. Confidences default to 0.5. `poseFrameRate` defaults to 30 and does not reload the landmarker.
+
 ## 0.5.0
 
 Breaking: "segmentation" is renamed to "person mask" in every public name, option and native event key, and the browser playground site is removed.

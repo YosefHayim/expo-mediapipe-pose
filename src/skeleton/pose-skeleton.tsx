@@ -1,57 +1,74 @@
-import * as React from "react";
-import Svg, { Circle, Line } from "react-native-svg";
-import type { PoseFrame } from "../shared-contracts";
+import { Circle, Line, Svg } from "react-native-svg";
+import type { PoseFrame } from "../landmarks/pose-frame";
 import {
-	createDetectionSkeleton,
-	createSkeleton,
-	type Dimensions,
-	type SkeletonOptions,
-} from "./create-skeleton";
-import type { SelectablePose } from "./select-pose";
+	listPoseBones,
+	type PoseBoneJoint,
+	type PoseBoneLine,
+} from "./pose-bones";
 
-export type PoseSkeletonProps = SkeletonOptions &
-	Dimensions &
-	(
-		| { frame: PoseFrame }
-		| {
-				detection: SelectablePose & { imageSize: Dimensions };
-		  }
-	);
+export interface PoseSkeletonProps {
+	poseFrame: PoseFrame;
+	viewWidth: number;
+	viewHeight: number;
+	skeletonColor?: string;
+}
 
-export const PoseSkeleton = React.memo((props: PoseSkeletonProps) => {
-	const { width, height } = props;
+export function PoseSkeleton({
+	poseFrame,
+	viewWidth,
+	viewHeight,
+	skeletonColor = "#38bdf8",
+}: PoseSkeletonProps) {
+	const isWidthEmpty = viewWidth <= 0;
 
-	const isSizeEmpty = width <= 0 || height <= 0;
-	if (isSizeEmpty) return null;
+	if (isWidthEmpty) return null;
 
-	const hasFrameProp = "frame" in props;
-	const skeleton = hasFrameProp
-		? createSkeleton(props.frame, props, props)
-		: createDetectionSkeleton(props.detection, props, props);
-	const { points, lines } = skeleton;
+	const isHeightEmpty = viewHeight <= 0;
+
+	if (isHeightEmpty) return null;
+
+	const drawing = listPoseBones({ poseFrame, viewWidth, viewHeight });
+
+	function showBoneLine(line: PoseBoneLine) {
+		const boneWidth = 3;
+
+		return (
+			<Line
+				key={line.name}
+				x1={line.x1}
+				y1={line.y1}
+				x2={line.x2}
+				y2={line.y2}
+				stroke={skeletonColor}
+				strokeWidth={boneWidth}
+				strokeLinecap="round"
+			/>
+		);
+	}
+
+	function showBoneJoint(joint: PoseBoneJoint) {
+		const jointRadius = 4;
+
+		return (
+			<Circle
+				key={joint.name}
+				cx={joint.x}
+				cy={joint.y}
+				r={jointRadius}
+				fill={skeletonColor}
+			/>
+		);
+	}
+
 	return (
-		<Svg width={width} height={height} pointerEvents="none" accessible={false}>
-			{lines.map((line) => (
-				<Line
-					key={line.name}
-					x1={line.start.x}
-					y1={line.start.y}
-					x2={line.end.x}
-					y2={line.end.y}
-					stroke={line.color}
-					strokeWidth={line.width}
-					strokeLinecap="round"
-				/>
-			))}
-			{points.map((point) => (
-				<Circle
-					key={point.name}
-					cx={point.x}
-					cy={point.y}
-					r={point.radius}
-					fill={point.color}
-				/>
-			))}
+		<Svg
+			width={viewWidth}
+			height={viewHeight}
+			pointerEvents="none"
+			accessible={false}
+		>
+			{drawing.lines.map(showBoneLine)}
+			{drawing.joints.map(showBoneJoint)}
 		</Svg>
 	);
-});
+}

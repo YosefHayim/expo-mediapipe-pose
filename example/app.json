@@ -13,13 +13,9 @@
 		},
 		"plugins": [
 			[
-				"expo-camera",
-				{
-					"cameraPermission": "Allow the pose example to track your movement on this device.",
-					"recordAudioAndroid": false
-				}
-			],
-			"expo-asset"
+				"expo-mediapipe-pose",
+				"Allow the pose example to track your movement on this device."
+			]
 		]
 	}
 }

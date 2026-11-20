@@ -1,348 +1,160 @@
 # expo-mediapipe-pose
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/hero-dark.svg">
-  <img src=".github/hero-light.svg" alt="A body skeleton raises one arm and a usePoseRule check turns from fail to pass" width="100%">
-</picture>
+On-device pose landmarks for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), using Google's [MediaPipe Pose Landmarker](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker).
 
-On-device pose tracking for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), built on Google's [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker). Community project, not an official Google or Expo package.
+This is a community library. It is not an official Expo or Google package. Expo Go cannot load it. Use a development build.
 
-## Why
-
-Pose tracking in a phone app usually means one of two things: send camera frames to a server, or wire the MediaPipe iOS and Android SDKs into React Native yourself. This library does the second part once. You get one camera component, typed events and a few hooks. Frames stay on the phone: nothing is uploaded and no model is downloaded.
-
-## Features
-
-- A camera view that draws a styled skeleton over 33 named landmarks.
-- Rules you write yourself (`usePoseRule`) with confidence checks, hold time and an explicit `unknown` status.
-- Named angles and distances between landmarks, in image or world coordinates.
-- Photo and video analysis from local files.
-- Up to six poses per frame, with a person mask per pose when you ask for it.
-- Record and replay landmark sessions (pose data, not video).
-- Camera and frame-rate discovery, with separate preview, inference and callback rates.
-- A pure `expo-mediapipe-pose/core` entry point for logic and tests that does not load React Native.
-
-## How it works
-
-```mermaid
-flowchart LR
-  A[Camera frame] --> B[Native MediaPipe detector<br/>off the UI thread]
-  B --> C[Validated event]
-  C --> D[Landmarks]
-  C --> E[Rules]
-  C --> F[Skeleton]
-  C --> G[Person mask]
-```
-
-Swift (iOS) and Kotlin (Android) capture frames and run the detector on their own thread. Each result crosses to JavaScript as one event, and a zod schema checks it before your code sees it. Events from an old camera session are dropped after a stop or reconfigure. Everything after that (rules, skeleton drawing, geometry) is plain TypeScript.
+The app reads `landmarks.leftWrist` instead of joint number 15. The same `PoseFrame` comes from the live camera, a photo, and a video. This package draws the skeleton.
 
 ## Install
 
 ```sh
-pnpm add expo-mediapipe-pose
-pnpm exec expo install react-native-svg expo-camera
+npx expo install expo-mediapipe-pose react-native-svg
 ```
 
-Add the camera permission text to your app config, then make a development build. [Expo Go](https://expo.dev/go) cannot load this native module.
+`react-native-svg` is only there so the skeleton can draw. The pose model is bundled. There is no other runtime dependency.
+
+## Development build
+
+```sh
+npx expo run:ios
+npx expo run:android
+```
+
+## Camera permission
+
+Two different moments:
+
+1. At prebuild, the config plugin writes the iOS usage sentence (`NSCameraUsageDescription`). Android already declares `CAMERA` in this package.
+2. At runtime, `requestCameraPermission()` shows the one system dialog and returns `"granted"` or `"denied"`.
 
 ```json
 {
-  "expo": {
-    "plugins": [
-      ["expo-camera", {
-        "cameraPermission": "Allow camera access for on-device pose tracking.",
-        "recordAudioAndroid": false
-      }]
-    ]
+  "plugins": [
+    ["expo-mediapipe-pose", "Allow this app to detect your pose."]
+  ]
+}
+```
+
+Leave the sentence out and the plugin uses "Allow this app to use the camera to detect your pose."
+
+An app that does not prebuild must set `NSCameraUsageDescription` itself. The camera view does not ask. If permission is missing, `onPoseFailure` reports `cameraPermission` and the preview stays closed.
+
+## Show a pose camera
+
+```tsx
+import { useState } from "react";
+import { Button, View } from "react-native";
+import {
+  PoseCameraView,
+  requestCameraPermission,
+  type PoseFrame,
+} from "expo-mediapipe-pose";
+
+export function PoseScreen() {
+  const [isGranted, setIsGranted] = useState(false);
+
+  async function handleAllowPress() {
+    const permission = await requestCameraPermission();
+    setIsGranted(permission === "granted");
   }
+
+  if (!isGranted) return <Button title="Allow camera" onPress={handleAllowPress} />;
+
+  return (
+    <PoseCameraView
+      style={{ flex: 1 }}
+      onPoseFrame={handlePoseFrame}
+      onPoseFailure={handlePoseFailure}
+    />
+  );
+}
+
+function handlePoseFrame(poseFrame: PoseFrame) {
+  console.log(poseFrame.landmarks.leftWrist);
+}
+
+function handlePoseFailure(failure: { reason: string }) {
+  console.log(failure.reason);
 }
 ```
 
-```sh
-pnpm exec expo run:ios
-# or: pnpm exec expo run:android
-```
+`isCameraRunning` defaults to true. `cameraFacing` defaults to `"front"`.
 
-Version 0.5.0 targets Expo SDK 58, React Native 0.88 and React 19.3. Its peer ranges also allow SDK 57, React Native 0.86 and React 19.2. Upgrading from 0.4? Read the [0.5.0 breaking changes](CHANGELOG.md): the old mask names are now "person mask" names.
+## Named landmarks
 
-## Hello world
+`LANDMARK_NAMES` is the 33 MediaPipe joints, in MediaPipe order. A missing joint is `null`. It is not a failure.
 
-[hello-world/](hello-world/) is a small Expo app with one screen. It asks for the camera, draws the skeleton and turns it green when both hands are above your nose. `app.tsx` has numbered comments, 1 to 6, that you read top to bottom:
+`landmarks` is the first person. `poses` lists every person in that frame. The list order is not a stable identity.
 
-1. Install the packages.
-2. Ask for the camera with `useCameraPermissions`.
-3. Write a condition with `usePoseRule`.
-4. Read the landmarks in a frame handler.
-5. Show the camera with `PoseCameraView`.
-6. Color the skeleton by the rule status.
+`worldLandmarks` are meters from the hip midpoint. `pointInImage(landmarks.nose, imageWidth, imageHeight)` turns a normalized point into image pixels.
 
-[hello-world/README.md](hello-world/README.md) says how to run it. The [larger example app](example/app.tsx) adds camera switching, pause and resume, photo and video analysis, replay and error recovery.
+## Skeleton
 
-## Guides
+`skeletonRendering` is `"shown"` by default. `"hidden"` still calls `onPoseFrame`. The skeleton color defaults to `#38bdf8`. A joint is skipped when it is missing or its visibility is below 0.5.
 
-### Show a pose camera
-
-Mount it after permission is granted. It fills its layout and draws the skeleton by default.
+A photo has no switch. Place `PoseSkeleton` on the image, or skip it.
 
 ```tsx
-import { PoseCameraView } from "expo-mediapipe-pose";
+import { PoseSkeleton } from "expo-mediapipe-pose";
 
-<PoseCameraView
-  style={{ flex: 1 }}
-  cameraFacing="front"
-  frameLimit={15}
-  onLandmark={frame => handlePose(frame.landmarks)}
-  onInferenceError={error => showCameraError(error.code)}
+<PoseSkeleton
+  poseFrame={poseFrame}
+  viewWidth={width}
+  viewHeight={height}
 />
 ```
 
-Set `isActive={false}` when the screen loses focus to release the camera and keep the component mounted. `previewFps`, `frameLimit` and `callbackFps` set the capture, inference and JavaScript rates on their own.
-
-### Style joints and body parts
+## Photo and video
 
 ```tsx
-<PoseCameraView
-  style={{ flex: 1 }}
-  skeleton={{
-    bodyParts: ["leftArm", "rightArm", "torso"],
-    color: "#38bdf8",
-    jointRadius: 5,
-    lineWidth: 3,
-    joints: { leftWrist: { color: "#f59e0b", radius: 8 } },
-    connections: { "leftElbow:leftWrist": { color: "#f59e0b" } },
-  }}
-/>
-```
-
-Choosing body parts changes the drawing, not the detector or the landmarks you receive. One joint's style beats the global style. Pass `skeleton={false}` to draw your own overlay.
-
-### React to a condition
-
-Your app writes the condition. `usePoseRule` checks confidence, hold time and stale input, and calls you only when the status changes.
-
-```tsx
-const feedbackColors = {
-  pass: "#22c55e",
-  fail: "#ef4444",
-  unknown: "#94a3b8",
-};
-
-const raisedArm = usePoseRule({
-  landmarks: ["leftWrist", "leftShoulder"],
-  minVisibility: 0.6,
-  holdMs: 250,
-  isActive: screenIsFocused,
-  evaluate: pose => pose.leftWrist.y < pose.leftShoulder.y,
-  onChange: status => handleArmStateChange(status),
+const photoFrame = await readPosePhoto({ path: photoPath });
+const videoFrames = await readPoseVideo({
+  path: videoPath,
+  sampleFrameRate: 5,
 });
-
-<PoseCameraView
-  style={{ flex: 1 }}
-  isActive={screenIsFocused}
-  onLandmark={raisedArm.update}
-  onCameraConfigured={raisedArm.reset}
-  onInferenceError={raisedArm.reset}
-  skeleton={{ bodyParts: ["leftArm"], color: feedbackColors[raisedArm.status] }}
-/>
 ```
 
-Missing, uncertain or stale landmarks give `unknown`, which is not the same as a failed condition. Use `usePoseRules` for several conditions at once. For logic and tests without a native view, import the pure helpers:
+A photo has no frame rate. Video samples timestamps before MediaPipe's video mode, which does not drop frames. The default sample rate is 5. More than 1000 frames throws. Ask for a lower `sampleFrameRate`.
 
-```ts
-import { getLandmark } from "expo-mediapipe-pose/core";
+A bad path throws, and the message includes that path. A still frame's `timestampMs` is 0.
 
-const leftWrist = getLandmark(frame, "leftWrist");
-```
+## Model and frame rate
 
-### Angles and distances
+`poseModel` is `"lite"`, `"full"`, or `"heavy"`. The default is `"full"`. All three models ship with the package. Changing the model reloads the landmarker. A local `.task` file can be passed as `poseModelPath` and wins over the bundled model.
 
-```ts
-import { getImageJointAngle } from "expo-mediapipe-pose/core";
+`poseFrameRate` is how many camera frames per second are sent to the landmarker. It is a whole number from 1 to 60, default 30. MediaPipe has no fps setting of its own. The preview stays smooth while this number changes, and the landmarker is not reloaded. A live stream can still drop a frame when the landmarker is busy.
 
-const input = { landmarks: frame.landmarks, imageSize: frame.imageSize };
-const elbow = getImageJointAngle(input, "leftShoulder", "leftElbow", "leftWrist", { minVisibility: 0.6 });
-if (elbow.status === "available") use(elbow.value); // degrees
-```
+## Settings
 
-A result is `{ status: "available", value, unit }` or `{ status: "unavailable", reason }`. Handle both.
+| Setting | Default |
+| --- | --- |
+| `maxPoseCount` | 1, whole number from 1 to 6 |
+| `minPoseDetectionConfidence` | 0.5 |
+| `minPosePresenceConfidence` | 0.5 |
+| `minTrackingConfidence` | 0.5 |
+| `poseDelegate` | `"gpu"` (`"cpu"` also works) |
 
-### Photos and videos
+These match the [Pose Landmarker options](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker). A confidence outside 0 to 1 throws. Person masks and a public running-mode switch are not part of this library. Photo and video use the image and video tasks. The live camera keeps video mode on a background queue.
 
-```ts
-const detection = await analyzePoseImage(localFileUri, { maxPoses: 2 });
+## Failures
 
-for await (const sample of analyzePoseVideo(localVideoUri, { samplingFps: 5, signal, onProgress })) {
-  handle(sample.detection, sample.timestampMs);
-}
-```
+`onPoseFailure` receives one reason:
 
-Inputs are local file locations. Video is sampled, and `signal` (an `AbortSignal`) cancels it.
+| Reason | When |
+| --- | --- |
+| `cameraPermission` | The view opened without permission. It does not ask. |
+| `modelLoad` | The model file did not load. |
+| `cameraRuntime` | The camera stopped while it was open. |
+| `cameraConfiguration` | The camera could not be configured. |
+| `inferenceRuntime` | A frame failed inside the landmarker. |
+| `nativeViewInitialization` | The native view did not start. |
+| `unreadableEvent` | A native event could not be read. |
 
-### Record and replay
+An empty person is a normal `PoseFrame` whose joints are `null`.
 
-```ts
-const recorder = createPoseRecorder({ maxFrames: 1800 });
-recorder.start();
-recorder.append(frame); // from onLandmark
-const recording = recorder.stop();
-const text = serializePoseRecording(recording); // parsePoseRecording(text) reads it back
-```
+## Limits
 
-Replay with `usePoseReplay(recording, { onFrame, onReset, onStateChange })`, or `createPoseReplay` outside React. Recordings hold landmarks and metadata, not camera video or person masks.
+Build success does not prove camera alignment or speed on a device. Pose order is not a person id. This library does not score exercises, record video, or return a person mask.
 
-### Person mask
-
-Set `personMaskEnabled` on the camera or on a photo or video call, then draw each pose's mask with `PosePersonMaskOverlay`. At most two mask results can be open per module. Call `releasePosePersonMask` when you finish with one, including on errors and on unmount. The overlay does not release them for you.
-
-### Several poses
-
-`maxPoses` allows up to six poses. `poseIndex` and `selectPose` pick one pose from a result. An index is not a person identity across frames, so reset rules and tracking when your selection changes.
-
-## API reference
-
-Everything below comes from `expo-mediapipe-pose`. Names marked "core" are also in `expo-mediapipe-pose/core`, which has no React Native dependency.
-
-### Camera
-
-| Export | What it does |
-|---|---|
-| `PoseCameraView`, `PoseCameraViewProps` | The camera component with skeleton, events and rate props. |
-| `getCameraCapabilities` | Lists the cameras and frame rates the phone supports. |
-| `CameraCapabilities`, `CameraCapability`, `CameraConfiguration`, `CameraFacing`, `CameraLens` (core) | Schemas and types for camera discovery and the applied configuration. |
-| `findCameraCapability`, `validateFrameRates`, `getOverlayStaleAfterMs`, `FrameRates` (core) | Pick a camera and check requested rates. |
-| `InferenceError`, `PosePerformanceMetrics` (core) | Error and timing events from the native side. |
-
-### Skeleton
-
-| Export | What it does |
-|---|---|
-| `PoseSkeleton`, `PoseSkeletonProps` | Draws a skeleton over your own view. |
-| `createSkeleton`, `createDetectionSkeleton`, `projectLandmark` (core) | Build skeleton shapes and project a landmark to preview pixels. |
-| `SkeletonOptions`, `JointStyle`, `ConnectionStyle`, `Dimensions` (core) | Skeleton style types. |
-| `selectPose`, `SelectablePose` (core) | Pick one pose from a multi-pose result. |
-
-### Landmarks and measurement
-
-| Export | What it does |
-|---|---|
-| `LANDMARK_NAMES`, `POSE_CONNECTIONS`, `BODY_PARTS`, `LandmarkName`, `ConnectionName`, `BodyPart` (core) | The 33 landmark names, skeleton lines and body-part groups. |
-| `getLandmark`, `getNamedLandmarks` (core) | Read landmarks by name. |
-| `Landmark`, `PoseLandmarks`, `PoseResults`, `PoseFrame`, `MaxPoses`, `ModelVariant` (core) | Result schemas and types. |
-| `getImageJointAngle`, `getImageDistance`, `getWorldJointAngle`, `getWorldDistance` (core) | Angles in degrees and distances in pixels or meters. |
-| `GeometryOptions`, `ImageGeometryInput`, `WorldGeometryInput`, `PoseMeasurement`, `UnavailableMeasurement`, `MeasurementUnit` (core) | Measurement input and result types. |
-
-### Rules and tracking
-
-| Export | What it does |
-|---|---|
-| `usePoseRule`, `usePoseRules` | React hooks for one or several rules. |
-| `definePoseRule`, `evaluatePoseRule`, `advancePoseRule`, `initialPoseRuleState`, `validatePoseRuleOptions` (core) | The same rules outside React. |
-| `PoseRuleOptions`, `PoseRuleState`, `PoseRuleStatus` (core) | Rule types. Status is `pass`, `fail` or `unknown`. |
-| `createThresholdRule`, `evaluatePoseThreshold`, `PoseThreshold`, `ThresholdRuleOptions` (core) | Threshold rules with hysteresis. |
-| `composeSkeletonFeedback`, `SkeletonAppearance`, `SkeletonFeedback` (core) | Combine rule results into skeleton styles. |
-| `usePoseTracking`, `inspectPoseTracking`, `trackingState`, `PoseTrackingOptions`, `PoseTrackingState`, `PoseTrackingStatus` | Whether a pose is present and steady. The hook is main entry only. |
-
-### Photos and videos
-
-| Export | What it does |
-|---|---|
-| `analyzePoseImage` | Detect poses in one local image. |
-| `analyzePoseVideo` | Sample a local video and yield detections, with cancel and progress. |
-| `PoseImageOptions`, `PoseDetection`, `resolvePoseImageOptions`, `validateLocalFileLocation` (core) | Image options and results. |
-| `PoseVideoSampling`, `PoseVideoFrame`, `PoseVideoOptions`, `PoseVideoProgress`, `resolvePoseVideoOptions`, `createVideoSamplePlan` (core) | Video options, sample plan and progress. |
-
-### Person mask
-
-| Export | What it does |
-|---|---|
-| `PosePersonMask`, `PosePersonMaskImage`, `MaskMaxDimension` (core) | The mask schemas and the size limit. |
-| `PosePersonMaskOverlay`, `PosePersonMaskOverlayProps` | Draws one pose's mask. |
-| `releasePosePersonMask` | Gives a mask back so it can be freed. |
-
-### Record and replay
-
-| Export | What it does |
-|---|---|
-| `createPoseRecorder`, `createPoseDetectionRecorder`, `copyPoseRecording`, `copyPoseDetectionRecording` (core) | Bounded recorders and copies. |
-| `serializePoseRecording`, `parsePoseRecording`, `serializePoseDetectionRecording`, `parsePoseDetectionRecording`, `PoseRecording`, `PoseDetectionRecording`, `PoseRecorderStatus` (core) | Save and load recordings. |
-| `usePoseReplay`, `createPoseReplay`, `createPoseDetectionReplay`, `PoseReplay`, `PoseReplayCallbacks`, `PoseReplayState`, `PoseReplayStatus` | Play a recording back. The hook is main entry only. |
-
-## Platforms and limits
-
-- iOS and Android development builds only. Expo Go and browsers are not supported. A bare React Native app needs [Expo modules installed](https://docs.expo.dev/bare/installing-expo-modules/).
-- Only the full pose model is bundled. Lite and heavy need a local model file.
-- Pose indices are not persistent identities.
-- The library does not count reps, score exercises or judge medical accuracy. Your app does that.
-- Native builds, behavior tests and public photo and video fixtures check the integration. They do not prove physical-camera alignment or long-session speed.
-
-## FAQ
-
-<details>
-<summary>What does it add to MediaPipe?</summary>
-
-A React Native camera component, typed events, skeleton styling, named geometry, rule hooks, photo and video analysis and person mask ownership. It uses Google's official MediaPipe Tasks SDKs and model as they are, so it adds no new model and claims no better accuracy.
-
-</details>
-
-<details>
-<summary>Is it a drop-in replacement for ThinkSys/mediapipe-reactnative?</summary>
-
-No. Replace `RNMediapipe` with `PoseCameraView`, use the camera props and `SkeletonOptions`, then rebuild and check your overlay coordinates.
-
-</details>
-
-<details>
-<summary>Can I use it from a Swift-only or Kotlin-only app?</summary>
-
-No. The Swift and Kotlin code is the Expo bridge, not a separate SDK. For a fully native app, start with Google's [iOS](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/ios) or [Android](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/android) guide.
-
-</details>
-
-<details>
-<summary>Do frames leave the phone?</summary>
-
-No. Inference runs on the phone, and the library uploads nothing and downloads no model. Recordings hold landmarks and metadata, not camera video.
-
-</details>
-
-<details>
-<summary>Does a pose index follow the same person across frames?</summary>
-
-No. `poseIndex` picks within one result only. Reset rules and tracking when your selection changes.
-
-</details>
-
-<details>
-<summary>Why do person mask results report backpressure?</summary>
-
-At most two mask leases can be open per module. Call `releasePosePersonMask` when you finish with one, including on errors and unmount.
-
-</details>
-
-<details>
-<summary>How do I add the Agent Skill to my coding agent?</summary>
-
-The repo ships an [Agent Skill](skills/expo-mediapipe-pose/SKILL.md) with install steps, a minimal camera, common tasks and common mistakes:
-
-```sh
-npx skills add YosefHayim/expo-mediapipe-pose
-```
-
-[llms.txt](llms.txt) is a short reading list for tools that accept it.
-
-</details>
-
-## Contributing
-
-Use Node 24 (`nvm use`) and the pinned pnpm.
-
-```sh
-pnpm install --frozen-lockfile
-pnpm check
-```
-
-`pnpm check` runs [Biome](https://biomejs.dev/), [knip](https://knip.dev/), typecheck, tests and builds through [Turborepo](https://turborepo.dev/). The [native fixture runner](example/fixtures/README.md) runs real SDK inference on public images and videos. Read [AGENTS.md](AGENTS.md) for the folder layout and the rules for changes. Report bugs with device, OS, SDK and model details in [GitHub Issues](https://github.com/YosefHayim/expo-mediapipe-pose/issues).
-
-## License
-
-[MIT](LICENSE). This project grew from [ThinkSys/mediapipe-reactnative](https://github.com/ThinkSys/mediapipe-reactnative); its attribution and the MediaPipe notices are kept in [third-party notices](THIRD_PARTY_NOTICES.md). The native inference SDKs and the pose model come from Google.
+The bundled models are Google's float16 pose landmarker lite, full, and heavy, version 1. Checksums are checked in `src/package-contents.test.ts`.

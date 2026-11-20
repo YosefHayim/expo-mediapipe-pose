@@ -1,43 +1,25 @@
 # expo-mediapipe-pose
 
-> Community-maintained on-device pose detection for Expo and React Native, using Google's MediaPipe Tasks SDKs with native Swift/iOS and Kotlin/Android implementations.
+> Community on-device pose landmarks for Expo and React Native, using Google's MediaPipe Pose Landmarker. Not an official Google or Expo package.
 
-Use this library for camera pose events, customizable skeletons, named geometry, developer-defined feedback, local image/video inference, landmark recording/replay and opt-in person masks. It is not an official Google/Expo package, a new pose model, or a medical assessment system.
+The app reads named joints such as `landmarks.leftWrist`. The package draws the skeleton. Live camera, photo, and video all return a `PoseFrame`. Expo Go is unsupported. Use a development build.
 
-The supported consumer API is TypeScript for Expo/React Native. Native inference requires an iOS/Android development build with compatible Expo modules; Expo Go and browser inference are unsupported. The internal Swift/Kotlin bridge is not a standalone native SDK distribution. The core entry point provides pure helpers, not inference.
-
-Install expo-mediapipe-pose@^0.5.0 from npm. Version matters: main may advance independently. The older v0.2.0 GitHub tag contains the earlier camera API.
-
-Coordinates, missing/unknown states, pose-index identity limits, cancellation and person mask lease ownership are part of the API contract. Physical-device performance, persistent person identity, repetition counting, exercise scoring and medical accuracy must not be inferred from build or fixture success. Landmark recordings do not contain camera video or mask files.
+Install `expo-mediapipe-pose` and peer `react-native-svg`. The three pose models (lite, full, heavy) are bundled. Full is the default.
 
 ## Start here
 
-- [Agent Skill](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/skills/expo-mediapipe-pose/SKILL.md): Exact install steps, a minimal camera example, common tasks and common mistakes, written for coding agents.
-- [README](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/README.md): Why, features, install, hello world, guides, API reference by job, limits and FAQ.
-
-## README sections
-
-- [Hello world](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#hello-world): The six-step starter app in hello-world/.
-- [Guides](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#guides): Show a pose camera, style the skeleton, rules, angles, photos and videos, record and replay, person mask.
-- [API reference](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#api-reference): Every export grouped by job.
-- [Show a pose camera](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#show-a-pose-camera): Minimal PoseCameraView with permission, facing and frame limit.
-- [Style joints and body parts](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#style-joints-and-body-parts): Skeleton options for joints, connections and body parts.
-- [React to a condition](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#react-to-a-condition): usePoseRule with hold time, stale input and unknown states.
-- [FAQ](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#faq): Platform support, privacy, models, pose indices and person mask leases.
+- [README](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md): Install, permission, camera, landmarks, skeleton, photo, video, models, and failures.
+- [Show a pose camera](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#show-a-pose-camera): `requestCameraPermission` once, then `PoseCameraView`.
+- [Camera permission](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#camera-permission): Config plugin sentence, then one runtime dialog.
+- [Named landmarks](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#named-landmarks): 33 names, null when missing, world landmarks in meters.
+- [Photo and video](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#photo-and-video): `readPosePhoto` and `readPoseVideo`.
+- [Failures](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/README.md#failures): `onPoseFailure` reasons. An empty pose is not a failure.
 
 ## Project files
 
-- [Changelog](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/CHANGELOG.md): Release history and compatibility notes.
-- [Agent instructions](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/AGENTS.md): Repository layout, domain rules and checks for contributors and agents.
-- [Hello world app](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/hello-world/app.tsx): One screen with numbered steps: permission, rule, landmarks, camera, skeleton color.
-- [Example application](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/app.tsx): Camera permissions, lifecycle controls, feedback and entry points for photo and video analysis.
-- [Photo and person mask example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/photo-panel.tsx): Local photo inference, pose selection, person mask display and cleanup.
-- [Video example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/video-panel.tsx): Sampled local-video inference, progress and cancellation.
-- [Replay example](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/replay-panel.tsx): Recording and replay of landmark sessions.
-- [Native fixture guide](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/example/fixtures/README.md): Public fixture provenance, cold-launch checks and person mask pixel verification; these do not establish physical-camera performance.
+- [Changelog](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/CHANGELOG.md)
+- [Agent instructions](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/AGENTS.md)
+- [Example app](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/example/app.tsx)
+- [Fixture notes](https://github.com/YosefHayim/expo-mediapipe-pose/blob/main/example/fixtures/README.md)
 
-## Upstream and licensing
-
-- [Google Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker): Official underlying model and SDK overview.
-- [License](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/LICENSE): Repository MIT license.
-- [Third-party notices](https://raw.githubusercontent.com/YosefHayim/expo-mediapipe-pose/main/THIRD_PARTY_NOTICES.md): ThinkSys ancestry and Google SDK and model attribution.
+Pose index is not a person id. Do not infer device performance or medical accuracy from a successful build.

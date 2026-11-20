@@ -9,15 +9,20 @@ internal struct PoseImageOptions: Record {
   @Field var maxPoses: Int = 1
   @Field var modelVariant: String = "full"
   @Field var modelPath: String? = nil
+  @Field var poseDelegate: String = "gpu"
   @Field var maxImageDimension: Int = 2048
-  @Field var minPoseDetectionConfidence: Double = 0.35
-  @Field var minPosePresenceConfidence: Double = 0.35
+  @Field var minPoseDetectionConfidence: Double = 0.5
+  @Field var minPosePresenceConfidence: Double = 0.5
+  @Field var minTrackingConfidence: Double = 0.5
 
   func validate() throws {
     guard (64...512).contains(maskMaxDimension) else { throw PoseMediaError.invalidOptions }
     guard (1...6).contains(maxPoses) else { throw PoseMediaError.invalidOptions }
     guard (256...2048).contains(maxImageDimension) else { throw PoseMediaError.invalidOptions }
-    let confidences = [minPoseDetectionConfidence, minPosePresenceConfidence]
+    guard ["gpu", "cpu"].contains(poseDelegate) else { throw PoseMediaError.invalidOptions }
+    let confidences = [
+      minPoseDetectionConfidence, minPosePresenceConfidence, minTrackingConfidence,
+    ]
     guard confidences.allSatisfy({ $0.isFinite && (0...1).contains($0) }) else {
       throw PoseMediaError.invalidOptions
     }
@@ -25,9 +30,7 @@ internal struct PoseImageOptions: Record {
 }
 
 internal enum PoseImageAnalysis {
-  static func analyze(_ location: String, options: PoseImageOptions, masks: PoseMaskStore) throws
-    -> [String: Any]
-  {
+  static func analyze(_ location: String, options: PoseImageOptions) throws -> [String: Any] {
     try autoreleasepool {
       try options.validate()
       let url = try PoseModel.localURL(location)
@@ -61,27 +64,23 @@ internal enum PoseImageAnalysis {
       let configuration = PoseLandmarkerOptions()
       configuration.baseOptions.modelAssetPath = try PoseModel.path(
         variant: options.modelVariant, localPath: options.modelPath)
-      configuration.baseOptions.delegate = .CPU
+      configuration.baseOptions.delegate = try PoseModel.pickDelegate(options.poseDelegate)
       configuration.runningMode = .image
       configuration.numPoses = options.maxPoses
-      configuration.shouldOutputSegmentationMasks = options.personMaskEnabled
+      configuration.shouldOutputSegmentationMasks = false
       configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
       configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
+      configuration.minTrackingConfidence = Float(options.minTrackingConfidence)
       let detector = try PoseLandmarker(options: configuration)
       let image = try MPImage(uiImage: UIImage(cgImage: pixels))
       let started = ProcessInfo.processInfo.systemUptime
       let result = try detector.detect(image: image)
       let duration = (ProcessInfo.processInfo.systemUptime - started) * 1000
       var payload = try PoseLandmarkPayload.make(result)
-      if options.personMaskEnabled {
-        payload["personMask"] = try masks.save(
-          result, width: pixels.width, height: pixels.height,
-          maximumDimension: options.maskMaxDimension)
-      }
       payload["imageSize"] = ["width": pixels.width, "height": pixels.height]
       payload["inferenceDurationMs"] = duration
       payload["model"] = [
-        "variant": options.modelVariant, "delegate": "CPU",
+        "variant": options.modelVariant, "delegate": options.poseDelegate,
         "source": options.modelPath == nil ? "bundled" : "local",
       ]
       return payload

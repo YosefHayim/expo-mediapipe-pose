@@ -4,13 +4,10 @@
 		".": {
 			"entry": [
 				"src/index.ts",
-				"src/core.ts",
 				"src/**/*.test.ts",
-				"src/testing/*.ts"
+				"plugin/set-ios-camera-usage-text.ts",
+				"app.plugin.js"
 			]
-		},
-		"hello-world": {
-			"entry": ["app.tsx"]
 		}
 	}
 }

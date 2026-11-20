@@ -19,14 +19,16 @@ internal class PoseImageOptions : Record {
     @Field var maxPoses: Int = 1
     @Field var modelVariant: String = "full"
     @Field var modelPath: String? = null
+    @Field var poseDelegate: String = "gpu"
     @Field var maxImageDimension: Int = 2048
-    @Field var minPoseDetectionConfidence: Double = 0.35
-    @Field var minPosePresenceConfidence: Double = 0.35
+    @Field var minPoseDetectionConfidence: Double = 0.5
+    @Field var minPosePresenceConfidence: Double = 0.5
 
     fun validate() {
         require(maskMaxDimension in 64..512)
         require(maxPoses in 1..6)
         require(maxImageDimension in 256..2048)
+        require(poseDelegate in listOf("gpu", "cpu"))
         val confidences = listOf(minPoseDetectionConfidence, minPosePresenceConfidence)
         require(confidences.all { it.isFinite() && it in 0.0..1.0 })
     }
@@ -37,17 +39,22 @@ internal object PoseImageAnalysis {
         context: Context,
         location: String,
         options: PoseImageOptions,
-        masks: PoseMaskStore,
     ): Map<String, Any> {
         options.validate()
         val pixels = decode(PoseModel.localFile(location), options.maxImageDimension)
         try {
             val configuration =
                 PoseLandmarker.PoseLandmarkerOptions.builder()
-                    .setBaseOptions(PoseModel.options(options.modelVariant, options.modelPath))
+                    .setBaseOptions(
+                        PoseModel.options(
+                            options.modelVariant,
+                            options.modelPath,
+                            options.poseDelegate,
+                        )
+                    )
                     .setRunningMode(RunningMode.IMAGE)
                     .setNumPoses(options.maxPoses)
-                    .setOutputSegmentationMasks(options.personMaskEnabled)
+                    .setOutputSegmentationMasks(false)
                     .setMinPoseDetectionConfidence(options.minPoseDetectionConfidence.toFloat())
                     .setMinPosePresenceConfidence(options.minPosePresenceConfidence.toFloat())
                     .build()
@@ -60,21 +67,7 @@ internal object PoseImageAnalysis {
                     outputMasks = result.segmentationMasks().orElse(emptyList())
                     val duration = (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
                     val landmarkPayload = PoseLandmarkPayload.make(result)
-                    val personMask =
-                        if (options.personMaskEnabled)
-                            mapOf(
-                                "personMask" to
-                                    masks.save(
-                                        context,
-                                        result,
-                                        pixels.width,
-                                        pixels.height,
-                                        options.maskMaxDimension,
-                                    )
-                            )
-                        else emptyMap()
                     return landmarkPayload +
-                        personMask +
                         mapOf(
                             "imageSize" to
                                 mapOf("width" to pixels.width, "height" to pixels.height),
@@ -82,7 +75,7 @@ internal object PoseImageAnalysis {
                             "model" to
                                 mapOf(
                                     "variant" to options.modelVariant,
-                                    "delegate" to "CPU",
+                                    "delegate" to options.poseDelegate,
                                     "source" to
                                         if (options.modelPath == null) "bundled" else "local",
                                 ),

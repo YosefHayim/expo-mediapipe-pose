@@ -1,371 +1,187 @@
-import { useCameraPermissions } from "expo-camera";
 import {
-	composeSkeletonFeedback,
-	createPoseRecorder,
-	createThresholdRule,
-	getImageJointAngle,
-	type InferenceError,
 	PoseCameraView,
+	type PoseFailure,
 	type PoseFrame,
-	type PosePerformanceMetrics,
-	type PoseRecording,
-	usePoseRules,
-	usePoseTracking,
+	type PoseModel,
+	requestCameraPermission,
 } from "expo-mediapipe-pose";
-import * as React from "react";
-import {
-	AppState,
-	Button,
-	Linking,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
-import {
-	createJointFeedbackStyles,
-	feedbackLabels,
-	trackingLabels,
-} from "@/rules/pose-feedback";
-import { raisedArmRule } from "@/rules/pose-rules";
-import { CameraControls, type CameraSelection } from "./camera-controls";
-import { PhotoPanel } from "./photo-panel";
-import { ReplayPanel } from "./replay-panel";
-import { VideoPanel } from "./video-panel";
+import { useState } from "react";
+import { Button, Pressable, StyleSheet, Text, View } from "react-native";
 
-const wristFeedback = createJointFeedbackStyles("leftWrist");
-const elbowFeedback = createJointFeedbackStyles("leftElbow");
+const POSE_MODELS: PoseModel[] = ["lite", "full", "heavy"];
+const FRAME_RATES = [15, 30, 60];
 
-const App = () => {
-	const [permission, requestPermission] = useCameraPermissions();
-	const [cameraSelection, setCameraSelection] =
-		React.useState<CameraSelection | null>(null);
-	const [recorder] = React.useState(() =>
-		createPoseRecorder({ maxFrames: 300 }),
-	);
-	const [recording, setRecording] = React.useState<PoseRecording | null>(null);
-	const [recordingActive, setRecordingActive] = React.useState(false);
-	const [recordingError, setRecordingError] = React.useState<string | null>(
-		null,
-	);
-	const [mediaMode, setMediaMode] = React.useState<
-		"camera" | "photo" | "video"
-	>("camera");
-	const [paused, setPaused] = React.useState(false);
-	const [foreground, setForeground] = React.useState(
-		AppState.currentState === "active",
-	);
-	const [failure, setFailure] = React.useState<InferenceError | null>(null);
-	const [cameraKey, setCameraKey] = React.useState(0);
-	const [frameLimit, setFrameLimit] = React.useState(15);
-	const [metrics, setMetrics] = React.useState<PosePerformanceMetrics | null>(
-		null,
-	);
-	const liveCameraVisible = recording === null && mediaMode === "camera";
-	const cameraInForeground = foreground && liveCameraVisible;
-	const isActive = cameraInForeground && !paused;
-	const displayedMetrics = isActive ? metrics : null;
-	const [wasActive, setWasActive] = React.useState(isActive);
-	if (wasActive !== isActive) {
-		setWasActive(isActive);
-		const isInactive = !isActive;
-		if (isInactive) setMetrics(null);
-	}
-	const feedback = usePoseRules({
-		raisedArm: {
-			...raisedArmRule,
-			isActive,
-		},
-		elbowBend: createThresholdRule({
-			landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
-			isActive,
-			holdMs: 250,
-			direction: "below",
-			enterThreshold: 85,
-			exitThreshold: 95,
-			measure: (_pose, frame) => {
-				const angle = getImageJointAngle(
-					{ landmarks: frame.landmarks, imageSize: frame.additionalData },
-					"leftShoulder",
-					"leftElbow",
-					"leftWrist",
-				);
+type CameraPermission = "unknown" | "granted" | "denied";
 
-				const isAngleStatusUnavailable = angle.status === "unavailable";
-				if (isAngleStatusUnavailable) return null;
+export function App() {
+	const [cameraPermission, setCameraPermission] =
+		useState<CameraPermission>("unknown");
+	const [poseModel, setPoseModel] = useState<PoseModel>("full");
+	const [poseFrameRate, setPoseFrameRate] = useState(30);
+	const [poseFrame, setPoseFrame] = useState<PoseFrame | null>(null);
+	const [failureReason, setFailureReason] = useState<string | null>(null);
 
-				return angle.value;
-			},
-		}),
-	});
-	const feedbackSkeleton = composeSkeletonFeedback(
-		{
-			color: "#94a3b8",
-			bodyParts: ["leftArm", "torso"],
-			joints: { leftWrist: { radius: 8 } },
-		},
-		[
-			{ status: feedback.statuses.raisedArm, styles: wristFeedback },
-			{ status: feedback.statuses.elbowBend, styles: elbowFeedback },
-		],
-	);
-	const tracking = usePoseTracking({
-		landmarks: ["leftShoulder", "leftElbow", "leftWrist"],
-		isActive,
-		holdMs: 400,
-	});
-	const handleLandmark = React.useCallback(
-		(frame: PoseFrame) => {
-			tracking.update(frame);
-			feedback.update(frame);
-			try {
-				const isFrameNotRecorded = !recorder.append(frame);
-				if (isFrameNotRecorded) return;
-			} catch (error) {
-				setRecordingError(String(error));
-				setRecordingActive(false);
-				setRecording(recorder.stop());
-				return;
-			}
-
-			const isRecorderStatusNotFull = recorder.status !== "full";
-			if (isRecorderStatusNotFull) return;
-
-			setRecordingActive(false);
-			setRecording(recorder.stop());
-		},
-		[tracking.update, feedback.update, recorder],
-	);
-
-	React.useEffect(() => {
-		const subscription = AppState.addEventListener("change", (appStatus) =>
-			setForeground(appStatus === "active"),
-		);
-		setForeground(AppState.currentState === "active");
-		return () => subscription.remove();
-	}, []);
-
-	const isMediaModeVideo = mediaMode === "video";
-	const handleVideoPanelClose = () => setMediaMode("camera");
-
-	if (isMediaModeVideo)
-		return (
-			<View style={styles.screen}>
-				<VideoPanel onClose={handleVideoPanelClose} />
-			</View>
-		);
-
-	const isMediaModePhoto = mediaMode === "photo";
-	const handlePhotoPanelClose = () => setMediaMode("camera");
-
-	if (isMediaModePhoto)
-		return (
-			<View style={styles.screen}>
-				<PhotoPanel onClose={handlePhotoPanelClose} />
-			</View>
-		);
-
-	const isPermissionMissing = permission == null;
-	if (isPermissionMissing)
-		return (
-			<View style={styles.screen}>
-				<Text style={styles.label}>Checking camera permission…</Text>
-			</View>
-		);
-
-	const isPermissionDenied = !permission.granted;
-	const handleNoCameraVideoPress = () => setMediaMode("video");
-
-	const handleNoCameraPhotoPress = () => setMediaMode("photo");
-
-	if (isPermissionDenied) {
-		const permissionAction = permission.canAskAgain
-			? requestPermission
-			: Linking.openSettings;
-		const permissionLabel = permission.canAskAgain
-			? "Allow camera"
-			: "Open settings";
-		return (
-			<View style={styles.screen}>
-				<Text style={styles.label}>
-					Pose detection runs on your device. Camera access is required for live
-					detection. Local file analysis does not need it.
-				</Text>
-				<Button
-					title="Analyze a local video"
-					disabled={recordingActive}
-					onPress={handleNoCameraVideoPress}
-				/>
-				<Button title={permissionLabel} onPress={permissionAction} />
-				<Button
-					title="Analyze a local photo"
-					disabled={recordingActive}
-					onPress={handleNoCameraPhotoPress}
-				/>
-			</View>
-		);
-	}
-
-	const handleRecordingClose = () => setRecording(null);
-
-	if (recording)
-		return (
-			<View style={styles.screen}>
-				<ReplayPanel
-					notice={recordingError}
-					recording={recording}
-					onClose={handleRecordingClose}
-				/>
-			</View>
-		);
-
-	const isCameraReady = cameraSelection !== null && isActive;
-	const canToggleRecording = recordingActive || isCameraReady;
-	const toggleRecording = () => {
-		if (recordingActive) {
-			setRecordingActive(false);
-			setRecording(recorder.stop());
-			return;
+	async function handleAllowPress() {
+		try {
+			const permission = await requestCameraPermission();
+			setCameraPermission(permission);
+		} catch (error) {
+			setFailureReason("The camera permission dialog failed.");
+			console.error({ error });
 		}
+	}
 
-		setRecordingError(null);
-		recorder.start();
-		setRecordingActive(true);
-	};
+	function handlePoseFrame(nextFrame: PoseFrame) {
+		setPoseFrame(nextFrame);
+		setFailureReason(null);
+	}
 
-	const selectCamera = (selection: CameraSelection) => {
-		setMetrics(null);
-		feedback.reset();
-		tracking.reset();
-		setCameraSelection(selection);
-		setFailure(null);
-		setCameraKey((previous) => previous + 1);
-	};
-	const retryCamera = () => {
-		setMetrics(null);
-		setFailure(null);
-		feedback.reset();
-		tracking.reset();
-		setCameraKey((previous) => previous + 1);
-	};
-	const resetAfterFailure = (error: InferenceError) => {
-		setMetrics(null);
-		feedback.reset();
-		tracking.reset();
-		setFailure(error);
-	};
-	const resetAfterConfiguration = () => {
-		setMetrics(null);
-		feedback.reset();
-		tracking.reset();
-		setFailure(null);
-	};
+	function handlePoseFailure(failure: PoseFailure) {
+		setFailureReason(failure.reason);
+	}
 
-	const pauseButtonLabel = paused ? "Resume" : "Pause";
+	function handleChoosePoseModel(nextModel: PoseModel) {
+		setPoseModel(nextModel);
+	}
 
-	const handleAnalyzePhotoPress = () => setMediaMode("photo");
+	function handleChooseFrameRate(nextFrameRate: number) {
+		setPoseFrameRate(nextFrameRate);
+	}
 
-	const handleAnalyzeVideoPress = () => setMediaMode("video");
+	function showModel(model: PoseModel) {
+		return (
+			<ModelChoice
+				key={model}
+				poseModel={model}
+				chosenPoseModel={poseModel}
+				onChoosePoseModel={handleChoosePoseModel}
+			/>
+		);
+	}
 
-	const handleFrameLimitPress = () =>
-		setFrameLimit((previous) => {
-			const isPreviousSkipFifteen = previous === 15;
-			return isPreviousSkipFifteen ? 30 : 15;
-		});
+	function showFrameRate(frameRate: number) {
+		return (
+			<FrameRateChoice
+				key={frameRate}
+				frameRate={frameRate}
+				chosenFrameRate={poseFrameRate}
+				onChooseFrameRate={handleChooseFrameRate}
+			/>
+		);
+	}
 
-	const handlePauseTogglePress = () => setPaused((isPaused) => !isPaused);
+	const isPermissionGranted = cameraPermission === "granted";
 
-	const hasCameraSelection = cameraSelection != null;
-	const hasNoCameraSelection = cameraSelection == null;
-	const hasDisplayedMetrics = displayedMetrics != null;
-	const hasFailure = failure != null;
+	if (!isPermissionGranted) {
+		return (
+			<View style={styles.screen}>
+				<Text style={styles.note}>{readPermissionNote(cameraPermission)}</Text>
+				<Button title="Allow camera" onPress={handleAllowPress} />
+			</View>
+		);
+	}
 
 	return (
 		<View style={styles.screen}>
-			<Text style={styles.title}>MediaPipe Pose</Text>
-			<Button
-				title="Analyze a local photo"
-				disabled={recordingActive}
-				onPress={handleAnalyzePhotoPress}
+			<PoseCameraView
+				style={styles.camera}
+				poseModel={poseModel}
+				poseFrameRate={poseFrameRate}
+				onPoseFrame={handlePoseFrame}
+				onPoseFailure={handlePoseFailure}
 			/>
-			<Button
-				title="Analyze a local video"
-				disabled={recordingActive}
-				onPress={handleAnalyzeVideoPress}
-			/>
-			<Text style={styles.label}>{trackingLabels[tracking.status]}</Text>
-			<Text style={styles.label}>
-				{feedbackLabels[feedback.statuses.raisedArm]}
-			</Text>
-			<Text style={styles.label}>
-				Elbow feedback: {feedback.statuses.elbowBend}
-			</Text>
-			{hasCameraSelection && (
-				<PoseCameraView
-					key={cameraKey}
-					style={styles.camera}
-					cameraFacing={cameraSelection.facing}
-					cameraLens={cameraSelection.lens}
-					isActive={isActive}
-					frameLimit={frameLimit}
-					previewFps={cameraSelection.previewFps}
-					callbackFps={5}
-					onPerformanceMetrics={setMetrics}
-					onLandmark={handleLandmark}
-					onCameraConfigured={resetAfterConfiguration}
-					onInferenceError={resetAfterFailure}
-					skeleton={feedbackSkeleton}
-				/>
-			)}
-			{hasNoCameraSelection && (
-				<Text style={styles.label}>
-					Choose an available camera below to start.
-				</Text>
-			)}
-			{hasDisplayedMetrics && (
-				<Text style={styles.label}>
-					Inference: {displayedMetrics.inferenceFps.toFixed(1)} fps · Results:{" "}
-					{displayedMetrics.resultFps.toFixed(1)} fps
-				</Text>
-			)}
-			<Button
-				title={`Inference limit: ${frameLimit} fps`}
-				onPress={handleFrameLimitPress}
-			/>
-			<Button
-				title={
-					recordingActive
-						? "Stop recording and replay"
-						: "Record up to 300 landmark frames"
-				}
-				onPress={toggleRecording}
-				disabled={!canToggleRecording}
-			/>
-			{hasFailure && (
-				<View>
-					<Text style={styles.label}>Camera error: {failure.code}</Text>
-					<Button title="Retry camera" onPress={retryCamera} />
-				</View>
-			)}
-			<CameraControls selection={cameraSelection} onSelect={selectCamera} />
-			<View style={styles.actions}>
-				<Button title={pauseButtonLabel} onPress={handlePauseTogglePress} />
-			</View>
+			<View style={styles.bar}>{POSE_MODELS.map(showModel)}</View>
+			<View style={styles.bar}>{FRAME_RATES.map(showFrameRate)}</View>
+			<Text style={styles.note}>{readWristNote(poseFrame)}</Text>
+			<Text style={styles.note}>{readFailureNote(failureReason)}</Text>
 		</View>
 	);
-};
+}
 
-export default App;
+interface ModelChoiceProps {
+	poseModel: PoseModel;
+	chosenPoseModel: PoseModel;
+	onChoosePoseModel: (nextModel: PoseModel) => void;
+}
+
+function ModelChoice({
+	poseModel,
+	chosenPoseModel,
+	onChoosePoseModel,
+}: ModelChoiceProps) {
+	function handlePress() {
+		onChoosePoseModel(poseModel);
+	}
+
+	const isChosen = poseModel === chosenPoseModel;
+	const label = isChosen ? `${poseModel} on` : poseModel;
+
+	return (
+		<Pressable onPress={handlePress} style={styles.choice}>
+			<Text style={styles.choiceLabel}>{label}</Text>
+		</Pressable>
+	);
+}
+
+interface FrameRateChoiceProps {
+	frameRate: number;
+	chosenFrameRate: number;
+	onChooseFrameRate: (nextFrameRate: number) => void;
+}
+
+function FrameRateChoice({
+	frameRate,
+	chosenFrameRate,
+	onChooseFrameRate,
+}: FrameRateChoiceProps) {
+	function handlePress() {
+		onChooseFrameRate(frameRate);
+	}
+
+	const isChosen = frameRate === chosenFrameRate;
+	const label = isChosen ? `${frameRate} fps on` : `${frameRate} fps`;
+
+	return (
+		<Pressable onPress={handlePress} style={styles.choice}>
+			<Text style={styles.choiceLabel}>{label}</Text>
+		</Pressable>
+	);
+}
+
+function readPermissionNote(cameraPermission: CameraPermission): string {
+	const isDenied = cameraPermission === "denied";
+
+	if (isDenied) return "Camera permission was denied.";
+
+	return "The pose camera needs permission.";
+}
+
+function readWristNote(poseFrame: PoseFrame | null): string {
+	const isMissing = poseFrame == null;
+
+	if (isMissing) return "No pose yet.";
+
+	const leftWrist = poseFrame.landmarks.leftWrist;
+	const isWristMissing = leftWrist == null;
+
+	if (isWristMissing) return "Left wrist is not visible.";
+
+	return `Left wrist ${leftWrist.x.toFixed(2)}, ${leftWrist.y.toFixed(2)}`;
+}
+
+function readFailureNote(failureReason: string | null): string {
+	const isMissing = failureReason == null;
+
+	if (isMissing) return "";
+
+	return failureReason;
+}
 
 const styles = StyleSheet.create({
-	screen: {
-		flex: 1,
-		backgroundColor: "#111827",
-		padding: 24,
-		paddingTop: 64,
-		gap: 16,
-	},
-	title: { color: "white", fontSize: 24, fontWeight: "600" },
-	label: { color: "white", fontSize: 16 },
-	camera: { flex: 1, borderRadius: 16 },
-	actions: { flexDirection: "row", justifyContent: "space-between" },
+	screen: { flex: 1, backgroundColor: "#09090b" },
+	camera: { flex: 1 },
+	bar: { flexDirection: "row", gap: 8, padding: 8 },
+	choice: { paddingVertical: 8, paddingHorizontal: 12 },
+	choiceLabel: { color: "#fafafa", fontSize: 16 },
+	note: { color: "#fafafa", paddingHorizontal: 12, paddingBottom: 8 },
 });

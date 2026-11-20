@@ -1,6 +1,4 @@
 import { registerRootComponent } from "expo";
-import { NativeChecks } from "@/checks/native-checks";
-import App from "./app";
-import { isNativeChecksEnabled } from "./environment";
+import { App } from "./app";
 
-registerRootComponent(isNativeChecksEnabled ? NativeChecks : App);
+registerRootComponent(App);

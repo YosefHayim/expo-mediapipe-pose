@@ -12,9 +12,7 @@ private final class PoseVideoSession {
   var lastTimestamp = -1
   var phase = Phase.ready
 
-  init(asset: AVAsset, durationMs: Double, options: PoseImageOptions, trackingConfidence: Double)
-    throws
-  {
+  init(asset: AVAsset, durationMs: Double, options: PoseImageOptions) throws {
     self.durationMs = durationMs
     self.options = options
     generator = AVAssetImageGenerator(asset: asset)
@@ -26,13 +24,13 @@ private final class PoseVideoSession {
     let configuration = PoseLandmarkerOptions()
     configuration.baseOptions.modelAssetPath = try PoseModel.path(
       variant: options.modelVariant, localPath: options.modelPath)
-    configuration.baseOptions.delegate = .CPU
+    configuration.baseOptions.delegate = try PoseModel.pickDelegate(options.poseDelegate)
     configuration.runningMode = .video
     configuration.numPoses = options.maxPoses
-    configuration.shouldOutputSegmentationMasks = options.personMaskEnabled
+    configuration.shouldOutputSegmentationMasks = false
     configuration.minPoseDetectionConfidence = Float(options.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(options.minPosePresenceConfidence)
-    configuration.minTrackingConfidence = Float(trackingConfidence)
+    configuration.minTrackingConfidence = Float(options.minTrackingConfidence)
     detector = try PoseLandmarker(options: configuration)
   }
 
@@ -43,7 +41,6 @@ private final class PoseVideoSession {
 }
 
 internal final class PoseVideoAnalysis {
-  let masks = PoseMaskStore()
   let worker = DispatchQueue(label: "expo.pose.media")
   private var session: PoseVideoSession?
   private var destroyed = false
@@ -61,10 +58,10 @@ internal final class PoseVideoAnalysis {
   func open(_ location: String, options: PoseImageOptions, trackingConfidence: Double) async throws
     -> [String: Any]
   {
-    try options.validate()
-    guard trackingConfidence.isFinite, (0...1).contains(trackingConfidence) else {
-      throw PoseMediaError.invalidOptions
-    }
+    var imageOptions = options
+    imageOptions.minTrackingConfidence = trackingConfidence
+    try imageOptions.validate()
+    let checkedOptions = imageOptions
     let asset = AVURLAsset(url: try PoseModel.localURL(location))
     let duration = try await asset.load(.duration)
     let tracks = try await asset.loadTracks(withMediaType: .video)
@@ -75,8 +72,7 @@ internal final class PoseVideoAnalysis {
     return try await onWorker {
       guard !self.destroyed, self.session == nil else { throw PoseMediaError.videoUnavailable }
       let opened = try PoseVideoSession(
-        asset: asset, durationMs: durationMs, options: options,
-        trackingConfidence: trackingConfidence)
+        asset: asset, durationMs: durationMs, options: checkedOptions)
       self.session = opened
       return ["id": opened.id, "durationMs": durationMs]
     }
@@ -110,15 +106,10 @@ internal final class PoseVideoAnalysis {
           let result = try detector.detect(videoFrame: image, timestampInMilliseconds: timestampMs)
           let inferenceDurationMs = (ProcessInfo.processInfo.systemUptime - started) * 1000
           var detection = try PoseLandmarkPayload.make(result)
-          if current.options.personMaskEnabled {
-            detection["personMask"] = try self.masks.save(
-              result, width: decoded.image.width, height: decoded.image.height,
-              maximumDimension: current.options.maskMaxDimension)
-          }
           detection["imageSize"] = ["width": decoded.image.width, "height": decoded.image.height]
           detection["inferenceDurationMs"] = inferenceDurationMs
           detection["model"] = [
-            "variant": current.options.modelVariant, "delegate": "CPU",
+            "variant": current.options.modelVariant, "delegate": current.options.poseDelegate,
             "source": current.options.modelPath == nil ? "bundled" : "local",
           ]
           current.phase = .ready

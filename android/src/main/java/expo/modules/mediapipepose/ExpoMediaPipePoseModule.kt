@@ -1,5 +1,6 @@
 package expo.modules.mediapipepose
 
+import expo.modules.interfaces.permissions.PermissionsStatus
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
@@ -9,24 +10,31 @@ import kotlinx.coroutines.withContext
 
 class ExpoMediaPipePoseModule : Module() {
     private val photoDispatcher = Dispatchers.Default.limitedParallelism(1)
-    private val masks = PoseMaskStore()
-    private val videos = PoseVideoAnalysis(masks)
+    private val videos = PoseVideoAnalysis()
 
     override fun definition() = ModuleDefinition {
         Name("ExpoMediaPipePose")
-        AsyncFunction("getCameraCapabilities") { promise: Promise ->
-            val context = appContext.reactContext
-            if (context == null) {
-                promise.reject("cameraCapabilities", "React context is unavailable", null)
+        AsyncFunction("requestCameraPermission") { promise: Promise ->
+            val permissions = appContext.permissions
+            if (permissions == null) {
+                promise.reject("cameraPermission", "Permissions module is unavailable", null)
                 return@AsyncFunction
             }
-            PoseCameraCapabilities.discover(context, promise)
+            permissions.askForPermissions(
+                { responses ->
+                    val cameraResponse = responses[android.Manifest.permission.CAMERA]
+                    val isGranted = cameraResponse?.status == PermissionsStatus.GRANTED
+                    val permission = if (isGranted) "granted" else "denied"
+                    promise.resolve(permission)
+                },
+                android.Manifest.permission.CAMERA,
+            )
         }
         AsyncFunction("analyzePoseImage") Coroutine
             { location: String, options: PoseImageOptions ->
                 val context = requireNotNull(appContext.reactContext).applicationContext
                 withContext(photoDispatcher) {
-                    PoseImageAnalysis.analyze(context, location, options, masks)
+                    PoseImageAnalysis.analyze(context, location, options)
                 }
             }
         AsyncFunction("openPoseVideo") {
@@ -48,13 +56,8 @@ class ExpoMediaPipePoseModule : Module() {
         AsyncFunction("closePoseVideo") { id: String, promise: Promise ->
             videos.close(id, promise)
         }
-        AsyncFunction("releasePosePersonMask") Coroutine
-            { id: String ->
-                withContext(Dispatchers.IO) { masks.release(id) }
-            }
         OnDestroy {
             videos.destroy()
-            masks.destroy()
         }
         View(ExpoMediaPipePoseView::class) {
             Events("onCameraConfigured", "onLandmark", "onInferenceError", "onPerformanceMetrics")
@@ -97,6 +100,9 @@ class ExpoMediaPipePoseModule : Module() {
             Prop("poseModelAssetPath") { view: ExpoMediaPipePoseView, path: String? ->
                 view.options = view.options.copy(modelPath = path)
             }
+            Prop("poseDelegate") { view: ExpoMediaPipePoseView, poseDelegate: String ->
+                view.options = view.options.copy(poseDelegate = poseDelegate)
+            }
             Prop("minPoseDetectionConfidence") { view: ExpoMediaPipePoseView, confidence: Double ->
                 view.options = view.options.copy(minPoseDetectionConfidence = confidence)
             }
@@ -107,7 +113,6 @@ class ExpoMediaPipePoseModule : Module() {
                 view.options = view.options.copy(minTrackingConfidence = confidence)
             }
             OnViewDidUpdateProps { view: ExpoMediaPipePoseView ->
-                view.maskStore = masks
                 view.applyChanges()
             }
             OnViewDestroys { view: ExpoMediaPipePoseView -> view.destroy() }

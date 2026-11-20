@@ -12,7 +12,6 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   let onInferenceError = EventDispatcher()
 
   private let session = AVCaptureSession()
-  private var maskStore: PoseMaskStore?
   private let worker = DispatchQueue(label: "expo.modules.mediapipepose", qos: .userInitiated)
   private lazy var preview = AVCaptureVideoPreviewLayer(session: session)
   // Main-thread identity invalidates queued events as soon as props or lifecycle change.
@@ -90,10 +89,6 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
 
   @objc private func cameraFailed() { cameraInterrupted() }
 
-  func setMaskStore(_ store: PoseMaskStore) {
-    worker.async { self.maskStore = store }
-  }
-
   func applyChanges() {
     let applicationIsActive = UIApplication.shared.applicationState == .active
     let viewIsVisible = window != nil && !bounds.isEmpty
@@ -170,12 +165,12 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
     let configuration = PoseLandmarkerOptions()
     configuration.baseOptions.modelAssetPath = try PoseModel.path(
       variant: requested.modelVariant, localPath: requested.modelPath)
-    configuration.baseOptions.delegate = .GPU
+    configuration.baseOptions.delegate = try PoseModel.pickDelegate(requested.poseDelegate)
     // Sequential video inference on the capture worker keeps timestamps and metadata paired.
     // AVCaptureVideoDataOutput drops frames while this worker is busy.
     configuration.runningMode = .video
     configuration.numPoses = requested.maxPoses
-    configuration.shouldOutputSegmentationMasks = requested.personMaskEnabled
+    configuration.shouldOutputSegmentationMasks = false
     configuration.minPoseDetectionConfidence = Float(requested.minPoseDetectionConfidence)
     configuration.minPosePresenceConfidence = Float(requested.minPosePresenceConfidence)
     configuration.minTrackingConfidence = Float(requested.minTrackingConfidence)
@@ -285,16 +280,11 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
         "inferenceDurationMs": inferenceDurationMs,
         "poseCount": inference.landmarks.count, "luminance": try luminance(pixels),
         "thermalState": thermal,
-        "poseModelDelegate": "GPU", "poseModelVariant": requested.modelVariant,
+        "poseModelDelegate": requested.poseDelegate, "poseModelVariant": requested.modelVariant,
         "poseModelSource": requested.modelPath == nil ? "bundled" : "local",
       ]
       var event = try PoseLandmarkPayload.make(inference)
       event["additionalData"] = metadata
-      if requested.personMaskEnabled {
-        guard let maskStore else { throw PoseMediaError.maskUnavailable }
-        event["personMask"] = try maskStore.save(
-          inference, width: width, height: height, maximumDimension: requested.maskMaxDimension)
-      }
       emit(onLandmark, event, token: token)
     } catch {
       captureOptions = nil
@@ -335,12 +325,8 @@ final class ExpoMediaPipePoseView: ExpoView, AVCaptureVideoDataOutputSampleBuffe
   }
 
   private func emit(_ dispatcher: EventDispatcher, _ event: [String: Any], token: Int) {
-    let store = maskStore
     DispatchQueue.main.async { [weak self] in
-      guard let self, self.generation == token, self.requestedOptions != nil else {
-        store?.discard(event["personMask"] as? [String: Any])
-        return
-      }
+      guard let self, self.generation == token, self.requestedOptions != nil else { return }
       dispatcher(event)
     }
   }
