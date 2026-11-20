@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
@@ -37,12 +36,40 @@ function listPackedFiles(): string[] {
 	if (isPackFailed) {
 		throw new Error(`npm pack failed: ${reply.stderr}`);
 	}
-	const packedPackages: Record<string, PackedFileList> = JSON.parse(
-		reply.stdout,
-	);
-	const firstList = packedPackages[manifest.name];
-	assert.ok(firstList, "npm pack must report this package");
-	return firstList.files.map((file) => file.path);
+	const packedReport: unknown = JSON.parse(reply.stdout);
+	const packedList = readPackedFileList(packedReport);
+	const isListMissing = packedList == null;
+	if (isListMissing) {
+		throw new Error("npm pack must report this package");
+	}
+	return packedList.files.map((file) => file.path);
+}
+
+// npm 11 returns an array. npm 12 returns an object keyed by package name.
+function readPackedFileList(packedReport: unknown): PackedFileList | null {
+	const isNpm11List = Array.isArray(packedReport);
+
+	if (isNpm11List) {
+		function isThisPackage(packageReport: { name?: string }) {
+			return packageReport.name === manifest.name;
+		}
+
+		const namedPackage = packedReport.find(isThisPackage) ?? null;
+		return namedPackage as PackedFileList | null;
+	}
+
+	const isMissing = packedReport == null;
+
+	if (isMissing) return null;
+
+	const isRecord = typeof packedReport === "object";
+
+	if (!isRecord) return null;
+
+	const namedPackage = (packedReport as Record<string, PackedFileList>)[
+		manifest.name
+	];
+	return namedPackage ?? null;
 }
 
 function listNativeSourceFiles(): string[] {
