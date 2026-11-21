@@ -11,6 +11,11 @@ import { readPoseFrame } from "../landmarks/pose-frame";
 import type { PoseDelegate, PoseModel } from "../pose-settings";
 import { readFrameRate, readPoseSettings } from "../pose-settings";
 import { PoseSkeleton } from "../skeleton/pose-skeleton";
+import {
+	readSkeletonJointLooks,
+	type SkeletonJointChoice,
+	type SkeletonRendering,
+} from "../skeleton/skeleton-joints";
 
 export type PoseFailureReason =
 	| "cameraPermission"
@@ -25,8 +30,6 @@ export interface PoseFailure {
 	reason: PoseFailureReason;
 }
 
-export type SkeletonRendering = "shown" | "hidden";
-
 export interface PoseCameraViewProps {
 	style?: ViewProps["style"];
 	isCameraRunning?: boolean;
@@ -40,6 +43,7 @@ export interface PoseCameraViewProps {
 	minTrackingConfidence?: number;
 	skeletonRendering?: SkeletonRendering;
 	skeletonColor?: string;
+	skeletonJoints?: readonly SkeletonJointChoice[];
 	onPoseFrame?: (poseFrame: PoseFrame) => void;
 	onPoseFailure?: (failure: PoseFailure) => void;
 }
@@ -76,6 +80,7 @@ export function PoseCameraView({
 	minTrackingConfidence = 0.5,
 	skeletonRendering = "shown",
 	skeletonColor = "#38bdf8",
+	skeletonJoints = [],
 	onPoseFrame,
 	onPoseFailure,
 }: PoseCameraViewProps): ReactElement {
@@ -143,12 +148,17 @@ export function PoseCameraView({
 	}
 
 	const previewFrameRate = 30;
-	const skeleton = showSkeleton(
+
+	readSkeletonJointLooks(skeletonJoints, skeletonColor);
+
+	const skeleton = showSkeleton({
 		skeletonRendering,
 		drawnFrame,
-		viewSize,
+		viewWidth: viewSize.width,
+		viewHeight: viewSize.height,
 		skeletonColor,
-	);
+		skeletonJoints,
+	});
 
 	return (
 		<View style={style} onLayout={handleLayout}>
@@ -173,25 +183,30 @@ export function PoseCameraView({
 	);
 }
 
-function showSkeleton(
-	skeletonRendering: SkeletonRendering,
-	drawnFrame: PoseFrame | null,
-	viewSize: { width: number; height: number },
-	skeletonColor: string,
-): ReactNode {
-	const isHidden = skeletonRendering == "hidden";
+interface ShownSkeleton {
+	skeletonRendering: SkeletonRendering;
+	drawnFrame: PoseFrame | null;
+	viewWidth: number;
+	viewHeight: number;
+	skeletonColor: string;
+	skeletonJoints: readonly SkeletonJointChoice[];
+}
+
+function showSkeleton(shown: ShownSkeleton): ReactNode {
+	const isHidden = shown.skeletonRendering == "hidden";
 
 	if (isHidden) return null;
 
+	const drawnFrame = shown.drawnFrame;
 	const isFrameMissing = drawnFrame == null;
 
 	if (isFrameMissing) return null;
 
-	const isWidthEmpty = viewSize.width <= 0;
+	const isWidthEmpty = shown.viewWidth <= 0;
 
 	if (isWidthEmpty) return null;
 
-	const isHeightEmpty = viewSize.height <= 0;
+	const isHeightEmpty = shown.viewHeight <= 0;
 
 	if (isHeightEmpty) return null;
 
@@ -199,9 +214,10 @@ function showSkeleton(
 		<View style={styles.skeleton} pointerEvents="none">
 			<PoseSkeleton
 				poseFrame={drawnFrame}
-				viewWidth={viewSize.width}
-				viewHeight={viewSize.height}
-				skeletonColor={skeletonColor}
+				viewWidth={shown.viewWidth}
+				viewHeight={shown.viewHeight}
+				skeletonColor={shown.skeletonColor}
+				skeletonJoints={shown.skeletonJoints}
 			/>
 		</View>
 	);

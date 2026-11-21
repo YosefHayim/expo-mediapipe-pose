@@ -5,10 +5,11 @@ Expo native pose landmarks on MediaPipe Pose Landmarker. Read [README.md](README
 ## Layout
 
 - `src/index.ts` is the only public import. There is no second entry.
-- `src/camera/`: `PoseCameraView` and `requestCameraPermission`.
+- `src/camera/`: `PoseCameraView`, `requestCameraPermission`, and `usePoseCamera`. The hook keeps the permission, the latest full pose, and the failure. Settings passed in are returned with defaults filled.
 - `src/landmarks/`: the 33 names and `PoseFrame` reading. Image pixels, world meters, and preview pixels stay different.
-- `src/skeleton/`: the bones and `PoseSkeleton`. Hiding the skeleton does not change landmarks or reload the landmarker.
+- `src/skeleton/`: the bones, `PoseSkeleton`, and `skeletonJoints`. Hiding the skeleton or one joint does not change landmarks or reload the landmarker. A bone is drawn only when both ends are shown and visible. Its color is the first joint's color.
 - `src/read-pose-file.ts`: `readPosePhoto` and `readPoseVideo`.
+- `src/use-pose-photo.ts` and `src/use-pose-video.ts`: store the photo frame, or the sampled video frames, and the failure message.
 - `src/pose-settings.ts`: model, delegate, pose count, confidences, and frame-rate checks.
 - `plugin/set-ios-camera-usage-text.ts`: writes only `NSCameraUsageDescription`. `app.plugin.js` loads the compiled plugin.
 - `ios/` and `android/src/main/java/expo/modules/mediapipepose/`: capture, file decoding, and the landmarker. Keep that work off the UI thread. Close Android `ImageProxy` and inference images. Drop events from an old camera generation.

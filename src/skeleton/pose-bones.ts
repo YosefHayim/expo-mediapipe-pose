@@ -3,7 +3,14 @@ import {
 	type LandmarkPoint,
 	type PoseFrame,
 	placeLandmarkInView,
+	type ViewSize,
 } from "../landmarks/pose-frame";
+import {
+	readJointLook,
+	readSkeletonJointLooks,
+	type SkeletonJointChoice,
+	type SkeletonJointLook,
+} from "./skeleton-joints";
 
 const POSE_CONNECTIONS: readonly (readonly [LandmarkName, LandmarkName])[] = [
 	["nose", "leftEyeInner"],
@@ -49,18 +56,22 @@ export interface PoseBoneLine {
 	y1: number;
 	x2: number;
 	y2: number;
+	color: string;
 }
 
 export interface PoseBoneJoint {
 	name: LandmarkName;
 	x: number;
 	y: number;
+	color: string;
 }
 
 export interface PoseDrawing {
 	poseFrame: PoseFrame;
 	viewWidth: number;
 	viewHeight: number;
+	skeletonColor: string;
+	skeletonJoints: readonly SkeletonJointChoice[];
 }
 
 export interface PoseBones {
@@ -68,7 +79,20 @@ export interface PoseBones {
 	joints: PoseBoneJoint[];
 }
 
+interface PlacedConnection {
+	poseFrame: PoseFrame;
+	image: ViewSize;
+	view: ViewSize;
+	connection: readonly [LandmarkName, LandmarkName];
+	looks: Map<LandmarkName, SkeletonJointLook>;
+	skeletonColor: string;
+}
+
 export function listPoseBones(drawing: PoseDrawing): PoseBones {
+	const looks = readSkeletonJointLooks(
+		drawing.skeletonJoints,
+		drawing.skeletonColor,
+	);
 	const image = {
 		width: drawing.poseFrame.imageWidth,
 		height: drawing.poseFrame.imageHeight,
@@ -77,21 +101,39 @@ export function listPoseBones(drawing: PoseDrawing): PoseBones {
 	const joints: PoseBoneJoint[] = [];
 
 	for (const landmarkName of LANDMARK_NAMES) {
-		const point = drawing.poseFrame.landmarks[landmarkName];
-		const isDrawn = isLandmarkDrawn(point);
+		const look = readJointLook(looks, landmarkName, drawing.skeletonColor);
+		const drawnPoint = readDrawnPoint(
+			drawing.poseFrame.landmarks[landmarkName],
+			look,
+		);
+		const isSkipped = drawnPoint == null;
 
-		if (!isDrawn) continue;
+		if (isSkipped) continue;
 
-		const placed = placeLandmarkInView(point, image, view);
-		joints.push({ name: landmarkName, x: placed.x, y: placed.y });
+		const placed = placeLandmarkInView(drawnPoint, image, view);
+
+		joints.push({
+			name: landmarkName,
+			x: placed.x,
+			y: placed.y,
+			color: look.color,
+		});
 	}
 
 	const lines: PoseBoneLine[] = [];
 
 	for (const connection of POSE_CONNECTIONS) {
-		const line = placeConnection(drawing.poseFrame, image, view, connection);
+		const line = placeConnection({
+			poseFrame: drawing.poseFrame,
+			image,
+			view,
+			connection,
+			looks,
+			skeletonColor: drawing.skeletonColor,
+		});
+		const isLineMissing = line == null;
 
-		if (line == null) continue;
+		if (isLineMissing) continue;
 
 		lines.push(line);
 	}
@@ -99,25 +141,25 @@ export function listPoseBones(drawing: PoseDrawing): PoseBones {
 	return { lines, joints };
 }
 
-function placeConnection(
-	poseFrame: PoseFrame,
-	image: { width: number; height: number },
-	view: { width: number; height: number },
-	connection: readonly [LandmarkName, LandmarkName],
-): PoseBoneLine | null {
-	const [fromName, toName] = connection;
-	const fromPoint = poseFrame.landmarks[fromName];
-	const toPoint = poseFrame.landmarks[toName];
-	const isFromDrawn = isLandmarkDrawn(fromPoint);
+function placeConnection(placed: PlacedConnection): PoseBoneLine | null {
+	const [fromName, toName] = placed.connection;
+	const fromLook = readJointLook(placed.looks, fromName, placed.skeletonColor);
+	const fromPoint = readDrawnPoint(
+		placed.poseFrame.landmarks[fromName],
+		fromLook,
+	);
+	const isFromSkipped = fromPoint == null;
 
-	if (!isFromDrawn) return null;
+	if (isFromSkipped) return null;
 
-	const isToDrawn = isLandmarkDrawn(toPoint);
+	const toLook = readJointLook(placed.looks, toName, placed.skeletonColor);
+	const toPoint = readDrawnPoint(placed.poseFrame.landmarks[toName], toLook);
+	const isToSkipped = toPoint == null;
 
-	if (!isToDrawn) return null;
+	if (isToSkipped) return null;
 
-	const fromPlaced = placeLandmarkInView(fromPoint, image, view);
-	const toPlaced = placeLandmarkInView(toPoint, image, view);
+	const fromPlaced = placeLandmarkInView(fromPoint, placed.image, placed.view);
+	const toPlaced = placeLandmarkInView(toPoint, placed.image, placed.view);
 
 	return {
 		name: `${fromName}:${toName}`,
@@ -125,7 +167,23 @@ function placeConnection(
 		y1: fromPlaced.y,
 		x2: toPlaced.x,
 		y2: toPlaced.y,
+		color: fromLook.color,
 	};
+}
+
+function readDrawnPoint(
+	point: LandmarkPoint | null,
+	look: SkeletonJointLook,
+): LandmarkPoint | null {
+	const isHidden = look.shown == "hidden";
+
+	if (isHidden) return null;
+
+	const isFaint = isLandmarkDrawn(point) == false;
+
+	if (isFaint) return null;
+
+	return point;
 }
 
 function isLandmarkDrawn(point: LandmarkPoint | null): point is LandmarkPoint {

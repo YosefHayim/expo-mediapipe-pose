@@ -6,12 +6,14 @@ import {
 	type PoseBoneJoint,
 	type PoseBoneLine,
 } from "./pose-bones";
+import type { SkeletonJointChoice } from "./skeleton-joints";
 
 export interface PoseSkeletonProps {
 	poseFrame: PoseFrame;
 	viewWidth: number;
 	viewHeight: number;
 	skeletonColor?: string;
+	skeletonJoints?: readonly SkeletonJointChoice[];
 }
 
 export function PoseSkeleton({
@@ -19,6 +21,7 @@ export function PoseSkeleton({
 	viewWidth,
 	viewHeight,
 	skeletonColor = "#38bdf8",
+	skeletonJoints = [],
 }: PoseSkeletonProps): ReactElement | null {
 	const isWidthEmpty = viewWidth <= 0;
 
@@ -28,7 +31,13 @@ export function PoseSkeleton({
 
 	if (isHeightEmpty) return null;
 
-	const drawing = listPoseBones({ poseFrame, viewWidth, viewHeight });
+	const drawing = listPoseBones({
+		poseFrame,
+		viewWidth,
+		viewHeight,
+		skeletonColor,
+		skeletonJoints,
+	});
 
 	function showBoneLine(line: PoseBoneLine) {
 		const boneWidth = 3;
@@ -40,7 +49,7 @@ export function PoseSkeleton({
 				y1={line.y1}
 				x2={line.x2}
 				y2={line.y2}
-				stroke={skeletonColor}
+				stroke={line.color}
 				strokeWidth={boneWidth}
 				strokeLinecap="round"
 			/>
@@ -56,7 +65,7 @@ export function PoseSkeleton({
 				cx={joint.x}
 				cy={joint.y}
 				r={jointRadius}
-				fill={skeletonColor}
+				fill={joint.color}
 			/>
 		);
 	}

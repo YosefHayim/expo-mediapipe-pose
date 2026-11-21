@@ -1,45 +1,33 @@
 import { registerRootComponent } from "expo";
 import {
+	type PoseCamera,
 	PoseCameraView,
 	type PoseFailure,
 	type PoseFrame,
 	type PoseModel,
-	requestCameraPermission,
+	type SkeletonJointChoice,
+	usePoseCamera,
 } from "expo-mediapipe-pose";
 import { type ReactElement, useState } from "react";
 import { Button, Pressable, StyleSheet, Text, View } from "react-native";
 
 const POSE_MODELS: PoseModel[] = ["lite", "full", "heavy"];
 const FRAME_RATES = [15, 30, 60];
-
-type CameraPermission = "unknown" | "granted" | "denied";
+const ARM_SKELETON_JOINTS: SkeletonJointChoice[] = [
+	{ landmarkName: "leftShoulder", color: "#f97316" },
+	{ landmarkName: "leftElbow", color: "#f97316" },
+	{ landmarkName: "rightShoulder", color: "#f97316" },
+	{ landmarkName: "rightElbow", color: "#f97316" },
+];
 
 export function App(): ReactElement {
-	const [cameraPermission, setCameraPermission] =
-		useState<CameraPermission>("unknown");
 	const [poseModel, setPoseModel] = useState<PoseModel>("full");
 	const [poseFrameRate, setPoseFrameRate] = useState(30);
-	const [poseFrame, setPoseFrame] = useState<PoseFrame | null>(null);
-	const [failureReason, setFailureReason] = useState<string | null>(null);
-
-	async function handleAllowPress() {
-		try {
-			const permission = await requestCameraPermission();
-			setCameraPermission(permission);
-		} catch (error) {
-			setFailureReason("The camera permission dialog failed.");
-			console.error({ error });
-		}
-	}
-
-	function handlePoseFrame(nextFrame: PoseFrame) {
-		setPoseFrame(nextFrame);
-		setFailureReason(null);
-	}
-
-	function handlePoseFailure(failure: PoseFailure) {
-		setFailureReason(failure.reason);
-	}
+	const camera = usePoseCamera({
+		poseModel,
+		poseFrameRate,
+		skeletonJoints: ARM_SKELETON_JOINTS,
+	});
 
 	function handleChoosePoseModel(nextModel: PoseModel) {
 		setPoseModel(nextModel);
@@ -71,13 +59,14 @@ export function App(): ReactElement {
 		);
 	}
 
-	const isPermissionGranted = cameraPermission == "granted";
+	const isClosed = camera.permission != "granted";
 
-	if (!isPermissionGranted) {
+	if (isClosed) {
 		return (
 			<View style={styles.screen}>
-				<Text style={styles.note}>{readPermissionNote(cameraPermission)}</Text>
-				<Button title="Allow camera" onPress={handleAllowPress} />
+				<Text style={styles.note}>{readPermissionNote(camera.permission)}</Text>
+				<Text style={styles.note}>{readFailureNote(camera.failure)}</Text>
+				<Button title="Allow camera" onPress={camera.askForCamera} />
 			</View>
 		);
 	}
@@ -86,15 +75,25 @@ export function App(): ReactElement {
 		<View style={styles.screen}>
 			<PoseCameraView
 				style={styles.camera}
-				poseModel={poseModel}
-				poseFrameRate={poseFrameRate}
-				onPoseFrame={handlePoseFrame}
-				onPoseFailure={handlePoseFailure}
+				isCameraRunning={camera.isCameraRunning}
+				cameraFacing={camera.cameraFacing}
+				poseModel={camera.poseModel}
+				poseDelegate={camera.poseDelegate}
+				maxPoseCount={camera.maxPoseCount}
+				poseFrameRate={camera.poseFrameRate}
+				minPoseDetectionConfidence={camera.minPoseDetectionConfidence}
+				minPosePresenceConfidence={camera.minPosePresenceConfidence}
+				minTrackingConfidence={camera.minTrackingConfidence}
+				skeletonRendering={camera.skeletonRendering}
+				skeletonColor={camera.skeletonColor}
+				skeletonJoints={camera.skeletonJoints}
+				onPoseFrame={camera.readFrame}
+				onPoseFailure={camera.readFailure}
 			/>
 			<View style={styles.bar}>{POSE_MODELS.map(showModel)}</View>
 			<View style={styles.bar}>{FRAME_RATES.map(showFrameRate)}</View>
-			<Text style={styles.note}>{readWristNote(poseFrame)}</Text>
-			<Text style={styles.note}>{readFailureNote(failureReason)}</Text>
+			<Text style={styles.note}>{readWristNote(camera.frame)}</Text>
+			<Text style={styles.note}>{readFailureNote(camera.failure)}</Text>
 		</View>
 	);
 }
@@ -149,8 +148,8 @@ function FrameRateChoice({
 	);
 }
 
-function readPermissionNote(cameraPermission: CameraPermission): string {
-	const isDenied = cameraPermission == "denied";
+function readPermissionNote(permission: PoseCamera["permission"]): string {
+	const isDenied = permission == "denied";
 
 	if (isDenied) return "Camera permission was denied.";
 
@@ -170,12 +169,12 @@ function readWristNote(poseFrame: PoseFrame | null): string {
 	return `Left wrist ${leftWrist.x.toFixed(2)}, ${leftWrist.y.toFixed(2)}`;
 }
 
-function readFailureNote(failureReason: string | null): string {
-	const isMissing = failureReason == null;
+function readFailureNote(failure: PoseFailure | null): string {
+	const isMissing = failure == null;
 
 	if (isMissing) return "";
 
-	return failureReason;
+	return failure.reason;
 }
 
 const styles = StyleSheet.create({

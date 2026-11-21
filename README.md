@@ -42,44 +42,64 @@ An app that does not prebuild must set `NSCameraUsageDescription` itself. The ca
 
 ## Show a pose camera
 
+`usePoseCamera` keeps the permission, the latest full pose, and the last failure. Pass the settings you want to control. It fills the defaults and returns those too, so the view can be filled from `camera`.
+
 ```tsx
-import { useState } from "react";
-import { Button, View } from "react-native";
-import {
-  PoseCameraView,
-  requestCameraPermission,
-  type PoseFrame,
-} from "expo-mediapipe-pose";
+import { Button } from "react-native";
+import { PoseCameraView, usePoseCamera } from "expo-mediapipe-pose";
 
 export function PoseScreen() {
-  const [isGranted, setIsGranted] = useState(false);
+  const camera = usePoseCamera({
+    isCameraRunning: true,
+    cameraFacing: "front",
+    poseModel: "full",
+    poseDelegate: "gpu",
+    maxPoseCount: 1,
+    poseFrameRate: 30,
+    minPoseDetectionConfidence: 0.5,
+    minPosePresenceConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+    skeletonRendering: "shown",
+    skeletonColor: "#38bdf8",
+    skeletonJoints: [
+      { landmarkName: "leftWrist", shown: "hidden" },
+      { landmarkName: "rightWrist", shown: "hidden" },
+      { landmarkName: "leftShoulder", color: "#f97316" },
+      { landmarkName: "leftElbow", color: "#f97316" },
+    ],
+  });
 
-  async function handleAllowPress() {
-    const permission = await requestCameraPermission();
-    setIsGranted(permission === "granted");
+  const isClosed = camera.permission != "granted";
+
+  if (isClosed) {
+    return <Button title="Allow camera" onPress={camera.askForCamera} />;
   }
-
-  if (!isGranted) return <Button title="Allow camera" onPress={handleAllowPress} />;
 
   return (
     <PoseCameraView
       style={{ flex: 1 }}
-      onPoseFrame={handlePoseFrame}
-      onPoseFailure={handlePoseFailure}
+      isCameraRunning={camera.isCameraRunning}
+      cameraFacing={camera.cameraFacing}
+      poseModel={camera.poseModel}
+      poseDelegate={camera.poseDelegate}
+      maxPoseCount={camera.maxPoseCount}
+      poseFrameRate={camera.poseFrameRate}
+      minPoseDetectionConfidence={camera.minPoseDetectionConfidence}
+      minPosePresenceConfidence={camera.minPosePresenceConfidence}
+      minTrackingConfidence={camera.minTrackingConfidence}
+      skeletonRendering={camera.skeletonRendering}
+      skeletonColor={camera.skeletonColor}
+      skeletonJoints={camera.skeletonJoints}
+      onPoseFrame={camera.readFrame}
+      onPoseFailure={camera.readFailure}
     />
   );
 }
-
-function handlePoseFrame(poseFrame: PoseFrame) {
-  console.log(poseFrame.landmarks.leftWrist);
-}
-
-function handlePoseFailure(failure: { reason: string }) {
-  console.log(failure.reason);
-}
 ```
 
-`isCameraRunning` defaults to true. `cameraFacing` defaults to `"front"`.
+`camera.frame` is the full pose: all 33 `landmarks`, `worldLandmarks`, every person in `poses`, the timestamp, the image size, and `cameraFacing`. `camera.frame.landmarks.leftWrist` is one joint. `camera.failure` is the last failure. A denied dialog sets `camera.permission` to `"denied"`. A dialog that fails sets `camera.failure.reason` to `cameraPermission`.
+
+Changing `poseModel` reloads the landmarker. Changing `poseFrameRate` does not. `requestCameraPermission()` is still there when you want the dialog without the hook.
 
 ## Named landmarks
 
@@ -93,6 +113,8 @@ function handlePoseFailure(failure: { reason: string }) {
 
 `skeletonRendering` is `"shown"` by default. `"hidden"` still calls `onPoseFrame`. The skeleton color defaults to `#38bdf8`. A joint is skipped when it is missing or its visibility is below 0.5.
 
+`skeletonJoints` lists joints to hide or recolor. A joint left off the list stays shown in `skeletonColor`. `shown: "hidden"` drops that joint from the drawing only. The pose still has the landmark. A bone is drawn when both ends are shown and visible. The line uses the first joint's color, or `skeletonColor` when that joint has none. The same list works on `PoseCameraView` and `PoseSkeleton`. Listing a name twice throws. List only the joints you want to change.
+
 A photo has no switch. Place `PoseSkeleton` on the image, or skip it.
 
 ```tsx
@@ -102,12 +124,55 @@ import { PoseSkeleton } from "expo-mediapipe-pose";
   poseFrame={poseFrame}
   viewWidth={width}
   viewHeight={height}
+  skeletonJoints={[
+    { landmarkName: "nose", color: "#fafafa" },
+    { landmarkName: "leftEye", shown: "hidden" },
+    { landmarkName: "rightEye", shown: "hidden" },
+  ]}
 />
 ```
 
 ## Photo and video
 
+`usePosePhoto` stores one frame. `usePoseVideo` stores every sampled frame, in order. `read` keeps the error message on `failure` instead of throwing. The functions are there when you want the frame back yourself.
+
 ```tsx
+export function PhotoScreen() {
+  const photo = usePosePhoto();
+  const poseFrame = photo.frame;
+  const isMissing = poseFrame == null;
+
+  async function handleReadPress() {
+    await photo.read({ path: photoPath, poseModel: "heavy" });
+  }
+
+  if (isMissing) return <Button title="Read photo" onPress={handleReadPress} />;
+
+  return (
+    <PoseSkeleton poseFrame={poseFrame} viewWidth={width} viewHeight={height} />
+  );
+}
+
+export function VideoScreen() {
+  const clip = usePoseVideo();
+  const shownFrame = clip.shownFrame;
+  const isMissing = shownFrame == null;
+
+  async function handleReadPress() {
+    await clip.read({ path: videoPath, sampleFrameRate: 5 });
+  }
+
+  if (isMissing) return <Button title="Read video" onPress={handleReadPress} />;
+
+  return (
+    <PoseSkeleton
+      poseFrame={shownFrame}
+      viewWidth={width}
+      viewHeight={height}
+    />
+  );
+}
+
 const photoFrame = await readPosePhoto({ path: photoPath });
 const videoFrames = await readPoseVideo({
   path: videoPath,
@@ -117,7 +182,7 @@ const videoFrames = await readPoseVideo({
 
 A photo has no frame rate. Video samples timestamps before MediaPipe's video mode, which does not drop frames. The default sample rate is 5. More than 1000 frames throws. Ask for a lower `sampleFrameRate`.
 
-A bad path throws, and the message includes that path. A still frame's `timestampMs` is 0.
+A bad path throws from `readPosePhoto` and `readPoseVideo`, and the message includes that path. The hooks store that same message on `failure`. A still frame's `timestampMs` is 0.
 
 ## Model and frame rate
 
