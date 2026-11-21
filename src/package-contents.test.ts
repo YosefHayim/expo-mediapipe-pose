@@ -253,7 +253,15 @@ function isFileMissing(file: string) {
 }
 
 function isUnexpectedPackPath(file: string) {
-	return /(^|\/)(node_modules|\.gradle|scripts|example|skills|hello-world)\//.test(
+	const isToolingPath =
+		/(^|\/)(node_modules|\.gradle|scripts|example|skills|hello-world)\//.test(
+			file,
+		);
+
+	if (isToolingPath) return true;
+
+	// Compiled files whose sources were removed in the lean cut.
+	return /^build\/(components|contracts|core|file-analysis|hooks|native-module|native|person-mask|pose|replay|rules|shared-contracts|tracking)(\/|\.)/.test(
 		file,
 	);
 }
