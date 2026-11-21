@@ -1,0 +1,31 @@
+// https://docs.expo.dev/guides/using-eslint/
+const { defineConfig } = require("eslint/config");
+const expoConfig = require("eslint-config-expo/flat");
+
+module.exports = defineConfig([
+	expoConfig,
+	{
+		ignores: [
+			"dist/*",
+			"build/**",
+			"plugin/build/**",
+		],
+	},
+	{
+		rules: {
+			// This package compares with ==, including == null.
+			eqeqeq: "off",
+		},
+	},
+	{
+		files: ["app.plugin.js"],
+		languageOptions: {
+			sourceType: "commonjs",
+			globals: {
+				require: "readonly",
+				module: "readonly",
+				exports: "readonly",
+			},
+		},
+	},
+]);

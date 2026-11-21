@@ -1,36 +1,32 @@
 {
 	"name": "expo-mediapipe-pose",
 	"version": "0.5.0",
-	"description": "On-device pose camera for Expo with customizable skeletons, named landmarks, and pose feedback rules.",
+	"description": "On-device MediaPipe pose landmarks for Expo, with a camera view, named joints, and a skeleton.",
 	"main": "build/index.js",
 	"types": "build/index.d.ts",
 	"files": [
 		"build",
 		"src",
 		"!src/**/*.test.ts",
-		"!src/testing/**",
 		"ios/*.swift",
 		"!ios/PoseFrameTimingTests.swift",
 		"android/src/main",
 		"android/build.gradle",
 		"assets",
-		"skills",
+		"app.plugin.js",
+		"plugin/build",
 		"ExpoMediaPipePose.podspec",
-		"expo-module.config.json",
-		"LICENSE",
-		"THIRD_PARTY_NOTICES.md",
-		"llms.txt",
-		"CHANGELOG.md"
+		"expo-module.config.json"
 	],
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json",
+		"build": "tsc -p tsconfig.build.json && tsc -p plugin/tsconfig.json",
 		"test": "vitest run && pnpm test:swift",
 		"test:watch": "vitest",
 		"test:swift": "node -e \"if(process.platform!=='darwin'){console.log('Swift frame-timing tests skipped: they run only on macOS.');process.exit(0)}const{mkdirSync}=require('fs'),{spawnSync}=require('child_process');mkdirSync('node_modules/.cache',{recursive:true});const o='node_modules/.cache/frame-timing-tests';const c=spawnSync('xcrun',['swiftc','ios/PoseFrameTiming.swift','ios/PoseFrameTimingTests.swift','-o',o],{stdio:'inherit'});if(c.status!==0)process.exit(1);process.exit(spawnSync(o,{stdio:'inherit'}).status??1)\"",
-		"lint": "biome check . && knip",
+		"lint": "biome check . && eslint src plugin app.plugin.js vitest.config.ts --max-warnings 0",
 		"lint:fix": "biome check --write .",
 		"typecheck": "tsc --noEmit",
-		"check": "turbo run lint typecheck test build --output-logs=errors-only",
+		"check": "pnpm build && pnpm lint && pnpm typecheck && pnpm test",
 		"prepack": "pnpm build",
 		"prepare": "husky && pnpm build"
 	},
@@ -50,17 +46,13 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.6",
-		"@types/jsdom": "30.0.0",
 		"@types/node": "24.19.2",
 		"@types/react": "19.3.0",
-		"@types/react-dom": "19.3.0",
+		"eslint": "9.39.5",
+		"eslint-config-expo": "58.0.4",
 		"husky": "9.1.7",
-		"jsdom": "31.0.0",
-		"knip": "6.44.2",
 		"react": "19.3.1",
-		"react-dom": "19.3.1",
 		"react-native-svg": "15.16.1",
-		"turbo": "2.11.10",
 		"typescript": "6.0.3",
 		"vitest": "5.1.0"
 	},
@@ -71,10 +63,6 @@
 			"types": "./build/index.d.ts",
 			"default": "./build/index.js"
 		},
-		"./core": {
-			"types": "./build/core.d.ts",
-			"default": "./build/core.js"
-		},
 		"./package.json": "./package.json"
 	},
 	"keywords": [
@@ -84,7 +72,7 @@
 		"pose-detection",
 		"pose-estimation",
 		"camera",
-		"skeleton-tracking"
+		"pose-landmarks"
 	],
 	"homepage": "https://github.com/YosefHayim/expo-mediapipe-pose#readme",
 	"bugs": {
@@ -93,8 +81,5 @@
 	"publishConfig": {
 		"access": "public",
 		"registry": "https://registry.npmjs.org/"
-	},
-	"dependencies": {
-		"zod": "4.6.7"
 	}
 }

@@ -15,7 +15,6 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 private class PoseVideoSession(
-    val context: Context,
     val retriever: MediaMetadataRetriever,
     val detector: PoseLandmarker,
     val durationMs: Long,
@@ -33,7 +32,7 @@ private class PoseVideoSession(
     }
 }
 
-internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
+internal class PoseVideoAnalysis {
     private val worker = Executors.newSingleThreadExecutor()
     private val destroyed = AtomicBoolean(false)
     private var session: PoseVideoSession? = null
@@ -96,10 +95,16 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                 require(duration > 0)
                 val configuration =
                     PoseLandmarker.PoseLandmarkerOptions.builder()
-                        .setBaseOptions(PoseModel.options(options.modelVariant, options.modelPath))
+                        .setBaseOptions(
+                            PoseModel.options(
+                                options.modelVariant,
+                                options.modelPath,
+                                options.poseDelegate,
+                            )
+                        )
                         .setRunningMode(RunningMode.VIDEO)
                         .setNumPoses(options.maxPoses)
-                        .setOutputSegmentationMasks(options.personMaskEnabled)
+                        .setOutputSegmentationMasks(false)
                         .setMinPoseDetectionConfidence(options.minPoseDetectionConfidence.toFloat())
                         .setMinPosePresenceConfidence(options.minPosePresenceConfidence.toFloat())
                         .setMinTrackingConfidence(trackingConfidence.toFloat())
@@ -107,7 +112,6 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                 val detector = PoseLandmarker.createFromOptions(context, configuration)
                 val opened =
                     PoseVideoSession(
-                        context.applicationContext,
                         retriever,
                         detector,
                         duration,
@@ -159,22 +163,8 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                             (SystemClock.elapsedRealtimeNanos() - started) / 1_000_000.0
                         outputMasks = result.segmentationMasks().orElse(emptyList())
                         val landmarkPayload = PoseLandmarkPayload.make(result)
-                        val personMask =
-                            if (current.options.personMaskEnabled)
-                                mapOf(
-                                    "personMask" to
-                                        masks.save(
-                                            current.context,
-                                            result,
-                                            pixels.width,
-                                            pixels.height,
-                                            current.options.maskMaxDimension,
-                                        )
-                                )
-                            else emptyMap()
                         val detection =
                             landmarkPayload +
-                                personMask +
                                 mapOf(
                                     "imageSize" to
                                         mapOf("width" to pixels.width, "height" to pixels.height),
@@ -182,7 +172,7 @@ internal class PoseVideoAnalysis(private val masks: PoseMaskStore) {
                                     "model" to
                                         mapOf(
                                             "variant" to current.options.modelVariant,
-                                            "delegate" to "CPU",
+                                            "delegate" to current.options.poseDelegate,
                                             "source" to
                                                 if (current.options.modelPath == null) "bundled"
                                                 else "local",

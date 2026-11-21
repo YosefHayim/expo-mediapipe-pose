@@ -1,17 +1,7 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"files": {
-		"includes": [
-			"src/**",
-			"vitest.config.ts",
-			"example/**/*.ts",
-			"example/**/*.tsx",
-			"example/*.json",
-			"hello-world/*.ts",
-			"hello-world/*.tsx",
-			"hello-world/*.json",
-			"*.json"
-		]
+		"includes": ["src/**", "vitest.config.ts", "plugin/**/*.ts", "*.json"]
 	},
 	"vcs": {
 		"enabled": true,
@@ -24,7 +14,13 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"preset": "recommended"
+			"preset": "recommended",
+			"suspicious": {
+				"noDoubleEquals": "off"
+			},
+			"complexity": {
+				"useLiteralKeys": "off"
+			}
 		}
 	},
 	"assist": {

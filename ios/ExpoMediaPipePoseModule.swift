@@ -1,3 +1,4 @@
+import AVFoundation
 import ExpoModulesCore
 
 public class ExpoMediaPipePoseModule: Module {
@@ -5,9 +6,13 @@ public class ExpoMediaPipePoseModule: Module {
   private var mediaWorker: DispatchQueue { videos.worker }
   public func definition() -> ModuleDefinition {
     Name("ExpoMediaPipePose")
-    AsyncFunction("getCameraCapabilities") { PoseCameraCapabilities.discover() }
+    AsyncFunction("requestCameraPermission") { () async -> String in
+      let isGranted = await AVCaptureDevice.requestAccess(for: .video)
+      guard isGranted else { return "denied" }
+      return "granted"
+    }
     AsyncFunction("analyzePoseImage") { (location: String, options: PoseImageOptions) in
-      try PoseImageAnalysis.analyze(location, options: options, masks: self.videos.masks)
+      try PoseImageAnalysis.analyze(location, options: options)
     }.runOnQueue(mediaWorker)
     AsyncFunction("openPoseVideo") {
       (location: String, options: PoseImageOptions, trackingConfidence: Double) async throws
@@ -20,12 +25,9 @@ public class ExpoMediaPipePoseModule: Module {
     }
     AsyncFunction("closePoseVideo") { (id: String) in self.videos.close(id) }.runOnQueue(
       mediaWorker)
-    AsyncFunction("releasePosePersonMask") { (id: String) in try self.videos.masks.release(id) }
-      .runOnQueue(mediaWorker)
     OnDestroy {
       self.mediaWorker.async {
         self.videos.destroy()
-        self.videos.masks.destroy()
       }
     }
     View(ExpoMediaPipePoseView.self) {
@@ -63,6 +65,9 @@ public class ExpoMediaPipePoseModule: Module {
       Prop("poseModelAssetPath") { (view: ExpoMediaPipePoseView, path: String?) in
         view.options.modelPath = path
       }
+      Prop("poseDelegate") { (view: ExpoMediaPipePoseView, poseDelegate: String) in
+        view.options.poseDelegate = poseDelegate
+      }
       Prop("minPoseDetectionConfidence") { (view: ExpoMediaPipePoseView, confidence: Double) in
         view.options.minPoseDetectionConfidence = confidence
       }
@@ -73,7 +78,6 @@ public class ExpoMediaPipePoseModule: Module {
         view.options.minTrackingConfidence = confidence
       }
       OnViewDidUpdateProps { (view: ExpoMediaPipePoseView) in
-        view.setMaskStore(self.videos.masks)
         view.applyChanges()
       }
     }

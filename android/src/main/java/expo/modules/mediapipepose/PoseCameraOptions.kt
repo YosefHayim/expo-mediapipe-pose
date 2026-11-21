@@ -10,12 +10,13 @@ data class PoseCameraOptions(
     val maxPoses: Int = 1,
     val modelVariant: String = "full",
     val modelPath: String? = null,
+    val poseDelegate: String = "gpu",
     val rotation: Int = 0,
     val viewWidth: Int = 0,
     val viewHeight: Int = 0,
-    val minPoseDetectionConfidence: Double = 0.35,
-    val minPosePresenceConfidence: Double = 0.35,
-    val minTrackingConfidence: Double = 0.35,
+    val minPoseDetectionConfidence: Double = 0.5,
+    val minPosePresenceConfidence: Double = 0.5,
+    val minTrackingConfidence: Double = 0.5,
 ) {
     fun isValid(): Boolean {
         if (maskMaxDimension !in 64..512) return false
@@ -23,6 +24,7 @@ data class PoseCameraOptions(
         if (facing !in listOf("front", "back")) return false
         if (lens !in listOf("auto", "wide")) return false
         if (modelVariant !in listOf("lite", "full", "heavy")) return false
+        if (poseDelegate !in listOf("gpu", "cpu")) return false
         if (!zoom.isFinite() || zoom < 1) return false
         if (previewFps !in 1..60) return false
         val confidenceValues =

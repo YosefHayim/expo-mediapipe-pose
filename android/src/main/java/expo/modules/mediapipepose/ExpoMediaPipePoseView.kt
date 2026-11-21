@@ -49,7 +49,6 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
-    @Volatile internal var maskStore: PoseMaskStore? = null
     private val worker = Executors.newSingleThreadExecutor()
     private val mainExecutor = ContextCompat.getMainExecutor(context)
     private val generation = AtomicInteger()
@@ -180,10 +179,16 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         return PoseLandmarker.createFromOptions(
             context,
             PoseLandmarker.PoseLandmarkerOptions.builder()
-                .setBaseOptions(PoseModel.options(requested.modelVariant, requested.modelPath))
+                .setBaseOptions(
+                    PoseModel.options(
+                        requested.modelVariant,
+                        requested.modelPath,
+                        requested.poseDelegate,
+                    )
+                )
                 .setRunningMode(RunningMode.VIDEO)
                 .setNumPoses(requested.maxPoses)
-                .setOutputSegmentationMasks(requested.personMaskEnabled)
+                .setOutputSegmentationMasks(false)
                 .setMinPoseDetectionConfidence(requested.minPoseDetectionConfidence.toFloat())
                 .setMinPosePresenceConfidence(requested.minPosePresenceConfidence.toFloat())
                 .setMinTrackingConfidence(requested.minTrackingConfidence.toFloat())
@@ -331,29 +336,14 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                         "poseCount" to inference.landmarks().size,
                         "luminance" to luminance(pixels),
                         "thermalState" to thermalState(),
-                        "poseModelDelegate" to "CPU",
+                        "poseModelDelegate" to requested.poseDelegate,
                         "poseModelVariant" to requested.modelVariant,
                         "poseModelSource" to
                             if (requested.modelPath == null) "bundled" else "local",
                     )
                 val landmarkPayload = PoseLandmarkPayload.make(inference)
-                val personMask =
-                    if (requested.personMaskEnabled)
-                        requireNotNull(maskStore)
-                            .save(
-                                context,
-                                inference,
-                                pixels.width,
-                                pixels.height,
-                                requested.maskMaxDimension,
-                            )
-                    else null
-                val frame =
-                    landmarkPayload +
-                        mapOf("additionalData" to metadata) +
-                        (if (personMask == null) emptyMap()
-                        else mapOf("personMask" to personMask))
-                emit(token, personMask) { onLandmark(frame) }
+                val frame = landmarkPayload + mapOf("additionalData" to metadata)
+                emit(token) { onLandmark(frame) }
             } catch (_: Exception) {
                 failed = true
                 emitFailure("inferenceRuntime", token)
@@ -442,14 +432,10 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         }
     }
 
-    private fun emit(token: Int, personMask: Map<String, Any>? = null, callback: () -> Unit) {
-        val store = maskStore
+    private fun emit(token: Int, callback: () -> Unit) {
         mainExecutor.execute {
             val currentGeneration = generation.get() == token && requestedOptions != null
-            if (destroyed || !currentGeneration) {
-                store?.discard(personMask)
-                return@execute
-            }
+            if (destroyed || !currentGeneration) return@execute
             callback()
         }
     }

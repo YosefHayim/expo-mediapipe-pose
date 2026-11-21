@@ -3,12 +3,9 @@ node_modules/
 
 # build (tsc, Gradle, Expo prebuild, pnpm pack, native test binaries)
 build/
-.turbo/
 .gradle/
 local.properties
 .expo/
-example/ios/
-example/android/
 *.tgz
 
 # editor and OS
