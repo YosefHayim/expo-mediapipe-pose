@@ -6,7 +6,7 @@ This is a community library. It is not an official Expo or Google package.
 
 ## Why
 
-The app **reads `landmarks.leftWrist` instead of joint number 15**. The same `PoseFrame` comes from the live camera, a photo, and a video. This package draws the skeleton.
+The app **reads the full body by joint name**. `landmarks` has all 33 MediaPipe joints, so `landmarks.nose`, `landmarks.leftWrist`, and `landmarks.rightAnkle` are the same pose. The same `PoseFrame` comes from the live camera, a photo, and a video. This package draws that skeleton.
 
 ## Quick start
 
@@ -62,7 +62,7 @@ export function PoseScreen() {
 }
 ```
 
-`camera.frame.landmarks.leftWrist` is one joint. A denied dialog sets `camera.permission` to `"denied"`.
+`camera.frame.landmarks` is the full body. `leftWrist` is one of those 33 joints. A denied dialog sets `camera.permission` to `"denied"`.
 
 ## Usage
 
