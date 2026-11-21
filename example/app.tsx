@@ -1,3 +1,4 @@
+import { registerRootComponent } from "expo";
 import {
 	PoseCameraView,
 	type PoseFailure,
@@ -185,3 +186,5 @@ const styles = StyleSheet.create({
 	choiceLabel: { color: "#fafafa", fontSize: 16 },
 	note: { color: "#fafafa", paddingHorizontal: 12, paddingBottom: 8 },
 });
+
+registerRootComponent(App);

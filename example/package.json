@@ -2,7 +2,7 @@
 	"name": "pose-camera-example",
 	"version": "0.0.0",
 	"private": true,
-	"main": "index.ts",
+	"main": "app.tsx",
 	"scripts": {
 		"dev": "expo start",
 		"ios": "expo run:ios",
