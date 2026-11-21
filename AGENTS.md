@@ -35,7 +35,7 @@ pnpm check
 git diff --check
 ```
 
-`pnpm check` is lint, typecheck, test, and build. Lint runs Biome, then ESLint with the SDK 58 flat config from `eslint-config-expo`. Swift frame-timing tests run on macOS only. Format Swift with `xcrun swift-format format --in-place ios/*.swift`.
+`pnpm check` builds, lints, typechecks the library and the example, then tests. Lint runs Biome, then ESLint with the SDK 58 flat config from `eslint-config-expo`. Swift frame-timing tests run on macOS only. Format Swift with `xcrun swift-format format --in-place ios/*.swift`.
 
 After native changes, prebuild the example and build it:
 
