@@ -16,6 +16,8 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -95,7 +97,7 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
         applyChanges()
     }
 
-    override fun onStateChanged(owner: LifecycleOwner, event: Lifecycle.Event) {
+    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
         when (event) {
             Lifecycle.Event.ON_START -> applyChanges()
             Lifecycle.Event.ON_STOP -> stopCapture()
@@ -209,15 +211,24 @@ class ExpoMediaPipePoseView(context: Context, appContext: AppContext) :
                     val cameraInfo = activeProvider.getCameraInfo(selector)
                     val targetFrameRate = Range(requested.previewFps, requested.previewFps)
                     require(cameraInfo.supportedFrameRateRanges.contains(targetFrameRate))
+                    val frameSizeSelector =
+                        ResolutionSelector.Builder()
+                            .setResolutionStrategy(
+                                ResolutionStrategy(
+                                    Size(1280, 720),
+                                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
+                                ),
+                            )
+                            .build()
                     val cameraPreview =
                         Preview.Builder()
                             .setTargetFrameRate(targetFrameRate)
-                            .setTargetResolution(Size(1280, 720))
+                            .setResolutionSelector(frameSizeSelector)
                             .setTargetRotation(requested.rotation)
                             .build()
                     val cameraAnalysis =
                         ImageAnalysis.Builder()
-                            .setTargetResolution(Size(1280, 720))
+                            .setResolutionSelector(frameSizeSelector)
                             .setTargetRotation(requested.rotation)
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
