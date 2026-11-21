@@ -14,5 +14,5 @@
 		"noEmitOnError": true
 	},
 	"include": ["src"],
-	"exclude": ["src/**/*.test.ts", "src/vitest-setup.ts"]
+	"exclude": ["src/**/*.test.ts"]
 }
