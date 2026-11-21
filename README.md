@@ -249,7 +249,7 @@ Active community library. Person masks and a public running-mode switch are not 
 
 Build success does not prove camera alignment or speed on a device. Pose order is not a person id. This library does not score exercises, record video, or return a person mask.
 
-The bundled models are Google's float16 pose landmarker lite, full, and heavy, version 1. Checksums are checked in `src/package-contents.test.ts`.
+The bundled models are Google's float16 pose landmarker lite, full, and heavy, version 1.
 
 ## Help
 
