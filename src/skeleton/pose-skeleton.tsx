@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { Circle, Line, Svg } from "react-native-svg";
-import type { PoseFrame } from "../landmarks/pose-frame";
+import type { PoseFrame } from "@/landmarks/pose-frame";
 import {
 	listPoseBones,
 	type PoseBoneJoint,

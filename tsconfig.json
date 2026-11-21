@@ -21,7 +21,10 @@
 		"allowJs": false,
 		"declaration": true,
 		"noEmit": true,
-		"types": ["node"]
+		"types": ["node"],
+		"paths": {
+			"@/*": ["./src/*"]
+		}
 	},
 	"include": ["src", "plugin/set-ios-camera-usage-text.ts"]
 }

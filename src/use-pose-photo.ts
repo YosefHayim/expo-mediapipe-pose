@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { PoseFrame } from "./landmarks/pose-frame";
+import type { PoseFrame } from "@/landmarks/pose-frame";
 import { type PosePhotoRequest, readPosePhoto } from "./read-pose-file";
 
 export interface PosePhotoRead {

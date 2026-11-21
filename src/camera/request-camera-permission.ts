@@ -1,4 +1,4 @@
-import { loadPoseModule } from "../pose-module";
+import { loadPoseModule } from "@/pose-module";
 
 export type CameraPermission = "granted" | "denied";
 
