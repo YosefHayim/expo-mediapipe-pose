@@ -6,7 +6,7 @@ Pod::Spec.new do |s|
   s.version = package['version']
   s.summary = package['description']
   s.description = package['description']
-  s.license = { :type => 'MIT', :file => 'LICENSE' }
+  s.license = 'MIT'
   s.author = 'Yosef Hayim Sabag'
   s.homepage = 'https://github.com/YosefHayim/expo-mediapipe-pose'
   s.source = { :git => s.homepage + '.git', :tag => 'v' + s.version.to_s }
@@ -15,7 +15,10 @@ Pod::Spec.new do |s|
   s.static_framework = true
   s.dependency 'ExpoModulesCore'
   s.dependency 'MediaPipeTasksVision', '1.0.0'
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'SWIFT_TREAT_WARNINGS_AS_ERRORS' => 'YES'
+  }
   s.source_files = 'ios/**/*.swift'
   s.exclude_files = 'ios/PoseFrameTimingTests.swift'
   s.resource_bundles = { 'ExpoMediaPipePoseModels' => ['assets/*.task'] }

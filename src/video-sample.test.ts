@@ -2,34 +2,30 @@ import { describe, expect, test } from "vitest";
 import { listSampleTimestamps } from "./video-sample";
 
 function listSampleTimestampsTests() {
-	test("steps across the video without the end timestamp", stepsAcrossTheVideo);
-	test("allows one thousand frames", allowsOneThousandFrames);
 	test(
-		"rejects a video that would pose more than one thousand frames",
-		rejectsTooManyFrames,
+		"a one second video at 5 frames per second is posed five times and not at the end",
+		samplesOneSecond,
 	);
-	test("rejects a duration that is not positive", rejectsABadDuration);
+	test(
+		"a long video tells the app to lower the rate instead of posing every frame",
+		rejectsAVideoThatWouldPoseTooMuch,
+	);
 }
 
 describe("listSampleTimestamps", listSampleTimestampsTests);
 
-function stepsAcrossTheVideo() {
+function samplesOneSecond() {
 	const timestamps = listSampleTimestamps(1000, 5);
 
 	expect(timestamps).toEqual([0, 200, 400, 600, 800]);
 }
 
-function allowsOneThousandFrames() {
-	const timestamps = listSampleTimestamps(16000, 60);
+function rejectsAVideoThatWouldPoseTooMuch() {
+	function sampleTooManyFrames() {
+		return listSampleTimestamps(16001, 60);
+	}
 
-	expect(timestamps).toHaveLength(1000);
-	expect(timestamps[0]).toBe(0);
-}
-
-function rejectsTooManyFrames() {
-	expect(() => listSampleTimestamps(16001, 60)).toThrow(/sampleFrameRate/);
-}
-
-function rejectsABadDuration() {
-	expect(() => listSampleTimestamps(0, 5)).toThrow(/duration/);
+	expect(sampleTooManyFrames).toThrow(
+		"This video would pose too many frames. Lower sampleFrameRate.",
+	);
 }

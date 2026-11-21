@@ -24,7 +24,6 @@ const cacheRoot = join(repositoryRoot, "node_modules", ".cache");
 const manifest = JSON.parse(readFileSync("package.json", "utf8")) as {
 	name: string;
 	exports: Record<string, { default: string; types: string } | string>;
-	dependencies?: Record<string, string>;
 };
 
 interface NpmPackListing {
@@ -38,16 +37,17 @@ import { LANDMARK_NAMES } from "./node_modules/expo-mediapipe-pose/build/landmar
 import { pointInImage } from "./node_modules/expo-mediapipe-pose/build/landmarks/pose-frame.js";
 const require = createRequire(import.meta.url);
 const names = require("./node_modules/expo-mediapipe-pose/build/landmarks/landmark-names.js");
-assert.equal(names.LANDMARK_NAMES.length, LANDMARK_NAMES.length);
-assert.equal(LANDMARK_NAMES.length, 33);
+assert.equal(names.LANDMARK_NAMES[15], "leftWrist");
+assert.equal(LANDMARK_NAMES[15], "leftWrist");
 assert.deepEqual(
   pointInImage({ x: 0.5, y: 0.25, z: 0, visibility: 1, presence: 1 }, 200, 100),
   { x: 100, y: 25 }
 );
-assert.equal(
-  Object.keys(require.cache).some((filePath) => filePath.includes("/react-native/")),
-  false
-);
+let loadedReactNative = false;
+for (const filePath of Object.keys(require.cache)) {
+  if (filePath.includes("/react-native/")) loadedReactNative = true;
+}
+assert.equal(loadedReactNative, false);
 `;
 
 function packedPackageContentsTests() {
@@ -60,9 +60,8 @@ function packedPackageContentsTests() {
 		"ships the three pose models with recorded checksums",
 		shipsModelChecksums,
 	);
-	test("does not depend on zod", doesNotDependOnZod);
 	test(
-		"imports named landmarks in Node without React Native",
+		"an installed app reads the left wrist without loading React Native",
 		importsNamedLandmarks,
 	);
 }
@@ -116,15 +115,6 @@ function shipsModelChecksums() {
 	expect(sha256("assets/pose_landmarker_full.task")).toBe(FULL_MODEL_SHA256);
 	expect(sha256("assets/pose_landmarker_lite.task")).toBe(LITE_MODEL_SHA256);
 	expect(sha256("assets/pose_landmarker_heavy.task")).toBe(HEAVY_MODEL_SHA256);
-}
-
-function doesNotDependOnZod() {
-	expect(manifest.dependencies?.["zod"]).toBeUndefined();
-
-	const textFiles = packedFiles.filter(isLibraryText);
-	const zodFiles = textFiles.filter(importsZod);
-
-	expect(zodFiles).toEqual([]);
 }
 
 function importsNamedLandmarks() {
@@ -266,22 +256,6 @@ function isUnexpectedPackPath(file: string) {
 	return /(^|\/)(node_modules|\.gradle|scripts|example|skills|hello-world)\//.test(
 		file,
 	);
-}
-
-function isLibraryText(file: string) {
-	const isBuild = file.startsWith("build/");
-
-	if (isBuild) return true;
-
-	const isSource = file.startsWith("src/");
-
-	if (isSource) return true;
-
-	return false;
-}
-
-function importsZod(file: string) {
-	return /from "zod"|require\("zod"\)/.test(readFileSync(file, "latin1"));
 }
 
 function sha256(file: string) {

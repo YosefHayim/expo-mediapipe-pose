@@ -23,3 +23,14 @@ dependencies {
   implementation 'androidx.camera:camera-lifecycle:1.4.2'
   implementation 'androidx.camera:camera-view:1.4.2'
 }
+
+kotlin {
+  compilerOptions {
+    allWarningsAsErrors.set(true)
+  }
+}
+
+afterEvaluate {
+  android.lint.abortOnError = true
+  android.lint.warningsAsErrors = true
+}

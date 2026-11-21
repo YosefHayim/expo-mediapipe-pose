@@ -1,36 +1,31 @@
 import { describe, expect, test } from "vitest";
-import { LANDMARK_NAMES } from "../landmarks/landmark-names";
+import { LANDMARK_NAMES, type LandmarkName } from "../landmarks/landmark-names";
 import { type LandmarkPoint, readPoseFrame } from "../landmarks/pose-frame";
 import { listPoseBones } from "./pose-bones";
 
 function listPoseBonesTests() {
-	test("draws a visible bone and skips a faint joint", drawsAVisibleBone);
+	test(
+		"the skeleton draws a visible arm and leaves out a wrist the camera barely sees",
+		drawsAVisibleArm,
+	);
 }
 
 describe("listPoseBones", listPoseBonesTests);
 
-function drawsAVisibleBone() {
-	const points: Array<LandmarkPoint | null> = [];
-
-	for (let index = 0; index < LANDMARK_NAMES.length; index += 1) {
-		points.push(null);
-	}
-
-	const shoulderIndex = LANDMARK_NAMES.indexOf("leftShoulder");
-	const elbowIndex = LANDMARK_NAMES.indexOf("leftElbow");
-	const wristIndex = LANDMARK_NAMES.indexOf("leftWrist");
-	points[shoulderIndex] = joint(0.25, 1);
-	points[elbowIndex] = joint(0.5, 1);
-	points[wristIndex] = joint(0.75, 0.2);
-
+function drawsAVisibleArm() {
 	const poseFrame = readPoseFrame({
-		landmarks: points,
-		worldLandmarks: points,
+		landmarks: jointsNamed({
+			leftShoulder: joint(0.25, 1),
+			leftElbow: joint(0.5, 1),
+			leftWrist: joint(0.75, 0.2),
+		}),
+		worldLandmarks: jointsNamed({}),
 		poses: [],
 		imageSize: { width: 100, height: 100 },
 	});
+	const isFrameMissing = poseFrame == null;
 
-	if (poseFrame == null) throw new Error("Expected a pose frame");
+	if (isFrameMissing) throw new Error("The pose for the skeleton was empty.");
 
 	const bones = listPoseBones({
 		poseFrame,
@@ -49,6 +44,19 @@ function drawsAVisibleBone() {
 
 function joint(x: number, visibility: number): LandmarkPoint {
 	return { x, y: 0.5, z: 0, visibility, presence: 1 };
+}
+
+function jointsNamed(
+	placedJoints: Partial<Record<LandmarkName, LandmarkPoint>>,
+): unknown[] {
+	const points: unknown[] = [];
+
+	for (const landmarkName of LANDMARK_NAMES) {
+		const point = placedJoints[landmarkName] ?? null;
+		points.push(point);
+	}
+
+	return points;
 }
 
 function readBoneName(line: { name: string }) {
