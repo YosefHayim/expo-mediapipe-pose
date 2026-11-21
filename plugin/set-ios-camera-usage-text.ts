@@ -13,7 +13,7 @@ export function setIosCameraUsageText(
 	cameraUsageText: string = DEFAULT_CAMERA_USAGE_TEXT,
 ): ExpoConfig {
 	function applyUsageText(mod: ExportedConfigWithProps<InfoPlist>) {
-		mod.modResults.NSCameraUsageDescription = cameraUsageText;
+		mod.modResults["NSCameraUsageDescription"] = cameraUsageText;
 		return mod;
 	}
 

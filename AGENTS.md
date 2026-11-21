@@ -1,6 +1,6 @@
 # expo-mediapipe-pose
 
-Expo native pose landmarks on MediaPipe Pose Landmarker. Read [README.md](README.md) before changing the public API. When the public API changes, update [llms.txt](llms.txt) too.
+Expo native pose landmarks on MediaPipe Pose Landmarker. Read [README.md](README.md) before changing the public API.
 
 ## Layout
 

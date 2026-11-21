@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { Circle, Line, Svg } from "react-native-svg";
 import type { PoseFrame } from "../landmarks/pose-frame";
 import {
@@ -18,7 +19,7 @@ export function PoseSkeleton({
 	viewWidth,
 	viewHeight,
 	skeletonColor = "#38bdf8",
-}: PoseSkeletonProps) {
+}: PoseSkeletonProps): ReactElement | null {
 	const isWidthEmpty = viewWidth <= 0;
 
 	if (isWidthEmpty) return null;

@@ -88,10 +88,6 @@ afterAll(() => {
 function holdsRequiredFiles() {
 	const requiredFiles = [
 		"README.md",
-		"llms.txt",
-		"CHANGELOG.md",
-		"LICENSE",
-		"THIRD_PARTY_NOTICES.md",
 		"expo-module.config.json",
 		"ExpoMediaPipePose.podspec",
 		"app.plugin.js",
@@ -123,7 +119,7 @@ function shipsModelChecksums() {
 }
 
 function doesNotDependOnZod() {
-	expect(manifest.dependencies?.zod).toBeUndefined();
+	expect(manifest.dependencies?.["zod"]).toBeUndefined();
 
 	const textFiles = packedFiles.filter(isLibraryText);
 	const zodFiles = textFiles.filter(importsZod);

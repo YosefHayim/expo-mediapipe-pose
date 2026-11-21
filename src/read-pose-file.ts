@@ -149,7 +149,7 @@ function readVideoSession(opened: unknown): VideoSession | null {
 
 	if (!isOpened) return null;
 
-	const id = opened.id;
+	const id = opened["id"];
 	const isId = typeof id === "string";
 
 	if (!isId) return null;
@@ -158,7 +158,7 @@ function readVideoSession(opened: unknown): VideoSession | null {
 
 	if (isIdEmpty) return null;
 
-	const durationMs = readPositiveNumber(opened.durationMs);
+	const durationMs = readPositiveNumber(opened["durationMs"]);
 
 	if (durationMs == null) return null;
 

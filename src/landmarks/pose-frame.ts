@@ -81,7 +81,7 @@ export function readPoseFrame(nativeEvent: unknown): PoseFrame | null {
 
 	if (!isEvent) return null;
 
-	const detection = nativeEvent.detection;
+	const detection = nativeEvent["detection"];
 	const isVideoStep = isPlainObject(detection);
 
 	if (isVideoStep) return readVideoPoseFrame(nativeEvent, detection);
@@ -93,7 +93,7 @@ function readVideoPoseFrame(
 	step: Record<string, unknown>,
 	detection: Record<string, unknown>,
 ): PoseFrame | null {
-	const timestampMs = readFiniteNumber(step.timestampMs);
+	const timestampMs = readFiniteNumber(step["timestampMs"]);
 
 	if (timestampMs == null) return null;
 
@@ -103,7 +103,7 @@ function readVideoPoseFrame(
 function readCameraOrPhotoFrame(
 	nativeEvent: Record<string, unknown>,
 ): PoseFrame | null {
-	const extra = nativeEvent.additionalData;
+	const extra = nativeEvent["additionalData"];
 	const isCamera = isPlainObject(extra);
 
 	if (isCamera) return readCameraFrame(nativeEvent, extra);
@@ -115,12 +115,12 @@ function readCameraFrame(
 	nativeEvent: Record<string, unknown>,
 	extra: Record<string, unknown>,
 ): PoseFrame | null {
-	const timestampMs = readFiniteNumber(extra.receivedAtMs);
+	const timestampMs = readFiniteNumber(extra["receivedAtMs"]);
 
 	if (timestampMs == null) return null;
 
-	const cameraFacing = readCameraFacing(extra.cameraFacing);
-	const image = readViewSize(extra.width, extra.height);
+	const cameraFacing = readCameraFacing(extra["cameraFacing"]);
+	const image = readViewSize(extra["width"], extra["height"]);
 
 	if (image == null) return null;
 
@@ -164,12 +164,13 @@ function readLandmarkFrame(
 }
 
 function readImageSize(holder: Record<string, unknown>): ViewSize | null {
-	const imageSize = holder.imageSize;
+	const imageSize = holder["imageSize"];
 	const hasImageSize = isPlainObject(imageSize);
 
-	if (hasImageSize) return readViewSize(imageSize.width, imageSize.height);
+	if (hasImageSize)
+		return readViewSize(imageSize["width"], imageSize["height"]);
 
-	return readViewSize(holder.width, holder.height);
+	return readViewSize(holder["width"], holder["height"]);
 }
 
 interface People {
@@ -179,15 +180,15 @@ interface People {
 }
 
 function readPeople(holder: Record<string, unknown>): People | null {
-	const landmarks = readNamedLandmarks(holder.landmarks);
+	const landmarks = readNamedLandmarks(holder["landmarks"]);
 
 	if (landmarks == null) return null;
 
-	const worldLandmarks = readNamedLandmarks(holder.worldLandmarks);
+	const worldLandmarks = readNamedLandmarks(holder["worldLandmarks"]);
 
 	if (worldLandmarks == null) return null;
 
-	const poseList = holder.poses;
+	const poseList = holder["poses"];
 	const isPoseList = Array.isArray(poseList);
 
 	if (!isPoseList) {
@@ -228,11 +229,11 @@ function readNamedPose(candidate: unknown): NamedPose | null {
 
 	if (!isPose) return null;
 
-	const landmarks = readNamedLandmarks(candidate.landmarks);
+	const landmarks = readNamedLandmarks(candidate["landmarks"]);
 
 	if (landmarks == null) return null;
 
-	const worldLandmarks = readNamedLandmarks(candidate.worldLandmarks);
+	const worldLandmarks = readNamedLandmarks(candidate["worldLandmarks"]);
 
 	if (worldLandmarks == null) return null;
 
@@ -268,23 +269,23 @@ function readLandmarkPoint(candidate: unknown): LandmarkPoint | null {
 
 	if (!isPoint) return null;
 
-	const x = readFiniteNumber(candidate.x);
+	const x = readFiniteNumber(candidate["x"]);
 
 	if (x == null) return null;
 
-	const y = readFiniteNumber(candidate.y);
+	const y = readFiniteNumber(candidate["y"]);
 
 	if (y == null) return null;
 
-	const z = readFiniteNumber(candidate.z);
+	const z = readFiniteNumber(candidate["z"]);
 
 	if (z == null) return null;
 
-	const visibility = readUnitInterval(candidate.visibility);
+	const visibility = readUnitInterval(candidate["visibility"]);
 
 	if (visibility == null) return null;
 
-	const presence = readUnitInterval(candidate.presence);
+	const presence = readUnitInterval(candidate["presence"]);
 
 	if (presence == null) return null;
 

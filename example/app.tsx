@@ -5,7 +5,7 @@ import {
 	type PoseModel,
 	requestCameraPermission,
 } from "expo-mediapipe-pose";
-import { useState } from "react";
+import { type ReactElement, useState } from "react";
 import { Button, Pressable, StyleSheet, Text, View } from "react-native";
 
 const POSE_MODELS: PoseModel[] = ["lite", "full", "heavy"];
@@ -13,7 +13,7 @@ const FRAME_RATES = [15, 30, 60];
 
 type CameraPermission = "unknown" | "granted" | "denied";
 
-export function App() {
+export function App(): ReactElement {
 	const [cameraPermission, setCameraPermission] =
 		useState<CameraPermission>("unknown");
 	const [poseModel, setPoseModel] = useState<PoseModel>("full");

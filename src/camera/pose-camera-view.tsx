@@ -1,5 +1,5 @@
 import { requireNativeView } from "expo";
-import { type ReactNode, useState } from "react";
+import { type ReactElement, type ReactNode, useState } from "react";
 import {
 	type LayoutChangeEvent,
 	StyleSheet,
@@ -78,7 +78,7 @@ export function PoseCameraView({
 	skeletonColor = "#38bdf8",
 	onPoseFrame,
 	onPoseFailure,
-}: PoseCameraViewProps) {
+}: PoseCameraViewProps): ReactElement {
 	const checkedFrameRate = readFrameRate(poseFrameRate);
 	const poseSettings = readPoseSettings({
 		poseModel,
@@ -223,7 +223,7 @@ function readPoseFailureReason(nativeEvent: unknown): PoseFailureReason | null {
 
 	if (!isEvent) return null;
 
-	return readFailureCode(nativeEvent.code);
+	return readFailureCode(nativeEvent["code"]);
 }
 
 function readFailureCode(code: unknown): PoseFailureReason | null {
