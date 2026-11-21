@@ -2,31 +2,25 @@
 
 On-device pose landmarks for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), using Google's [MediaPipe Pose Landmarker](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker).
 
-This is a community library. It is not an official Expo or Google package. Expo Go cannot load it. Use a development build.
+This is a community library. It is not an official Expo or Google package.
 
-The app reads `landmarks.leftWrist` instead of joint number 15. The same `PoseFrame` comes from the live camera, a photo, and a video. This package draws the skeleton.
+## Why
 
-## Install
+The app **reads `landmarks.leftWrist` instead of joint number 15**. The same `PoseFrame` comes from the live camera, a photo, and a video. This package draws the skeleton.
+
+## Quick start
+
+You need a [development build](https://docs.expo.dev/develop/development-builds/introduction/). **Expo Go cannot load it.**
 
 ```sh
 npx expo install expo-mediapipe-pose react-native-svg
-```
-
-`react-native-svg` is only there so the skeleton can draw. The pose model is bundled. There is no other runtime dependency.
-
-## Development build
-
-```sh
 npx expo run:ios
 npx expo run:android
 ```
 
-## Camera permission
+[`react-native-svg`](https://docs.swmansion.com/react-native-svg/) is only there so the skeleton can draw. The pose model is bundled. There is no other runtime dependency.
 
-Two different moments:
-
-1. At prebuild, the config plugin writes the iOS usage sentence (`NSCameraUsageDescription`). Android already declares `CAMERA` in this package.
-2. At runtime, `requestCameraPermission()` shows the one system dialog and returns `"granted"` or `"denied"`.
+At prebuild, the config plugin writes the iOS usage sentence (`NSCameraUsageDescription`). Android already declares `CAMERA` in this package.
 
 ```json
 {
@@ -40,7 +34,39 @@ Leave the sentence out and the plugin uses "Allow this app to use the camera to 
 
 An app that does not prebuild must set `NSCameraUsageDescription` itself. The camera view does not ask. If permission is missing, `onPoseFailure` reports `cameraPermission` and the preview stays closed.
 
-## Show a pose camera
+```tsx
+import { Button } from "react-native";
+import { PoseCameraView, usePoseCamera } from "expo-mediapipe-pose";
+
+export function PoseScreen() {
+  const camera = usePoseCamera({
+    isCameraRunning: true,
+    cameraFacing: "front",
+  });
+
+  const isClosed = camera.permission != "granted";
+
+  if (isClosed) {
+    return <Button title="Allow camera" onPress={camera.askForCamera} />;
+  }
+
+  return (
+    <PoseCameraView
+      style={{ flex: 1 }}
+      isCameraRunning={camera.isCameraRunning}
+      cameraFacing={camera.cameraFacing}
+      onPoseFrame={camera.readFrame}
+      onPoseFailure={camera.readFailure}
+    />
+  );
+}
+```
+
+`camera.frame.landmarks.leftWrist` is one joint. A denied dialog sets `camera.permission` to `"denied"`.
+
+## Usage
+
+### Camera
 
 `usePoseCamera` keeps the permission, the latest full pose, and the last failure. Pass the settings you want to control. It fills the defaults and returns those too, so the view can be filled from `camera`.
 
@@ -97,11 +123,11 @@ export function PoseScreen() {
 }
 ```
 
-`camera.frame` is the full pose: all 33 `landmarks`, `worldLandmarks`, every person in `poses`, the timestamp, the image size, and `cameraFacing`. `camera.frame.landmarks.leftWrist` is one joint. `camera.failure` is the last failure. A denied dialog sets `camera.permission` to `"denied"`. A dialog that fails sets `camera.failure.reason` to `cameraPermission`.
+`camera.frame` is the full pose: all 33 `landmarks`, `worldLandmarks`, every person in `poses`, the timestamp, the image size, and `cameraFacing`. `camera.failure` is the last failure. A dialog that fails sets `camera.failure.reason` to `cameraPermission`.
 
 Changing `poseModel` reloads the landmarker. Changing `poseFrameRate` does not. `requestCameraPermission()` is still there when you want the dialog without the hook.
 
-## Named landmarks
+### Named landmarks
 
 `LANDMARK_NAMES` is the 33 MediaPipe joints, in MediaPipe order. A missing joint is `null`. It is not a failure.
 
@@ -109,7 +135,7 @@ Changing `poseModel` reloads the landmarker. Changing `poseFrameRate` does not. 
 
 `worldLandmarks` are meters from the hip midpoint. `pointInImage(landmarks.nose, imageWidth, imageHeight)` turns a normalized point into image pixels.
 
-## Skeleton
+### Skeleton
 
 `skeletonRendering` is `"shown"` by default. `"hidden"` still calls `onPoseFrame`. The skeleton color defaults to `#38bdf8`. A joint is skipped when it is missing or its visibility is below 0.5.
 
@@ -132,7 +158,7 @@ import { PoseSkeleton } from "expo-mediapipe-pose";
 />
 ```
 
-## Photo and video
+### Photo and video
 
 `usePosePhoto` stores one frame. `usePoseVideo` stores every sampled frame, in order. `read` keeps the error message on `failure` instead of throwing. The functions are there when you want the frame back yourself.
 
@@ -180,17 +206,15 @@ const videoFrames = await readPoseVideo({
 });
 ```
 
-A photo has no frame rate. Video samples timestamps before MediaPipe's video mode, which does not drop frames. The default sample rate is 5. More than 1000 frames throws. Ask for a lower `sampleFrameRate`.
+A photo has no frame rate. A bad path throws from `readPosePhoto` and `readPoseVideo`, and the message includes that path. The hooks store that same message on `failure`. A still frame's `timestampMs` is 0.
 
-A bad path throws from `readPosePhoto` and `readPoseVideo`, and the message includes that path. The hooks store that same message on `failure`. A still frame's `timestampMs` is 0.
+### Model and frame rate
 
-## Model and frame rate
+`poseModel` is `"lite"`, `"full"`, or `"heavy"`. The default is `"full"`. All three models ship with the package. A local `.task` file can be passed as `poseModelPath` and wins over the bundled model.
 
-`poseModel` is `"lite"`, `"full"`, or `"heavy"`. The default is `"full"`. All three models ship with the package. Changing the model reloads the landmarker. A local `.task` file can be passed as `poseModelPath` and wins over the bundled model.
+`poseFrameRate` is how many camera frames per second are sent to the landmarker. It is a whole number from 1 to 60, default 30.
 
-`poseFrameRate` is how many camera frames per second are sent to the landmarker. It is a whole number from 1 to 60, default 30. MediaPipe has no fps setting of its own. The preview stays smooth while this number changes, and the landmarker is not reloaded. A live stream can still drop a frame when the landmarker is busy.
-
-## Settings
+### Settings
 
 | Setting | Default |
 | --- | --- |
@@ -200,9 +224,27 @@ A bad path throws from `readPosePhoto` and `readPoseVideo`, and the message incl
 | `minTrackingConfidence` | 0.5 |
 | `poseDelegate` | `"gpu"` (`"cpu"` also works) |
 
-These match the [Pose Landmarker options](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker). A confidence outside 0 to 1 throws. Person masks and a public running-mode switch are not part of this library. Photo and video use the image and video tasks. The live camera keeps video mode on a background queue.
+These match the [Pose Landmarker options](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker). A confidence outside 0 to 1 throws.
 
-## Failures
+## How it works
+
+MediaPipe has no fps setting of its own. `poseFrameRate` chooses how many live frames are sent. The preview stays smooth while this number changes, and the landmarker is not reloaded. A live stream can still drop a frame when the landmarker is busy.
+
+Changing `poseModel` reloads the landmarker. The live camera keeps video mode on a background queue.
+
+Video samples timestamps before MediaPipe's video mode, which does not drop frames. The default sample rate is 5. More than 1000 frames throws. Ask for a lower `sampleFrameRate`.
+
+Photo and video use the image and video tasks.
+
+## Status and scope
+
+Active community library. Person masks and a public running-mode switch are not part of this library.
+
+Build success does not prove camera alignment or speed on a device. Pose order is not a person id. This library does not score exercises, record video, or return a person mask.
+
+The bundled models are Google's float16 pose landmarker lite, full, and heavy, version 1. Checksums are checked in `src/package-contents.test.ts`.
+
+## Help
 
 `onPoseFailure` receives one reason:
 
@@ -218,8 +260,17 @@ These match the [Pose Landmarker options](https://developers.google.com/edge/med
 
 An empty person is a normal `PoseFrame` whose joints are `null`.
 
-## Limits
+## Development
 
-Build success does not prove camera alignment or speed on a device. Pose order is not a person id. This library does not score exercises, record video, or return a person mask.
+From the repo root, with [Node.js](https://nodejs.org/) 24 and [pnpm](https://pnpm.io/):
 
-The bundled models are Google's float16 pose landmarker lite, full, and heavy, version 1. Checksums are checked in `src/package-contents.test.ts`.
+```sh
+pnpm install --frozen-lockfile
+pnpm check
+```
+
+`pnpm check` is lint, typecheck, test, and build. The example app in `example/` is not in the npm package. Instructions for coding agents are in [Agents.md](Agents.md).
+
+## License
+
+MIT.
