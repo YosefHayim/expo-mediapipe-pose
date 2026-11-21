@@ -38,4 +38,6 @@ git diff --check
 
 Android CI creates a temporary SDK 58 app, links this package, and runs the library unit tests plus an app assemble. There is no example app in this repo. A successful build does not prove camera alignment or speed on a device.
 
+Action versions in `.github` are tags. `.github/workflows/actions.lock` pins the commits. When a `uses` line changes, run `gh actions-lock` and commit the lockfile with it.
+
 `pnpm build` writes `build/` and `plugin/build/`. Packing runs that build. Do not publish npm from an agent session. Do not commit secrets or personal camera recordings.

@@ -1,0 +1,5 @@
+paths:
+  .github/workflows/check.yml:
+    ignore:
+      # actionlint 1.7.12 rejects the same-repository uses: $/ form.
+      - 'specifying action "\$/.+" in invalid format because ref is missing'
