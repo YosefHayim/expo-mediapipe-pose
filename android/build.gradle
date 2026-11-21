@@ -13,6 +13,10 @@ android {
     versionName project.version.toString()
   }
   sourceSets.main.assets.srcDirs = ['../assets']
+  lintOptions {
+    abortOnError true
+    warningsAsErrors true
+  }
 }
 
 dependencies {
@@ -28,9 +32,4 @@ kotlin {
   compilerOptions {
     allWarningsAsErrors.set(true)
   }
-}
-
-afterEvaluate {
-  android.lint.abortOnError = true
-  android.lint.warningsAsErrors = true
 }
