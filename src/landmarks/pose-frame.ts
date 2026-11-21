@@ -209,7 +209,7 @@ function readPeople(holder: Record<string, unknown>): People | null {
 		poses.push(pose);
 	}
 
-	const isPoseListEmpty = poses.length === 0;
+	const isPoseListEmpty = poses.length == 0;
 
 	if (isPoseListEmpty) return { landmarks, worldLandmarks, poses };
 
@@ -293,11 +293,11 @@ function readLandmarkPoint(candidate: unknown): LandmarkPoint | null {
 }
 
 function readCameraFacing(candidate: unknown): CameraFacing | null {
-	const isFront = candidate === "front";
+	const isFront = candidate == "front";
 
 	if (isFront) return "front";
 
-	const isBack = candidate === "back";
+	const isBack = candidate == "back";
 
 	if (isBack) return "back";
 
@@ -330,7 +330,7 @@ function readViewSize(
 }
 
 function readFiniteNumber(candidate: unknown): number | null {
-	const isNumber = typeof candidate === "number";
+	const isNumber = typeof candidate == "number";
 
 	if (!isNumber) return null;
 
@@ -361,7 +361,7 @@ function readUnitInterval(candidate: unknown): number | null {
 function isPlainObject(
 	candidate: unknown,
 ): candidate is Record<string, unknown> {
-	const isObject = typeof candidate === "object";
+	const isObject = typeof candidate == "object";
 
 	if (!isObject) return false;
 

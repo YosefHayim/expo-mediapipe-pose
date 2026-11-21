@@ -71,7 +71,7 @@ export function App(): ReactElement {
 		);
 	}
 
-	const isPermissionGranted = cameraPermission === "granted";
+	const isPermissionGranted = cameraPermission == "granted";
 
 	if (!isPermissionGranted) {
 		return (
@@ -114,7 +114,7 @@ function ModelChoice({
 		onChoosePoseModel(poseModel);
 	}
 
-	const isChosen = poseModel === chosenPoseModel;
+	const isChosen = poseModel == chosenPoseModel;
 	const label = isChosen ? `${poseModel} on` : poseModel;
 
 	return (
@@ -139,7 +139,7 @@ function FrameRateChoice({
 		onChooseFrameRate(frameRate);
 	}
 
-	const isChosen = frameRate === chosenFrameRate;
+	const isChosen = frameRate == chosenFrameRate;
 	const label = isChosen ? `${frameRate} fps on` : `${frameRate} fps`;
 
 	return (
@@ -150,7 +150,7 @@ function FrameRateChoice({
 }
 
 function readPermissionNote(cameraPermission: CameraPermission): string {
-	const isDenied = cameraPermission === "denied";
+	const isDenied = cameraPermission == "denied";
 
 	if (isDenied) return "Camera permission was denied.";
 

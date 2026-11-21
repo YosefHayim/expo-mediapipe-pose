@@ -32,7 +32,7 @@ export function listSampleTimestamps(
 		if (isPastEnd) return timestamps;
 
 		const maxSampleFrames = 1000;
-		const isOverCap = timestamps.length === maxSampleFrames;
+		const isOverCap = timestamps.length == maxSampleFrames;
 
 		if (isOverCap) {
 			throw new Error(

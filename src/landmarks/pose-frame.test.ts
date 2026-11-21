@@ -195,7 +195,7 @@ function jointsAt(index: number, point: LandmarkPoint): unknown[] {
 	const points: unknown[] = [];
 
 	for (const [jointIndex] of LANDMARK_NAMES.entries()) {
-		const isPlaced = jointIndex === index;
+		const isPlaced = jointIndex == index;
 		const stored = isPlaced ? point : null;
 		points.push(stored);
 	}

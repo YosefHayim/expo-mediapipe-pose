@@ -102,15 +102,15 @@ export function createNativePoseImageSettings(
 }
 
 function readPoseModel(poseModel: string): PoseModel {
-	const isLite = poseModel === "lite";
+	const isLite = poseModel == "lite";
 
 	if (isLite) return "lite";
 
-	const isFull = poseModel === "full";
+	const isFull = poseModel == "full";
 
 	if (isFull) return "full";
 
-	const isHeavy = poseModel === "heavy";
+	const isHeavy = poseModel == "heavy";
 
 	if (isHeavy) return "heavy";
 
@@ -118,11 +118,11 @@ function readPoseModel(poseModel: string): PoseModel {
 }
 
 function readPoseDelegate(poseDelegate: string): PoseDelegate {
-	const isGpu = poseDelegate === "gpu";
+	const isGpu = poseDelegate == "gpu";
 
 	if (isGpu) return "gpu";
 
-	const isCpu = poseDelegate === "cpu";
+	const isCpu = poseDelegate == "cpu";
 
 	if (isCpu) return "cpu";
 
@@ -174,7 +174,7 @@ function readPoseModelPath(
 
 	if (isMissing) return null;
 
-	const isEmpty = poseModelPath === "";
+	const isEmpty = poseModelPath == "";
 
 	if (isEmpty) throw new Error("Pose model path must be a local file path.");
 

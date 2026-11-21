@@ -23,6 +23,9 @@
 		"enabled": true,
 		"rules": {
 			"preset": "recommended",
+			"suspicious": {
+				"noDoubleEquals": "off"
+			},
 			"complexity": {
 				"useLiteralKeys": "off"
 			}

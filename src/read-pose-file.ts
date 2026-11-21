@@ -134,7 +134,7 @@ async function closePoseVideoAfterFailure(
 }
 
 function readLocalPath(path: string): void {
-	const isEmpty = path === "";
+	const isEmpty = path == "";
 
 	if (isEmpty) throw new Error("Could not read a pose from .");
 }
@@ -150,11 +150,11 @@ function readVideoSession(opened: unknown): VideoSession | null {
 	if (!isOpened) return null;
 
 	const id = opened["id"];
-	const isId = typeof id === "string";
+	const isId = typeof id == "string";
 
 	if (!isId) return null;
 
-	const isIdEmpty = id === "";
+	const isIdEmpty = id == "";
 
 	if (isIdEmpty) return null;
 
@@ -166,7 +166,7 @@ function readVideoSession(opened: unknown): VideoSession | null {
 }
 
 function readPositiveNumber(candidate: unknown): number | null {
-	const isNumber = typeof candidate === "number";
+	const isNumber = typeof candidate == "number";
 
 	if (!isNumber) return null;
 
@@ -184,7 +184,7 @@ function readPositiveNumber(candidate: unknown): number | null {
 function isPlainObject(
 	candidate: unknown,
 ): candidate is Record<string, unknown> {
-	const isObject = typeof candidate === "object";
+	const isObject = typeof candidate == "object";
 
 	if (!isObject) return false;
 

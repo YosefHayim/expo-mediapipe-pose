@@ -78,7 +78,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-	const isConsumerCreated = consumerDirectory !== "";
+	const isConsumerCreated = consumerDirectory != "";
 
 	if (isConsumerCreated)
 		rmSync(consumerDirectory, { recursive: true, force: true });
@@ -150,7 +150,7 @@ function listPackedFiles(): string[] {
 		shell: true,
 		maxBuffer: 20 * 1024 * 1024,
 	});
-	const isPackFailed = reply.status !== 0;
+	const isPackFailed = reply.status != 0;
 
 	if (isPackFailed) throw new Error(`npm pack failed: ${reply.stderr}`);
 
@@ -175,7 +175,7 @@ function readPackedFileList(packedReport: unknown): NpmPackListing | null {
 
 	if (isMissing) return null;
 
-	const isRecord = typeof packedReport === "object";
+	const isRecord = typeof packedReport == "object";
 
 	if (!isRecord) return null;
 
@@ -186,7 +186,7 @@ function readPackedFileList(packedReport: unknown): NpmPackListing | null {
 }
 
 function isThisPackage(packageReport: { name?: string }) {
-	return packageReport.name === manifest.name;
+	return packageReport.name == manifest.name;
 }
 
 function readPackedPath(file: { path: string }) {
@@ -234,7 +234,7 @@ function listExportedFiles(): string[] {
 	const exportedFiles: string[] = [];
 
 	for (const definition of Object.values(manifest.exports)) {
-		const isStringPath = typeof definition === "string";
+		const isStringPath = typeof definition == "string";
 
 		if (isStringPath) {
 			exportedFiles.push(definition.replace(/^\.\//, ""));

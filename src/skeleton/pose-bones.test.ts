@@ -68,5 +68,5 @@ function readJointName(jointPoint: { name: string }) {
 }
 
 function isLeftShoulder(jointPoint: { name: string }) {
-	return jointPoint.name === "leftShoulder";
+	return jointPoint.name == "leftShoulder";
 }

@@ -125,7 +125,7 @@ export function PoseCameraView({
 
 		reportFrame(nextFrame);
 
-		const isSkeletonShown = skeletonRendering === "shown";
+		const isSkeletonShown = skeletonRendering == "shown";
 
 		if (isSkeletonShown) setDrawnFrame(nextFrame);
 	}
@@ -179,7 +179,7 @@ function showSkeleton(
 	viewSize: { width: number; height: number },
 	skeletonColor: string,
 ): ReactNode {
-	const isHidden = skeletonRendering === "hidden";
+	const isHidden = skeletonRendering == "hidden";
 
 	if (isHidden) return null;
 
@@ -227,39 +227,39 @@ function readPoseFailureReason(nativeEvent: unknown): PoseFailureReason | null {
 }
 
 function readFailureCode(code: unknown): PoseFailureReason | null {
-	const isCameraPermission = code === "cameraPermission";
+	const isCameraPermission = code == "cameraPermission";
 
 	if (isCameraPermission) return "cameraPermission";
 
-	const isModelLoad = code === "modelInitialization";
+	const isModelLoad = code == "modelInitialization";
 
 	if (isModelLoad) return "modelLoad";
 
-	const isModelLoadName = code === "modelLoad";
+	const isModelLoadName = code == "modelLoad";
 
 	if (isModelLoadName) return "modelLoad";
 
-	const isCameraRuntime = code === "cameraRuntime";
+	const isCameraRuntime = code == "cameraRuntime";
 
 	if (isCameraRuntime) return "cameraRuntime";
 
-	const isCameraConfiguration = code === "cameraConfiguration";
+	const isCameraConfiguration = code == "cameraConfiguration";
 
 	if (isCameraConfiguration) return "cameraConfiguration";
 
-	const isInferenceRuntime = code === "inferenceRuntime";
+	const isInferenceRuntime = code == "inferenceRuntime";
 
 	if (isInferenceRuntime) return "inferenceRuntime";
 
-	const isNativeViewInitialization = code === "nativeViewInitialization";
+	const isNativeViewInitialization = code == "nativeViewInitialization";
 
 	if (isNativeViewInitialization) return "nativeViewInitialization";
 
-	const isUnreadable = code === "invalidNativeEvent";
+	const isUnreadable = code == "invalidNativeEvent";
 
 	if (isUnreadable) return "unreadableEvent";
 
-	const isUnreadableName = code === "unreadableEvent";
+	const isUnreadableName = code == "unreadableEvent";
 
 	if (isUnreadableName) return "unreadableEvent";
 
@@ -269,7 +269,7 @@ function readFailureCode(code: unknown): PoseFailureReason | null {
 function isPlainObject(
 	candidate: unknown,
 ): candidate is Record<string, unknown> {
-	const isObject = typeof candidate === "object";
+	const isObject = typeof candidate == "object";
 
 	if (!isObject) return false;
 

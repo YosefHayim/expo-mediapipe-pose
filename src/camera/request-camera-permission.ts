@@ -13,11 +13,11 @@ export async function requestCameraPermission(): Promise<CameraPermission> {
 		throw new Error("The camera permission dialog failed.", { cause: error });
 	}
 
-	const isGranted = permission === "granted";
+	const isGranted = permission == "granted";
 
 	if (isGranted) return "granted";
 
-	const isDenied = permission === "denied";
+	const isDenied = permission == "denied";
 
 	if (isDenied) return "denied";
 
