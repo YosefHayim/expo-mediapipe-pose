@@ -13,7 +13,6 @@ Expo native pose landmarks on MediaPipe Pose Landmarker. Read [README.md](README
 - `src/pose-settings.ts`: model, delegate, pose count, confidences, and frame-rate checks.
 - `plugin/set-ios-camera-usage-text.ts`: writes only `NSCameraUsageDescription`. `app.plugin.js` loads the compiled plugin.
 - `ios/` and `android/src/main/java/expo/modules/mediapipepose/`: capture, file decoding, and the landmarker. Keep that work off the UI thread. Close Android `ImageProxy` and inference images. Drop events from an old camera generation.
-- `example/`: one Expo app that compiles the native module. It is not in the npm package.
 - `assets/`: bundled lite, full, and heavy models. Do not replace the full model bytes. Record new checksums in `src/package-contents.test.ts`.
 
 ## API rules
@@ -35,16 +34,8 @@ pnpm check
 git diff --check
 ```
 
-`pnpm check` builds, lints, typechecks the library and the example, then tests. Lint runs Biome, then ESLint with the SDK 58 flat config from `eslint-config-expo`. Swift frame-timing tests run on macOS only. Format Swift with `xcrun swift-format format --in-place ios/*.swift`.
+`pnpm check` builds, lints, typechecks, then tests. Lint runs Biome, then ESLint with the SDK 58 flat config from `eslint-config-expo`. Swift frame-timing tests run on macOS only. Format Swift with `xcrun swift-format format --in-place ios/*.swift`.
 
-After native changes, prebuild the example and build it:
-
-```sh
-pnpm --filter pose-camera-example exec expo prebuild
-pnpm --filter pose-camera-example ios
-pnpm --filter pose-camera-example android
-```
-
-Generated `example/ios` and `example/android` stay untracked. A successful build does not prove camera alignment or speed on a device.
+Android CI creates a temporary SDK 58 app, links this package, and runs the library unit tests plus an app assemble. There is no example app in this repo. A successful build does not prove camera alignment or speed on a device.
 
 `pnpm build` writes `build/` and `plugin/build/`. Packing runs that build. Do not publish npm from an agent session. Do not commit secrets or personal camera recordings.

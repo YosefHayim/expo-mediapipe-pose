@@ -6,8 +6,6 @@ build/
 .gradle/
 local.properties
 .expo/
-example/ios/
-example/android/
 *.tgz
 
 # editor and OS

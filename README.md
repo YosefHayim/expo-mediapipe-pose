@@ -269,7 +269,7 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-`pnpm check` builds, lints, typechecks the library and the example, then tests. The example app in `example/` is not in the npm package. Instructions for coding agents are in [Agents.md](Agents.md).
+`pnpm check` builds, lints, typechecks, then tests. Instructions for coding agents are in [AGENTS.md](AGENTS.md).
 
 ## License
 

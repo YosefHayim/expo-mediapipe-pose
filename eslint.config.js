@@ -9,9 +9,6 @@ module.exports = defineConfig([
 			"dist/*",
 			"build/**",
 			"plugin/build/**",
-			"example/ios/**",
-			"example/android/**",
-			"example/.expo/**",
 		],
 	},
 	{

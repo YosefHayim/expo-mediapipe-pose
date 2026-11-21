@@ -54,12 +54,27 @@ jobs:
       - name: Set up the workspace
         uses: ./.github/actions/setup
 
-      - name: Prebuild the example
-        run: pnpm --filter pose-camera-example exec expo prebuild --platform android --no-install
+      - name: Create a temporary app
+        run: pnpm create expo-app "$RUNNER_TEMP/pose-check" --template blank@sdk-58 --yes --no-agents-md
 
-      - name: Test and assemble the example
+      - name: Install this library
+        working-directory: ${{ runner.temp }}/pose-check
+        env:
+          LIBRARY_DIRECTORY: ${{ github.workspace }}
+        run: |
+          if [ -z "$LIBRARY_DIRECTORY" ]; then
+            echo "LIBRARY_DIRECTORY is empty"
+            exit 1
+          fi
+          pnpm add "link:$LIBRARY_DIRECTORY" react-native-svg@15.16.1
+
+      - name: Prebuild Android
+        working-directory: ${{ runner.temp }}/pose-check
+        run: pnpm exec expo prebuild --platform android --no-install
+
+      - name: Test and assemble
+        working-directory: ${{ runner.temp }}/pose-check/android
         run: ./gradlew :expo-mediapipe-pose:testDebugUnitTest :app:assembleDebug --console=plain
-        working-directory: example/android
 
   gate:
     name: CI Gate

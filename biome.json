@@ -1,15 +1,7 @@
 {
 	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"files": {
-		"includes": [
-			"src/**",
-			"vitest.config.ts",
-			"example/**/*.ts",
-			"example/**/*.tsx",
-			"example/*.json",
-			"plugin/**/*.ts",
-			"*.json"
-		]
+		"includes": ["src/**", "vitest.config.ts", "plugin/**/*.ts", "*.json"]
 	},
 	"vcs": {
 		"enabled": true,
