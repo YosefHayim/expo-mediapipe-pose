@@ -29,7 +29,7 @@ Expo native pose landmarks on MediaPipe Pose Landmarker. Read [README.md](README
 From the repo root:
 
 ```sh
-pnpm install --frozen-lockfile
+pnpm install
 pnpm check
 git diff --check
 ```

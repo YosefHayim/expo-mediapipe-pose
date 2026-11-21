@@ -272,7 +272,7 @@ An empty person is a normal `PoseFrame` whose joints are `null`.
 An app installs the published package with npm, Yarn, or pnpm. The commands below are for working in this repository, from the repo root, with [Node.js](https://nodejs.org/) 24 and [pnpm](https://pnpm.io/):
 
 ```sh
-pnpm install --frozen-lockfile
+pnpm install
 pnpm check
 ```
 

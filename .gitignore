@@ -17,6 +17,7 @@ Thumbs.db
 
 # local
 .worktrees/
+pnpm-lock.yaml
 pnpm-workspace.yaml
 .pnpm-store/
 package-lock.json
