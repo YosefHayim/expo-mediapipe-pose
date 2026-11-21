@@ -1,4 +1,4 @@
-import { LANDMARK_NAMES, type LandmarkName } from "@/landmarks/landmark-names";
+import { LANDMARK_NAMES, type LandmarkName } from "../landmarks/landmark-names";
 
 export type SkeletonRendering = "shown" | "hidden";
 

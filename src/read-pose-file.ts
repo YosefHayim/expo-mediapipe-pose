@@ -1,4 +1,4 @@
-import { type PoseFrame, readPoseFrame } from "@/landmarks/pose-frame";
+import { type PoseFrame, readPoseFrame } from "./landmarks/pose-frame";
 import { loadPoseModule, type PoseNativeModule } from "./pose-module";
 import {
 	createNativePoseImageSettings,

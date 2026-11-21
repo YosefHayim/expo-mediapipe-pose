@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { LANDMARK_NAMES, type LandmarkName } from "@/landmarks/landmark-names";
+import { LANDMARK_NAMES, type LandmarkName } from "../landmarks/landmark-names";
 import {
 	type LandmarkPoint,
 	type PoseFrame,
 	readPoseFrame,
-} from "@/landmarks/pose-frame";
+} from "../landmarks/pose-frame";
 import { listPoseBones, type PoseBones } from "./pose-bones";
 import type { SkeletonJointChoice, SkeletonRendering } from "./skeleton-joints";
 

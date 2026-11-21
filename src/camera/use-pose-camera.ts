@@ -1,10 +1,10 @@
 import { useState } from "react";
-import type { CameraFacing, PoseFrame } from "@/landmarks/pose-frame";
-import type { PoseDelegate, PoseModel } from "@/pose-settings";
+import type { CameraFacing, PoseFrame } from "../landmarks/pose-frame";
+import type { PoseDelegate, PoseModel } from "../pose-settings";
 import type {
 	SkeletonJointChoice,
 	SkeletonRendering,
-} from "@/skeleton/skeleton-joints";
+} from "../skeleton/skeleton-joints";
 import type { PoseFailure } from "./pose-camera-view";
 import {
 	type CameraPermission,

@@ -21,7 +21,7 @@ module.exports = defineConfig([
 		},
 	},
 	{
-		files: ["app.plugin.js", "write-relative-build-imports.js"],
+		files: ["app.plugin.js"],
 		languageOptions: {
 			sourceType: "commonjs",
 			globals: {

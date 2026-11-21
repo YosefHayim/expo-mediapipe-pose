@@ -1,10 +1,10 @@
-import { LANDMARK_NAMES, type LandmarkName } from "@/landmarks/landmark-names";
+import { LANDMARK_NAMES, type LandmarkName } from "../landmarks/landmark-names";
 import {
 	type LandmarkPoint,
 	type PoseFrame,
 	placeLandmarkInView,
 	type ViewSize,
-} from "@/landmarks/pose-frame";
+} from "../landmarks/pose-frame";
 import {
 	readJointLook,
 	readSkeletonJointLooks,

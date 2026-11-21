@@ -6,16 +6,16 @@ import {
 	View,
 	type ViewProps,
 } from "react-native";
-import type { CameraFacing, PoseFrame } from "@/landmarks/pose-frame";
-import { readPoseFrame } from "@/landmarks/pose-frame";
-import type { PoseDelegate, PoseModel } from "@/pose-settings";
-import { readFrameRate, readPoseSettings } from "@/pose-settings";
-import { PoseSkeleton } from "@/skeleton/pose-skeleton";
+import type { CameraFacing, PoseFrame } from "../landmarks/pose-frame";
+import { readPoseFrame } from "../landmarks/pose-frame";
+import type { PoseDelegate, PoseModel } from "../pose-settings";
+import { readFrameRate, readPoseSettings } from "../pose-settings";
+import { PoseSkeleton } from "../skeleton/pose-skeleton";
 import {
 	readSkeletonJointLooks,
 	type SkeletonJointChoice,
 	type SkeletonRendering,
-} from "@/skeleton/skeleton-joints";
+} from "../skeleton/skeleton-joints";
 
 export type PoseFailureReason =
 	| "cameraPermission"

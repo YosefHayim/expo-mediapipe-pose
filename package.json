@@ -19,11 +19,11 @@
 		"expo-module.config.json"
 	],
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && node write-relative-build-imports.js && tsc -p plugin/tsconfig.json",
+		"build": "tsc -p tsconfig.build.json && tsc -p plugin/tsconfig.json",
 		"test": "vitest run && pnpm test:swift",
 		"test:watch": "vitest",
 		"test:swift": "node -e \"if(process.platform!=='darwin'){console.log('Swift frame-timing tests skipped: they run only on macOS.');process.exit(0)}const{mkdirSync}=require('fs'),{spawnSync}=require('child_process');mkdirSync('node_modules/.cache',{recursive:true});const o='node_modules/.cache/frame-timing-tests';const c=spawnSync('xcrun',['swiftc','ios/PoseFrameTiming.swift','ios/PoseFrameTimingTests.swift','-o',o],{stdio:'inherit'});if(c.status!==0)process.exit(1);process.exit(spawnSync(o,{stdio:'inherit'}).status??1)\"",
-		"lint": "biome check . && eslint src plugin example app.plugin.js vitest.config.ts write-relative-build-imports.js --max-warnings 0",
+		"lint": "biome check . && eslint src plugin example app.plugin.js vitest.config.ts --max-warnings 0",
 		"lint:fix": "biome check --write .",
 		"typecheck": "tsc --noEmit",
 		"check": "pnpm build && pnpm lint && pnpm typecheck && pnpm --filter pose-camera-example typecheck && pnpm test",
