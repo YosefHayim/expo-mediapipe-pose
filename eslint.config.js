@@ -21,7 +21,7 @@ module.exports = defineConfig([
 		},
 	},
 	{
-		files: ["app.plugin.js"],
+		files: ["app.plugin.js", "example/metro.config.js", "example/asset-registry-shim.js"],
 		languageOptions: {
 			sourceType: "commonjs",
 			globals: {

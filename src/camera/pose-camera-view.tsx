@@ -1,5 +1,11 @@
 import { requireNativeView } from "expo";
-import { type ReactElement, type ReactNode, useState } from "react";
+import {
+	type ComponentType,
+	createElement,
+	type ReactElement,
+	type ReactNode,
+	useState,
+} from "react";
 import {
 	type LayoutChangeEvent,
 	StyleSheet,
@@ -65,7 +71,7 @@ interface NativePoseCameraProps {
 	onInferenceError: (errorEvent: { nativeEvent: unknown }) => void;
 }
 
-const NativePoseCamera = loadNativePoseCamera();
+let cachedNativePoseCamera: ComponentType<NativePoseCameraProps> | null = null;
 
 export function PoseCameraView({
 	style,
@@ -159,7 +165,6 @@ export function PoseCameraView({
 		skeletonColor,
 		skeletonJoints,
 	});
-
 	return (
 		<View style={style} onLayout={handleLayout}>
 			<NativePoseCamera
@@ -223,15 +228,31 @@ function showSkeleton(shown: ShownSkeleton): ReactNode {
 	);
 }
 
-function loadNativePoseCamera() {
+function NativePoseCamera(props: NativePoseCameraProps): ReactElement {
+	const ResolvedPoseCamera = readNativePoseCamera();
+
+	return createElement(ResolvedPoseCamera, props);
+}
+
+function readNativePoseCamera(): ComponentType<NativePoseCameraProps> {
+	const cached = cachedNativePoseCamera;
+
+	if (cached != null) return cached;
+
+	let loaded: ComponentType<NativePoseCameraProps>;
+
 	try {
-		return requireNativeView<NativePoseCameraProps>("ExpoMediaPipePose");
+		loaded = requireNativeView<NativePoseCameraProps>("ExpoMediaPipePose");
 	} catch (error) {
 		throw new Error(
 			"This needs a development build. Expo Go cannot load the pose camera.",
 			{ cause: error },
 		);
 	}
+
+	cachedNativePoseCamera = loaded;
+
+	return loaded;
 }
 
 function readPoseFailureReason(nativeEvent: unknown): PoseFailureReason | null {

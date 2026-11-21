@@ -5,17 +5,21 @@
 	"main": "app.tsx",
 	"scripts": {
 		"dev": "expo start",
+		"dev:web": "expo start --web",
 		"ios": "expo run:ios",
 		"android": "expo run:android",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@mediapipe/tasks-vision": "1.2.2",
 		"expo": "58.0.23",
 		"expo-mediapipe-pose": "workspace:*",
 		"expo-updates": "58.0.21",
 		"react": "19.3.0",
+		"react-dom": "19.3.0",
 		"react-native": "0.88.1",
-		"react-native-svg": "15.16.1"
+		"react-native-svg": "15.16.1",
+		"react-native-web": "0.21.2"
 	},
 	"devDependencies": {
 		"@types/react": "19.3.0",

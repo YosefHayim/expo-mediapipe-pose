@@ -13,7 +13,7 @@ Expo native pose landmarks on MediaPipe Pose Landmarker. Read [README.md](README
 - `src/pose-settings.ts`: model, delegate, pose count, confidences, and frame-rate checks.
 - `plugin/set-ios-camera-usage-text.ts`: writes only `NSCameraUsageDescription`. `app.plugin.js` loads the compiled plugin.
 - `ios/` and `android/src/main/java/expo/modules/mediapipepose/`: capture, file decoding, and the landmarker. Keep that work off the UI thread. Close Android `ImageProxy` and inference images. Drop events from an old camera generation.
-- `example/`: one Expo app that compiles the native module. It is not in the npm package.
+- `example/`: one Expo app that compiles the native module. It is not in the npm package. `pnpm --filter pose-camera-example dev:web` opens a browser preview of the same pose frame. That preview is not a published web runtime.
 - `assets/`: bundled lite, full, and heavy models. Do not replace the full model bytes. Record new checksums in `src/package-contents.test.ts`.
 
 ## API rules
