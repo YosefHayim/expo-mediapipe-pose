@@ -8,41 +8,8 @@ import {
 	type SkeletonJointChoice,
 	usePoseCamera,
 } from "expo-mediapipe-pose";
-import { lazy, type ReactElement, Suspense, useState } from "react";
-import {
-	Button,
-	Platform,
-	Pressable,
-	StyleSheet,
-	Text,
-	View,
-} from "react-native";
-
-const WebPoseScreen = lazy(loadWebPoseScreen);
-
-export function App(): ReactElement {
-	const isBrowser = Platform.OS == "web";
-
-	if (isBrowser) {
-		return (
-			<Suspense fallback={null}>
-				<WebPoseScreen />
-			</Suspense>
-		);
-	}
-
-	return <PhonePoseScreen />;
-}
-
-function loadWebPoseScreen(): Promise<{
-	default: typeof import("./web-pose-screen").WebPoseScreen;
-}> {
-	return import("./web-pose-screen").then(pickWebPoseScreen);
-}
-
-function pickWebPoseScreen(webPoseModule: typeof import("./web-pose-screen")) {
-	return { default: webPoseModule.WebPoseScreen };
-}
+import { type ReactElement, useState } from "react";
+import { Button, Pressable, StyleSheet, Text, View } from "react-native";
 
 const POSE_MODELS: PoseModel[] = ["lite", "full", "heavy"];
 const FRAME_RATES = [15, 30, 60];
@@ -53,7 +20,7 @@ const ARM_SKELETON_JOINTS: SkeletonJointChoice[] = [
 	{ landmarkName: "rightElbow", color: "#f97316" },
 ];
 
-function PhonePoseScreen(): ReactElement {
+export function App(): ReactElement {
 	const [poseModel, setPoseModel] = useState<PoseModel>("full");
 	const [poseFrameRate, setPoseFrameRate] = useState(30);
 	const camera = usePoseCamera({

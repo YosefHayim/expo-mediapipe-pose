@@ -271,12 +271,6 @@ pnpm check
 
 `pnpm check` is lint, typecheck, test, and build. The example app in `example/` is not in the npm package. Instructions for coding agents are in [Agents.md](Agents.md).
 
-The example can also open the Mac camera in a browser. That screen uses MediaPipe's [web Pose Landmarker](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/web_js) and draws with `PoseSkeleton`. It is not part of the published package.
-
-```sh
-pnpm --filter pose-camera-example dev:web
-```
-
 ## License
 
 MIT.
