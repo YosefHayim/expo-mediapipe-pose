@@ -13,7 +13,14 @@ The app **reads the full body by joint name**. `landmarks` has all 33 MediaPipe 
 You need a [development build](https://docs.expo.dev/develop/development-builds/introduction/). **Expo Go cannot load it.**
 
 ```sh
-npx expo install expo-mediapipe-pose react-native-svg
+npm install expo-mediapipe-pose react-native-svg
+yarn add expo-mediapipe-pose react-native-svg
+pnpm add expo-mediapipe-pose react-native-svg
+```
+
+[`npx expo install`](https://docs.expo.dev/more/expo-cli/#install) `expo-mediapipe-pose react-native-svg` runs that install with the package manager the app already uses, and picks versions for that Expo SDK.
+
+```sh
 npx expo run:ios
 npx expo run:android
 ```
@@ -262,7 +269,7 @@ An empty person is a normal `PoseFrame` whose joints are `null`.
 
 ## Development
 
-From the repo root, with [Node.js](https://nodejs.org/) 24 and [pnpm](https://pnpm.io/):
+An app installs the published package with npm, Yarn, or pnpm. The commands below are for working in this repository, from the repo root, with [Node.js](https://nodejs.org/) 24 and [pnpm](https://pnpm.io/):
 
 ```sh
 pnpm install --frozen-lockfile

@@ -253,6 +253,17 @@ function isFileMissing(file: string) {
 }
 
 function isUnexpectedPackPath(file: string) {
+	const packageManagerFiles = [
+		"pnpm-lock.yaml",
+		"pnpm-workspace.yaml",
+		"package-lock.json",
+		"yarn.lock",
+	];
+
+	const isPackageManagerFile = packageManagerFiles.includes(file);
+
+	if (isPackageManagerFile) return true;
+
 	const isToolingPath =
 		/(^|\/)(node_modules|\.gradle|scripts|example|skills|hello-world)\//.test(
 			file,
