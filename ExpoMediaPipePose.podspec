@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
   s.description = package['description']
   s.license = 'MIT'
   s.author = 'Yosef Hayim Sabag'
-  s.homepage = 'https://github.com/YosefHayim/expo-mediapipe-pose'
+  s.homepage = 'https://github.com/YosefHayim/mediapipe-pose'
   s.source = { :git => s.homepage + '.git', :tag => 'v' + s.version.to_s }
   s.platform = :ios, '16.4'
   s.swift_version = '5.9'
