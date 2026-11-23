@@ -1,4 +1,4 @@
-# expo-mediapipe-pose
+# @yosefsabag/mediapipe-pose
 
 Expo native pose landmarks on MediaPipe Pose Landmarker. Read [README.md](README.md) before changing the public API.
 

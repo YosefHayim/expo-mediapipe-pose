@@ -1,5 +1,5 @@
 {
-	"name": "expo-mediapipe-pose",
+	"name": "@yosefsabag/mediapipe-pose",
 	"version": "0.5.2",
 	"description": "On-device MediaPipe pose landmarks for Expo, with a camera view, named joints, and a skeleton.",
 	"main": "build/index.js",
