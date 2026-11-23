@@ -1,6 +1,6 @@
 {
 	"name": "@yosefsabag/mediapipe-pose",
-	"version": "0.5.2",
+	"version": "0.5.3",
 	"description": "On-device MediaPipe pose landmarks for Expo, with a camera view, named joints, and a skeleton.",
 	"main": "build/index.js",
 	"types": "build/index.d.ts",
@@ -32,7 +32,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/YosefHayim/expo-mediapipe-pose.git"
+		"url": "https://github.com/YosefHayim/mediapipe-pose.git"
 	},
 	"license": "MIT",
 	"engines": {
@@ -74,9 +74,9 @@
 		"camera",
 		"pose-landmarks"
 	],
-	"homepage": "https://github.com/YosefHayim/expo-mediapipe-pose#readme",
+	"homepage": "https://github.com/YosefHayim/mediapipe-pose#readme",
 	"bugs": {
-		"url": "https://github.com/YosefHayim/expo-mediapipe-pose/issues"
+		"url": "https://github.com/YosefHayim/mediapipe-pose/issues"
 	},
 	"publishConfig": {
 		"access": "public",
