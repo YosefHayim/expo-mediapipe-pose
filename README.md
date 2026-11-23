@@ -1,4 +1,4 @@
-# expo-mediapipe-pose
+# @yosefsabag/mediapipe-pose
 
 On-device pose landmarks for [Expo](https://docs.expo.dev/) and [React Native](https://reactnative.dev/), using Google's [MediaPipe Pose Landmarker](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker).
 
@@ -13,12 +13,12 @@ The app **reads the full body by joint name**. `landmarks` has all 33 MediaPipe 
 You need a [development build](https://docs.expo.dev/develop/development-builds/introduction/). **Expo Go cannot load it.**
 
 ```sh
-npm install expo-mediapipe-pose react-native-svg
-yarn add expo-mediapipe-pose react-native-svg
-pnpm add expo-mediapipe-pose react-native-svg
+npm install @yosefsabag/mediapipe-pose react-native-svg
+yarn add @yosefsabag/mediapipe-pose react-native-svg
+pnpm add @yosefsabag/mediapipe-pose react-native-svg
 ```
 
-[`npx expo install`](https://docs.expo.dev/more/expo-cli/#install) `expo-mediapipe-pose react-native-svg` runs that install with the package manager the app already uses, and picks versions for that Expo SDK.
+[`npx expo install`](https://docs.expo.dev/more/expo-cli/#install) `@yosefsabag/mediapipe-pose react-native-svg` runs that install with the package manager the app already uses, and picks versions for that Expo SDK.
 
 ```sh
 npx expo run:ios
@@ -32,7 +32,7 @@ At prebuild, the config plugin writes the iOS usage sentence (`NSCameraUsageDesc
 ```json
 {
   "plugins": [
-    ["expo-mediapipe-pose", "Allow this app to detect your pose."]
+    ["@yosefsabag/mediapipe-pose", "Allow this app to detect your pose."]
   ]
 }
 ```
@@ -43,7 +43,7 @@ An app that does not prebuild must set `NSCameraUsageDescription` itself. The ca
 
 ```tsx
 import { Button } from "react-native";
-import { PoseCameraView, usePoseCamera } from "expo-mediapipe-pose";
+import { PoseCameraView, usePoseCamera } from "@yosefsabag/mediapipe-pose";
 
 export function PoseScreen() {
   const camera = usePoseCamera({
@@ -79,7 +79,7 @@ export function PoseScreen() {
 
 ```tsx
 import { Button } from "react-native";
-import { PoseCameraView, usePoseCamera } from "expo-mediapipe-pose";
+import { PoseCameraView, usePoseCamera } from "@yosefsabag/mediapipe-pose";
 
 export function PoseScreen() {
   const camera = usePoseCamera({
@@ -151,7 +151,7 @@ Changing `poseModel` reloads the landmarker. Changing `poseFrameRate` does not. 
 A photo has no switch. Place `PoseSkeleton` on the image, or skip it.
 
 ```tsx
-import { PoseSkeleton } from "expo-mediapipe-pose";
+import { PoseSkeleton } from "@yosefsabag/mediapipe-pose";
 
 <PoseSkeleton
   poseFrame={poseFrame}
